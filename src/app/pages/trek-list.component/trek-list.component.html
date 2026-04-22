@@ -1,0 +1,7 @@
+<h2>Available Treks</h2>
+<p>Number of treks: {{ treks.length }}</p>
+<ul>
+  <li *ngFor="let trek of treks">
+    {{ trek.name }} - Difficulty: {{ trek.difficulty }}
+  </li>
+</ul>

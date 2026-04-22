@@ -1,0 +1,6 @@
+{
+  "treks": [
+    { "id": 1, "name": "Everest Base Camp", "difficulty": "Hard" },
+    { "id": 2, "name": "Valley of Flowers", "difficulty": "Easy" }
+  ]
+}
