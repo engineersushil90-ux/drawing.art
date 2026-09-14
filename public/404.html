@@ -4,17 +4,12 @@
     <meta charset="utf-8">
     <title>drawing.art</title>
     <script>
-      // GitHub Pages redirect trick for SPA routing
-      var pathSegmentsToKeep = 1;
+      // Redirect to index.html for SPA routing on custom domain
       var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/')
-          .replace(/&/g, '~and~') +
-        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
+      // If not already at root, redirect to index.html
+      if (l.pathname !== '/' && !l.pathname.endsWith('.html') && !l.pathname.endsWith('.js') && !l.pathname.endsWith('.css')) {
+        l.replace(l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/?path=' + encodeURIComponent(l.pathname));
+      }
     </script>
   </head>
   <body>
