@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TrekListComponent } from './trek-list.component';
+import { DrawingArtComponent } from './trek-list.component';
 
-describe('TrekListComponent', () => {
-  let component: TrekListComponent;
-  let fixture: ComponentFixture<TrekListComponent>;
+describe('DrawingArtComponent', () => {
+  let component: DrawingArtComponent;
+  let fixture: ComponentFixture<DrawingArtComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TrekListComponent],
+      imports: [DrawingArtComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TrekListComponent);
+    fixture = TestBed.createComponent(DrawingArtComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
