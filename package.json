@@ -9,7 +9,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:trekking-app": "node dist/trekking-app/server/server.mjs",
-    "json-server": "json-server --watch db.json --port 3000"
+    "json-server": "json-server --watch db.json --port 3000",
+    "deploy": "npm run build && git add -A && git commit -m \"Deploy: $(date)\" && git push"
   },
   "private": true,
   "packageManager": "npm@11.11.0",
