@@ -17,22 +17,6 @@ export const localDrawings = [
     "alt": "SK5856512"
   },
   {
-    "title": "SK32015407",
-    "category": "Color Art",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/ColorArt/2026-09-14/SK32015407.jpeg",
-    "alt": "SK32015407"
-  },
-  {
-    "title": "SK30350945",
-    "category": "Color Art",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/ColorArt/2026-09-14/SK30350945.jpeg",
-    "alt": "SK30350945"
-  },
-  {
     "title": "SK28202843",
     "category": "Color Art",
     "year": "2026",
@@ -81,38 +65,6 @@ export const localDrawings = [
     "alt": "SK6928221"
   },
   {
-    "title": "SK6644826",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK6644826.jpeg",
-    "alt": "SK6644826"
-  },
-  {
-    "title": "SK636494",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK636494.jpeg",
-    "alt": "SK636494"
-  },
-  {
-    "title": "SK5075155",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK5075155.jpeg",
-    "alt": "SK5075155"
-  },
-  {
-    "title": "SK5008160",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK5008160.jpeg",
-    "alt": "SK5008160"
-  },
-  {
     "title": "SK4802454",
     "category": "Pencil Sketches",
     "year": "2026",
@@ -127,14 +79,6 @@ export const localDrawings = [
     "date": "2026-09-14",
     "image": "/drawings/PencilSketches/2026-09-14/SK3774174.jpeg",
     "alt": "SK3774174"
-  },
-  {
-    "title": "SK32793732",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK32793732.jpeg",
-    "alt": "SK32793732"
   },
   {
     "title": "SK32588130",
@@ -185,14 +129,6 @@ export const localDrawings = [
     "alt": "SK30755536"
   },
   {
-    "title": "SK30315449",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK30315449.jpeg",
-    "alt": "SK30315449"
-  },
-  {
     "title": "SK29963574",
     "category": "Pencil Sketches",
     "year": "2026",
@@ -233,22 +169,6 @@ export const localDrawings = [
     "alt": "SK28413650"
   },
   {
-    "title": "SK28184566",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK28184566.jpeg",
-    "alt": "SK28184566"
-  },
-  {
-    "title": "SK28126674",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK28126674.jpeg",
-    "alt": "SK28126674"
-  },
-  {
     "title": "SK28114556",
     "category": "Pencil Sketches",
     "year": "2026",
@@ -273,28 +193,12 @@ export const localDrawings = [
     "alt": "SK28082451"
   },
   {
-    "title": "SK28073682",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK28073682.jpeg",
-    "alt": "SK28073682"
-  },
-  {
     "title": "SK2759377",
     "category": "Pencil Sketches",
     "year": "2026",
     "date": "2026-09-14",
     "image": "/drawings/PencilSketches/2026-09-14/SK2759377.jpeg",
     "alt": "SK2759377"
-  },
-  {
-    "title": "SK27225636",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK27225636.jpeg",
-    "alt": "SK27225636"
   },
   {
     "title": "SK27110427",
@@ -313,14 +217,6 @@ export const localDrawings = [
     "alt": "SK26621788"
   },
   {
-    "title": "SK26124661",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK26124661.jpeg",
-    "alt": "SK26124661"
-  },
-  {
     "title": "SK25239496",
     "category": "Pencil Sketches",
     "year": "2026",
@@ -337,14 +233,6 @@ export const localDrawings = [
     "alt": "SK25165721"
   },
   {
-    "title": "SK24439800",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK24439800.jpeg",
-    "alt": "SK24439800"
-  },
-  {
     "title": "SK24183567",
     "category": "Pencil Sketches",
     "year": "2026",
@@ -359,14 +247,6 @@ export const localDrawings = [
     "date": "2026-09-14",
     "image": "/drawings/PencilSketches/2026-09-14/SK22492690.jpeg",
     "alt": "SK22492690"
-  },
-  {
-    "title": "SK22297970",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK22297970.jpeg",
-    "alt": "SK22297970"
   },
   {
     "title": "SK21669665",
@@ -393,22 +273,6 @@ export const localDrawings = [
     "alt": "SK20833276"
   },
   {
-    "title": "SK20374778",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK20374778.jpeg",
-    "alt": "SK20374778"
-  },
-  {
-    "title": "SK18922437",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK18922437.jpeg",
-    "alt": "SK18922437"
-  },
-  {
     "title": "SK18088546",
     "category": "Pencil Sketches",
     "year": "2026",
@@ -433,14 +297,6 @@ export const localDrawings = [
     "alt": "SK16240129"
   },
   {
-    "title": "SK15739378",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK15739378.jpeg",
-    "alt": "SK15739378"
-  },
-  {
     "title": "SK15140478",
     "category": "Pencil Sketches",
     "year": "2026",
@@ -449,36 +305,12 @@ export const localDrawings = [
     "alt": "SK15140478"
   },
   {
-    "title": "SK15116523",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK15116523.jpeg",
-    "alt": "SK15116523"
-  },
-  {
-    "title": "SK14784937",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK14784937.jpeg",
-    "alt": "SK14784937"
-  },
-  {
     "title": "SK1370118",
     "category": "Pencil Sketches",
     "year": "2026",
     "date": "2026-09-14",
     "image": "/drawings/PencilSketches/2026-09-14/SK1370118.jpeg",
     "alt": "SK1370118"
-  },
-  {
-    "title": "SK12619738",
-    "category": "Pencil Sketches",
-    "year": "2026",
-    "date": "2026-09-14",
-    "image": "/drawings/PencilSketches/2026-09-14/SK12619738.jpeg",
-    "alt": "SK12619738"
   },
   {
     "title": "SK12001438",
