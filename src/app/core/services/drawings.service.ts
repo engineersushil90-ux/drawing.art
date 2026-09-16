@@ -11,21 +11,28 @@ export interface Artwork {
   alt: string;
 }
 
+export interface LikeResponse {
+  image: string;
+  likes: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class DrawingsService {
-
   private readonly http = inject(HttpClient);
 
   getDrawings(): Observable<Artwork[]> {
     return this.http.get<Artwork[]>('/api/drawings');
   }
-}
 
-const categoryMap: Record<string, string> = {
-  ColorArt: 'Color Art',
-  PencilSketches: 'Pencil Sketches',
-  '18+Sketches': '18+ Sketches',
-  FeatureDrawing: 'Feature Drawing'
-};
+  getLikes(): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>('/api/likes');
+  }
+
+  likeDrawing(image: string): Observable<LikeResponse> {
+    return this.http.post<LikeResponse>('/api/likes', {
+      image
+    });
+  }
+}

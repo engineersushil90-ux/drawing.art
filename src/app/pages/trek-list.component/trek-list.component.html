@@ -146,6 +146,17 @@
           <span class="view">
             View
           </span>
+            <button
+          type="button"
+          class="like-button"
+          (click)="likeDrawing($event, artwork)"
+          [attr.aria-label]="'Like ' + artwork.title"
+        >
+          <span>♥</span>
+          <strong>
+            {{ likes[artwork.image] || 0 }}
+          </strong>
+        </button>
 
         </div>
 

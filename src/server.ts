@@ -13,6 +13,7 @@ import {
   extname,
   basename,
 } from 'node:path';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
 import { readdir } from 'node:fs/promises';
 
@@ -22,7 +23,7 @@ const browserDistFolder =
 
 
 const app = express();
-
+app.use(express.json());
 const angularApp =
   new AngularNodeAppEngine();
 
@@ -292,6 +293,79 @@ app.get(
   }
 );
 
+const likesFile = join(process.cwd(), 'data', 'likes.json');
+
+let likesWriteQueue = Promise.resolve();
+
+async function readLikes(): Promise<Record<string, number>> {
+  try {
+    const data = await readFile(likesFile, 'utf8');
+    const parsed = JSON.parse(data);
+
+    return parsed.likes ?? {};
+  } catch {
+    return {};
+  }
+}
+
+async function saveLikes(likes: Record<string, number>): Promise<void> {
+  await mkdir(join(process.cwd(), 'data'), {
+    recursive: true
+  });
+
+  await writeFile(
+    likesFile,
+    JSON.stringify({ likes }, null, 2),
+    'utf8'
+  );
+}
+
+app.get('/api/likes', async (req, res, next) => {
+  try {
+    const likes = await readLikes();
+
+    res.json(likes);
+  } catch (error) {
+    console.error('Failed to read likes:', error);
+    next(error);
+  }
+});
+
+app.post('/api/likes', async (req, res, next) => {
+  try {
+    const image = req.body?.image;
+
+    if (
+      typeof image !== 'string' ||
+      !image.startsWith('/drawings/')
+    ) {
+      res.status(400).json({
+        error: 'Invalid drawing image'
+      });
+
+      return;
+    }
+
+    likesWriteQueue = likesWriteQueue.then(async () => {
+      const likes = await readLikes();
+
+      likes[image] = (likes[image] || 0) + 1;
+
+      await saveLikes(likes);
+
+      res.json({
+        image,
+        likes: likes[image]
+      });
+    }).catch(error => {
+      next(error);
+    });
+
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 /**
  * Serve static files from /browser
@@ -368,6 +442,8 @@ if (
 }
 
 
+
+
 /**
  * Request handler used by Angular CLI
  * and Firebase Cloud Functions.
@@ -376,3 +452,4 @@ export const reqHandler = createNodeRequestHandler(app);
 
 export default reqHandler;
   
+
