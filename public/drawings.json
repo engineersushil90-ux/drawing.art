@@ -1,11 +1,11 @@
 [
   {
-    "title": "apple",
+    "title": "SK27278666",
     "category": "Feature Drawing",
     "year": "2026",
-    "date": "apple.jpeg",
-    "image": "drawings/FeatureDrawing/apple.jpeg",
-    "alt": "apple"
+    "date": "SK27278666.jpeg",
+    "image": "drawings/FeatureDrawing/SK27278666.jpeg",
+    "alt": "SK27278666"
   },
   {
     "title": "SK12619738",
@@ -214,6 +214,14 @@
     "date": "2026-09-14",
     "image": "drawings/ColorArt/2026-09-14/SK9129866.jpeg",
     "alt": "SK9129866"
+  },
+  {
+    "title": "apple",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "2026-09-14",
+    "image": "drawings/PencilSketches/2026-09-14/apple.jpeg",
+    "alt": "apple"
   },
   {
     "title": "SK10383413",
@@ -510,5 +518,29 @@
     "date": "2026-09-14",
     "image": "drawings/PencilSketches/2026-09-14/SK876366.jpeg",
     "alt": "SK876366"
+  },
+  {
+    "title": "SK23147404",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "17-09-2026",
+    "image": "drawings/PencilSketches/17-09-2026/SK23147404.jpeg",
+    "alt": "SK23147404"
+  },
+  {
+    "title": "SK27278666",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "17-09-2026",
+    "image": "drawings/PencilSketches/17-09-2026/SK27278666.jpeg",
+    "alt": "SK27278666"
+  },
+  {
+    "title": "SK27610557",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "17-09-2026",
+    "image": "drawings/PencilSketches/17-09-2026/SK27610557.jpeg",
+    "alt": "SK27610557"
   }
 ]
