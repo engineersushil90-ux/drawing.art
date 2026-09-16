@@ -22,11 +22,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
-            "server": "src/main.server.ts",
             "tsConfig": "tsconfig.app.json",
-            "ssr": {
-              "entry": "src/server.ts"
-            },
             "inlineStyleLanguage": "scss",
             "assets": [
               {
@@ -37,10 +33,7 @@
             "styles": [
               "src/styles.scss"
             ],
-            "outputMode": "server",
-            "security": {
-              "allowedHosts": []
-            }
+            "outputMode": "static"
           },
           "configurations": {
             "production": {
