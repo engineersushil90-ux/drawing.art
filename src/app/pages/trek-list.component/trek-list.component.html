@@ -1,6 +1,9 @@
 <main>
 
-  <!-- HEADER -->
+  <!-- =====================================================
+       HEADER
+       ===================================================== -->
+
   <header class="site-header">
 
     <a class="brand" href="#">
@@ -8,13 +11,41 @@
     </a>
 
     <nav [class.open]="isMenuOpen">
-      <a href="#work" (click)="isMenuOpen = false">Work</a>
-      <a href="#about" (click)="isMenuOpen = false">About</a>
-      <a href="#videos" (click)="isMenuOpen = false">Videos</a>
-      <a href="#contact" (click)="isMenuOpen = false">Contact</a>
+
+      <a
+        href="#work"
+        (click)="isMenuOpen = false"
+      >
+        Work
+      </a>
+
+      <a
+        href="#about"
+        (click)="isMenuOpen = false"
+      >
+        About
+      </a>
+
+      <a
+        href="#videos"
+        (click)="isMenuOpen = false"
+      >
+        Videos
+      </a>
+
+      <a
+        href="#contact"
+        (click)="isMenuOpen = false"
+      >
+        Contact
+      </a>
+
     </nav>
 
-    <a class="contact-link" href="#contact">
+    <a
+      class="contact-link"
+      href="#contact"
+    >
       Get in touch
     </a>
 
@@ -22,7 +53,7 @@
       class="menu-button"
       type="button"
       (click)="isMenuOpen = !isMenuOpen"
-      aria-label="Toggle menu"
+      aria-label="Toggle navigation menu"
     >
       Menu
     </button>
@@ -30,13 +61,16 @@
   </header>
 
 
-  <!-- HERO -->
+  <!-- =====================================================
+       HERO
+       ===================================================== -->
+
   <section class="hero">
 
     <div class="hero-copy">
 
       <p class="eyebrow">
-        Artist &amp; illustrator
+        Artist &amp; Illustrator
       </p>
 
       <h1>
@@ -49,54 +83,85 @@
         and personal artwork.
       </p>
 
-      <a class="round-link" href="#work">
+      <a
+        class="round-link"
+        href="#work"
+      >
         Explore the work
-        <b>↓</b>
+
+        <b>
+          ↓
+        </b>
+
       </a>
 
     </div>
 
 
-<div class="hero-art" *ngIf="featuredArtwork">
+    <!-- FEATURE DRAWING -->
 
-  <img
-    [src]="featuredArtwork.image"
-    [alt]="featuredArtwork.alt"
-  />
+    <div
+      class="hero-art"
+      *ngIf="featuredArtwork"
+    >
 
-  <p class="art-caption">
-    {{ featuredArtwork.title }} · {{ featuredArtwork.year }}
-  </p>
+      <img
+        [src]="featuredArtwork.image"
+        [alt]="featuredArtwork.alt"
+      />
 
-</div>
+      <p class="art-caption">
+        {{ featuredArtwork.title }}
+        ·
+        {{ featuredArtwork.year }}
+      </p>
+
+    </div>
 
   </section>
 
 
-  <!-- WORK / GALLERY -->
-  <section class="work-section" id="work">
+  <!-- =====================================================
+       WORK / GALLERY
+       ===================================================== -->
+
+  <section
+    class="work-section"
+    id="work"
+  >
 
     <div class="section-heading">
 
       <div>
+
         <p class="eyebrow">
-          Selected work
+          Selected Work
         </p>
 
         <h2>
           The gallery
         </h2>
+
       </div>
 
+
       <p class="work-note">
-        {{ visibleArtworks.length }} artwork{{ visibleArtworks.length === 1 ? '' : 's' }}
+
+        {{ filteredArtworks.length }}
+
+        artwork{{ filteredArtworks.length === 1 ? '' : 's' }}
+
         currently available.
+
       </p>
 
     </div>
 
 
-    <!-- CATEGORY FILTERS -->
+    <!-- =================================================
+         CATEGORY FILTERS
+         ================================================= -->
+
     <div class="filters">
 
       <button
@@ -111,19 +176,34 @@
     </div>
 
 
-    <!-- LOADING -->
-    <p *ngIf="isLoading">
+    <!-- =================================================
+         LOADING
+         ================================================= -->
+
+    <div
+      class="loading-message"
+      *ngIf="isLoading"
+    >
       Loading drawings...
-    </p>
+    </div>
 
 
-    <!-- EMPTY -->
-    <p *ngIf="!isLoading && visibleArtworks.length === 0">
+    <!-- =================================================
+         EMPTY STATE
+         ================================================= -->
+
+    <div
+      class="empty-message"
+      *ngIf="!isLoading && visibleArtworks.length === 0"
+    >
       No drawings found in this category.
-    </p>
+    </div>
 
 
-    <!-- GALLERY -->
+    <!-- =================================================
+         GALLERY
+         ================================================= -->
+
     <div
       class="gallery"
       *ngIf="!isLoading && visibleArtworks.length > 0"
@@ -143,23 +223,37 @@
             loading="lazy"
           />
 
+
+          <!-- VIEW -->
+
           <span class="view">
             View
           </span>
-            <button
-          type="button"
-          class="like-button"
-          (click)="likeDrawing($event, artwork)"
-          [attr.aria-label]="'Like ' + artwork.title"
-        >
-          <span>♥</span>
-          <strong>
-            {{ likes[artwork.image] || 0 }}
-          </strong>
-        </button>
+
+
+          <!-- LIKE -->
+
+          <button
+            type="button"
+            class="like-button"
+            (click)="likeDrawing($event, artwork)"
+            [attr.aria-label]="'Like ' + artwork.title"
+          >
+
+            <span>
+              ♥
+            </span>
+
+            <strong>
+              {{ likes[artwork.image] || 0 }}
+            </strong>
+
+          </button>
 
         </div>
 
+
+        <!-- ART INFO -->
 
         <div class="art-info">
 
@@ -168,7 +262,9 @@
           </strong>
 
           <small>
-            {{ artwork.category }} / {{ artwork.year }}
+            {{ artwork.category }}
+            /
+            {{ artwork.year }}
           </small>
 
         </div>
@@ -177,13 +273,74 @@
 
     </div>
 
+
+    <!-- =================================================
+         PAGINATION
+         ================================================= -->
+
+    <nav
+      class="pagination"
+      *ngIf="!isLoading && totalPages > 1"
+      aria-label="Gallery pagination"
+    >
+
+      <!-- PREVIOUS -->
+
+      <button
+        type="button"
+        class="pagination-arrow"
+        [disabled]="currentPage === 1"
+        (click)="previousPage()"
+      >
+        ← Previous
+      </button>
+
+
+      <!-- PAGE NUMBERS -->
+
+      <div class="page-numbers">
+
+        <button
+          *ngFor="let page of pageNumbers"
+          type="button"
+          [class.active]="currentPage === page"
+          [attr.aria-current]="
+            currentPage === page ? 'page' : null
+          "
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+      </div>
+
+
+      <!-- NEXT -->
+
+      <button
+        type="button"
+        class="pagination-arrow"
+        [disabled]="currentPage === totalPages"
+        (click)="nextPage()"
+      >
+        Next →
+      </button>
+
+    </nav>
+
   </section>
 
 
-  <!-- FEATURED LINKS -->
+  <!-- =====================================================
+       FEATURED COLLECTION LINKS
+       ===================================================== -->
+
   <section class="featured-links">
 
-    <a href="#work" (click)="selectCategory('Pencil Sketches')">
+    <a
+      href="#work"
+      (click)="selectCategory('Pencil Sketches')"
+    >
 
       <span>
         EXPLORE
@@ -200,7 +357,10 @@
     </a>
 
 
-    <a href="#work" (click)="selectCategory('18+ Sketches')">
+    <a
+      href="#work"
+      (click)="selectCategory('18+ Sketches')"
+    >
 
       <span>
         EXPLORE
@@ -219,14 +379,23 @@
   </section>
 
 
-  <!-- ABOUT -->
-  <section class="about" id="about">
+  <!-- =====================================================
+       ABOUT
+       ===================================================== -->
 
-    <div class="about-image" *ngIf="artworks.length > 0">
+  <section
+    class="about"
+    id="about"
+  >
+
+    <div
+      class="about-image"
+      *ngIf="featuredArtwork"
+    >
 
       <img
-        [src]="artworks[0].image"
-        [alt]="artworks[0].alt"
+        [src]="featuredArtwork.image"
+        [alt]="featuredArtwork.alt"
         loading="lazy"
       />
 
@@ -250,7 +419,10 @@
         over time.
       </p>
 
-      <a class="text-link" href="#work">
+      <a
+        class="text-link"
+        href="#work"
+      >
         View all drawings →
       </a>
 
@@ -259,8 +431,14 @@
   </section>
 
 
-  <!-- VIDEOS -->
-  <section class="videos" id="videos">
+  <!-- =====================================================
+       VIDEOS
+       ===================================================== -->
+
+  <section
+    class="videos"
+    id="videos"
+  >
 
     <p class="eyebrow">
       Watch
@@ -277,7 +455,7 @@
 
     <a
       class="youtube-button"
-      href="https://www.youtube.com/"
+      href="https://www.youtube.com/@drawing.art0790"
       target="_blank"
       rel="noopener noreferrer"
     >
@@ -287,8 +465,14 @@
   </section>
 
 
-  <!-- CONTACT -->
-  <section class="contact-section" id="contact">
+  <!-- =====================================================
+       CONTACT
+       ===================================================== -->
+
+  <section
+    class="contact-section"
+    id="contact"
+  >
 
     <p class="eyebrow">
       Contact
@@ -309,8 +493,8 @@
 
       <div class="email-box">
 
-        <a href="mailto:sushil@smarttraffic.in">
-          sushil@smarttraffic.in
+        <a href="mailto:hello@drawing.art">
+          hello@drawing.art
         </a>
 
       </div>
@@ -338,7 +522,8 @@
           </h3>
 
           <p>
-            Interested in working together? Send a message.
+            Interested in working together?
+            Send a message.
           </p>
 
         </div>
@@ -363,54 +548,70 @@
   </section>
 
 
-  <!-- FOOTER -->
+  <!-- =====================================================
+       FOOTER
+       ===================================================== -->
+
   <footer>
 
-    <a class="brand" href="#">
+    <a
+      class="brand"
+      href="#"
+    >
       drawing<span>.art</span>
     </a>
 
+
+    <!-- VISITOR COUNT -->
+
     <p>
       © {{ currentYear }} drawing.art
+      ·
+      👁 {{ visits }} visits
     </p>
+
+
+    <!-- FOOTER LINKS -->
 
     <div>
 
-   
-  <a href="#work">
-    Work
-  </a>
+      <a href="#work">
+        Work
+      </a>
 
-  <a href="#about">
-    About
-  </a>
+      <a href="#about">
+        About
+      </a>
 
-  <a href="#contact">
-    Contact
-  </a>
+      <a href="#contact">
+        Contact
+      </a>
 
-  <a
-    href="https://www.youtube.com/@drawing.art0790"
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    YouTube
-  </a>
+      <a
+        href="https://www.youtube.com/@drawing.art0790"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        YouTube
+      </a>
 
-  <a
-    href="https://www.instagram.com/p/DdWWEj5TXQ-/?utm_source=ig_web_copy_link&stkn=MzRlODBiNWFlZA=="
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    Instagram
-  </a>
+      <a
+        href="https://www.instagram.com/p/DdWWEj5TXQ-/?utm_source=ig_web_copy_link&stkn=MzRlODBiNWFlZA=="
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Instagram
+      </a>
 
     </div>
 
   </footer>
 
 
-  <!-- LIGHTBOX -->
+  <!-- =====================================================
+       LIGHTBOX
+       ===================================================== -->
+
   <div
     class="lightbox"
     *ngIf="selectedArtwork"
@@ -418,8 +619,8 @@
   >
 
     <button
-      class="close"
       type="button"
+      class="close"
       (click)="closeArtwork(); $event.stopPropagation()"
       aria-label="Close artwork"
     >
@@ -427,12 +628,15 @@
     </button>
 
 
-    <figure (click)="$event.stopPropagation()">
+    <figure
+      (click)="$event.stopPropagation()"
+    >
 
       <img
         [src]="selectedArtwork.image"
         [alt]="selectedArtwork.alt"
       />
+
 
       <figcaption>
 
@@ -441,7 +645,9 @@
         </strong>
 
         <span>
-          {{ selectedArtwork.category }} / {{ selectedArtwork.year }}
+          {{ selectedArtwork.category }}
+          /
+          {{ selectedArtwork.year }}
         </span>
 
       </figcaption>

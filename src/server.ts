@@ -46,6 +46,104 @@ const drawingsRoot = join(
   'drawings'
 );
 
+const visitsFile = join(
+  process.cwd(),
+  'data',
+  'visits.json'
+);
+
+async function readVisits(): Promise<number> {
+
+  try {
+
+    const data = await readFile(
+      visitsFile,
+      'utf8'
+    );
+
+    const parsed = JSON.parse(data);
+
+    return Number(parsed.visits) || 0;
+
+  } catch {
+
+    return 0;
+
+  }
+
+}
+
+async function saveVisits(
+  visits: number
+): Promise<void> {
+
+  await mkdir(
+    join(process.cwd(), 'data'),
+    {
+      recursive: true
+    }
+  );
+
+  await writeFile(
+    visitsFile,
+    JSON.stringify(
+      { visits },
+      null,
+      2
+    ),
+    'utf8'
+  );
+
+}
+
+app.get('/api/visits', async (req, res, next) => {
+
+  try {
+
+    const visits = await readVisits();
+
+    res.json(visits);
+
+  } catch (error) {
+
+    console.error(
+      'Failed to read visits:',
+      error
+    );
+
+    next(error);
+
+  }
+
+});
+
+app.post('/api/visits', async (req, res, next) => {
+
+  try {
+
+    const visits = await readVisits();
+
+    const newVisits = visits + 1;
+
+    await saveVisits(newVisits);
+
+    res.json({
+      visits: newVisits
+    });
+
+  } catch (error) {
+
+    console.error(
+      'Failed to record visit:',
+      error
+    );
+
+    next(error);
+
+  }
+
+});
+
 
 /*
  * Folder name → category displayed by Angular.

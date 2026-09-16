@@ -35,4 +35,16 @@ export class DrawingsService {
       image
     });
   }
+
+  getVisits(): Observable<number> {
+  return this.http.get<number>('/api/visits');
+  }
+
+  recordVisit(): Observable<VisitResponse> {
+    return this.http.post<VisitResponse>('/api/visits', {});
+  }
+}
+
+export interface VisitResponse {
+  visits: number;
 }
