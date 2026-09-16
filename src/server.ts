@@ -435,7 +435,7 @@ app.post('/api/likes', async (req, res, next) => {
 
     if (
       typeof image !== 'string' ||
-      !image.startsWith('/drawings/')
+      !image.startsWith('drawings/')
     ) {
       res.status(400).json({
         error: 'Invalid drawing image'

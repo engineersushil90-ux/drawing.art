@@ -23,7 +23,7 @@ export class DrawingsService {
   private readonly http = inject(HttpClient);
 
   getDrawings(): Observable<Artwork[]> {
-    return this.http.get<Artwork[]>('/api/drawings');
+    return this.http.get<Artwork[]>('drawings.json');
   }
 
   getLikes(): Observable<Record<string, number>> {

@@ -2,7 +2,8 @@ import {
   Component,
   OnInit,
   inject,
-  afterNextRender
+  afterNextRender,
+  ChangeDetectorRef
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
@@ -84,8 +85,11 @@ export class DrawingArtComponent implements OnInit {
   // SERVICES
   // --------------------------------------------------
 
-  private readonly drawingsService =
-    inject(DrawingsService);
+private readonly drawingsService =
+  inject(DrawingsService);
+
+private readonly cdr =
+  inject(ChangeDetectorRef);
 
 
   // --------------------------------------------------
@@ -223,84 +227,71 @@ export class DrawingArtComponent implements OnInit {
   // --------------------------------------------------
   // LOAD DRAWINGS
   // --------------------------------------------------
+loadDrawings(): void {
+  this.isLoading = true;
 
-  loadDrawings(): void {
+  console.log('Loading drawings.json...');
 
-    this.isLoading = true;
+  this.drawingsService
+    .getDrawings()
+    .subscribe({
+      next: drawings => {
+        console.log(
+          'DRAWINGS LOADED:',
+          drawings
+        );
 
+        this.artworks = drawings;
+        this.isLoading = false;
 
-    this.drawingsService
-      .getDrawings()
-      .subscribe({
+        // Force UI refresh
+        this.cdr.detectChanges();
+      },
 
-        next: drawings => {
+      error: error => {
+        console.error(
+          'DRAWINGS ERROR:',
+          error
+        );
 
-          console.log(
-            'API drawings:',
-            drawings
-          );
+        this.artworks = [];
+        this.isLoading = false;
 
-
-          this.artworks = drawings;
-
-          this.isLoading = false;
-
-        },
-
-
-        error: error => {
-
-          console.error(
-            'Failed to load drawings:',
-            error
-          );
-
-
-          this.isLoading = false;
-
-        }
-
-      });
-
-  }
-
+        // Force UI refresh
+        this.cdr.detectChanges();
+      }
+    });
+}
 
   // --------------------------------------------------
   // LOAD LIKES
   // --------------------------------------------------
 
   loadLikes(): void {
+  this.drawingsService
+    .getLikes()
+    .subscribe({
+      next: likes => {
+        this.likes = likes;
 
-    this.drawingsService
-      .getLikes()
-      .subscribe({
+        console.log(
+          'Likes loaded:',
+          likes
+        );
 
-        next: likes => {
+        this.cdr.detectChanges();
+      },
 
-          this.likes = likes;
+      error: error => {
+        console.error(
+          'Failed to load likes:',
+          error
+        );
 
-
-          console.log(
-            'Likes loaded:',
-            likes
-          );
-
-        },
-
-
-        error: error => {
-
-          console.error(
-            'Failed to load likes:',
-            error
-          );
-
-        }
-
-      });
-
-  }
-
+        this.cdr.detectChanges();
+      }
+    });
+}
 
   // --------------------------------------------------
   // LIKE DRAWING
@@ -354,37 +345,31 @@ export class DrawingArtComponent implements OnInit {
   // --------------------------------------------------
 
   recordVisit(): void {
+  this.drawingsService
+    .recordVisit()
+    .subscribe({
+      next: response => {
+        this.visits =
+          response.visits;
 
-    this.drawingsService
-      .recordVisit()
-      .subscribe({
+        console.log(
+          'Total site visits:',
+          this.visits
+        );
 
-        next: response => {
+        this.cdr.detectChanges();
+      },
 
-          this.visits =
-            response.visits;
+      error: error => {
+        console.error(
+          'Failed to record visit:',
+          error
+        );
 
-
-          console.log(
-            'Total site visits:',
-            this.visits
-          );
-
-        },
-
-
-        error: error => {
-
-          console.error(
-            'Failed to record visit:',
-            error
-          );
-
-        }
-
-      });
-
-  }
+        this.cdr.detectChanges();
+      }
+    });
+}
 
 
   // --------------------------------------------------
