@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 import {
   DrawingsService,
@@ -16,7 +17,7 @@ import {
 
 @Component({
   selector: 'app-drawing-art',
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './trek-list.component.html',
   styleUrl: './trek-list.component.scss'
 })
