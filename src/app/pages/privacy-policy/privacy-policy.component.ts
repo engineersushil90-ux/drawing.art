@@ -28,7 +28,7 @@ import { RouterModule } from '@angular/router';
 
       <section>
         <h2>4. Contact Us</h2>
-        <p>If you have any questions about this Privacy Policy, please contact us at hello&#64;drawing.art</p>
+        <p>If you have any questions about this Privacy Policy, please contact us at sushil&#64;smarttraffic.in</p>
       </section>
 
       <a routerLink="/" class="back-link">← Back to Home</a>
