@@ -14,7 +14,7 @@ import { RouterModule } from '@angular/router';
       <div class="contact-details">
         <div class="detail-item">
           <strong>Email:</strong>
-          <p><a href="mailto:hello@drawing.art">hello&#64;drawing.art</a></p>
+          <p><a href="mailto:sushil@smarttraffic.in">sushil&#64;smarttraffic.in</a></p>
         </div>
         
         <div class="detail-item">
