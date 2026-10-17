@@ -1,5 +1,6 @@
 import {
   readdir,
+  stat,
   writeFile
 } from 'node:fs/promises';
 
@@ -92,10 +93,14 @@ async function scanDirectory(
       relativePath.split('/');
 
     // drawings / category / date / image
-    const date =
-      pathParts.length >= 3
-        ? pathParts[2]
+    const dateFolder = pathParts.length >= 3 ? pathParts[2] : '';
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(dateFolder)
+      ? dateFolder
+      : /^(\d{2})-(\d{2})-(\d{4})$/.test(dateFolder)
+        ? dateFolder.replace(/^(\d{2})-(\d{2})-(\d{4})$/, '$3-$2-$1')
         : '';
+
+    const modifiedAt = (await stat(fullPath)).mtime.toISOString();
 
     const title =
       basename(
@@ -103,9 +108,11 @@ async function scanDirectory(
         extension
       );
 
+    const effectiveDate = date || modifiedAt.substring(0, 10);
+
     const year =
-      /^\d{4}/.test(date)
-        ? date.substring(0, 4)
+      /^\d{4}/.test(effectiveDate)
+        ? effectiveDate.substring(0, 4)
         : new Date()
             .getFullYear()
             .toString();
@@ -114,7 +121,8 @@ async function scanDirectory(
       title,
       category,
       year,
-      date,
+      date: effectiveDate,
+      modifiedAt,
       image: relativePath,
       alt: title
     });
@@ -166,10 +174,17 @@ async function generateDrawings() {
     );
   }
 
-  // Sort newest first
+  // Sort by drawing date, then modification time for drawings from the same day.
   allDrawings.sort(
-    (a, b) =>
-      b.date.localeCompare(a.date)
+    (a, b) => {
+      const dateOrder = b.date.localeCompare(a.date);
+
+      if (dateOrder !== 0) {
+        return dateOrder;
+      }
+
+      return b.modifiedAt.localeCompare(a.modifiedAt);
+    }
   );
 
   await writeFile(

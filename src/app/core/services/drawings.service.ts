@@ -7,6 +7,7 @@ export interface Artwork {
   category: string;
   year: string;
   date?: string;
+  modifiedAt?: string;
   image: string;
   alt: string;
 }

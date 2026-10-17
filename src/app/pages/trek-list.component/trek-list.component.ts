@@ -142,21 +142,31 @@ private readonly cdr =
 
   get filteredArtworks(): Artwork[] {
 
+    let filtered: Artwork[];
+
     if (this.activeCategory === 'All Drawings') {
 
-      return this.artworks.filter(
+      filtered = this.artworks.filter(
         artwork =>
           artwork.category !== '18+ Sketches' &&
           artwork.category !== 'Feature Drawing'
       );
 
+    } else {
+      filtered = this.artworks.filter(
+        artwork => artwork.category === this.activeCategory
+      );
     }
 
+    return filtered.sort((a, b) => {
+      const dateOrder = (b.date || '').localeCompare(a.date || '');
 
-    return this.artworks.filter(
-      artwork =>
-        artwork.category === this.activeCategory
-    );
+      if (dateOrder !== 0) {
+        return dateOrder;
+      }
+
+      return (b.modifiedAt || '').localeCompare(a.modifiedAt || '');
+    });
 
   }
 
