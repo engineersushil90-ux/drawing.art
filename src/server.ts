@@ -16,6 +16,31 @@ const browserDistFolder =
 
 
 const app = express();
+
+const allowedApiOrigins = new Set([
+  'https://smarttraffic.in',
+  'https://www.smarttraffic.in',
+  'http://localhost:4200'
+]);
+
+app.use('/api', (req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (origin && allowedApiOrigins.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(origin && allowedApiOrigins.has(origin) ? 204 : 403);
+    return;
+  }
+
+  next();
+});
+
 app.use(express.json());
 
 

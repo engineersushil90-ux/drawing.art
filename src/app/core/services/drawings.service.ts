@@ -22,27 +22,28 @@ export interface LikeResponse {
 })
 export class DrawingsService {
   private readonly http = inject(HttpClient);
+  private readonly apiBaseUrl = 'https://drawing-art.onrender.com';
 
   getDrawings(): Observable<Artwork[]> {
     return this.http.get<Artwork[]>('drawings.json');
   }
 
   getLikes(): Observable<Record<string, number>> {
-    return this.http.get<Record<string, number>>('/api/likes');
+    return this.http.get<Record<string, number>>(`${this.apiBaseUrl}/api/likes`);
   }
 
   likeDrawing(image: string): Observable<LikeResponse> {
-    return this.http.post<LikeResponse>('/api/likes', {
+    return this.http.post<LikeResponse>(`${this.apiBaseUrl}/api/likes`, {
       image
     });
   }
 
   getVisits(): Observable<number> {
-  return this.http.get<number>('/api/visits');
+  return this.http.get<number>(`${this.apiBaseUrl}/api/visits`);
   }
 
   recordVisit(): Observable<VisitResponse> {
-    return this.http.post<VisitResponse>('/api/visits', {});
+    return this.http.post<VisitResponse>(`${this.apiBaseUrl}/api/visits`, {});
   }
 }
 
