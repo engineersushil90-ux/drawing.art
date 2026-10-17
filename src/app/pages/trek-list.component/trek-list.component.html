@@ -195,10 +195,18 @@
         </div>
 
         <div class="category-counts" aria-label="Artwork counts by category">
-          <span>Total <strong>{{ totalArtworkCount | number }}</strong></span>
-          <span>Pencil <strong>{{ pencilSketchCount | number }}</strong></span>
-          <span>18+ <strong>{{ adultSketchCount | number }}</strong></span>
-          <span>Color <strong>{{ colorArtCount | number }}</strong></span>
+          <button type="button" [class.active]="activeCategory === 'All Drawings'" (click)="selectCategory('All Drawings')" aria-label="Show all drawings">
+            Total <strong>{{ totalArtworkCount | number }}</strong>
+          </button>
+          <button type="button" [class.active]="activeCategory === 'Pencil Sketches'" (click)="selectCategory('Pencil Sketches')" aria-label="Show pencil sketches">
+            Pencil <strong>{{ pencilSketchCount | number }}</strong>
+          </button>
+          <button type="button" [class.active]="activeCategory === '18+ Sketches'" (click)="selectCategory('18+ Sketches')" aria-label="Show 18 plus sketches">
+            18+ <strong>{{ adultSketchCount | number }}</strong>
+          </button>
+          <button type="button" [class.active]="activeCategory === 'Color Art'" (click)="selectCategory('Color Art')" aria-label="Show color art">
+            Color <strong>{{ colorArtCount | number }}</strong>
+          </button>
         </div>
       </div>
 

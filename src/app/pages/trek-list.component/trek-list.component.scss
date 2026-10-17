@@ -302,21 +302,37 @@ h1 em {
   gap: 7px;
 }
 
-.category-counts span {
+.category-counts button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 6px 9px;
   border: 1px solid #e3dfd7;
   border-radius: 999px;
+  background: transparent;
   color: #647069;
+  font: inherit;
   font-size: 10px;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
 }
 
-.category-counts strong {
+.category-counts button strong {
   color: var(--ink);
   font-size: 11px;
+}
+
+.category-counts button:hover,
+.category-counts button.active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: white;
+}
+
+.category-counts button:hover strong,
+.category-counts button.active strong {
+  color: white;
 }
 
 .gallery-summary {
@@ -1288,7 +1304,7 @@ footer a {
     gap: 6px;
   }
 
-  .category-counts span {
+  .category-counts button {
     padding: 6px 8px;
   }
 
