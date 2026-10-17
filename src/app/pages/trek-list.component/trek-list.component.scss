@@ -329,7 +329,9 @@ h1 em {
 
 .gallery-stats {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
 }
 
@@ -1268,6 +1270,10 @@ footer a {
   .gallery-summary {
     align-items: flex-start;
     margin-top: 20px;
+  }
+
+  .gallery-stats {
+    justify-content: flex-start;
   }
 
 

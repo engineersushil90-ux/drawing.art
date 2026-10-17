@@ -68,6 +68,69 @@ const supabaseUrl = process.env['SUPABASE_URL']?.replace(/\/+$/, '');
 const supabaseServiceRoleKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
 const supabaseEnabled = Boolean(supabaseUrl && supabaseServiceRoleKey);
 
+function currentIndiaDate(): string {
+  const dateParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const part = (type: string) => dateParts.find(value => value.type === type)?.value ?? '';
+
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+interface DailyActivity {
+  date: string;
+  likes: number;
+  visits: number;
+}
+
+async function readDailyActivity(): Promise<DailyActivity> {
+  const date = currentIndiaDate();
+
+  if (supabaseEnabled) {
+    const rows = await supabaseRequest<Array<{ likes: number; visits: number }>>(
+      `daily_activity?select=likes,visits&activity_date=eq.${date}`
+    );
+    const activity = rows[0];
+
+    return {
+      date,
+      likes: Number(activity?.likes) || 0,
+      visits: Number(activity?.visits) || 0
+    };
+  }
+
+  try {
+    const stored = JSON.parse(await readDataFile('daily-activity.json')) as DailyActivity;
+
+    return stored.date === date
+      ? { date, likes: Number(stored.likes) || 0, visits: Number(stored.visits) || 0 }
+      : { date, likes: 0, visits: 0 };
+  } catch {
+    return { date, likes: 0, visits: 0 };
+  }
+}
+
+let dailyActivityWriteQueue: Promise<void> = Promise.resolve();
+
+function incrementDailyActivity(counter: 'likes' | 'visits'): Promise<DailyActivity> {
+  const update = dailyActivityWriteQueue.then(async () => {
+    const current = await readDailyActivity();
+    const activity = {
+      ...current,
+      [counter]: current[counter] + 1
+    };
+
+    await saveDataFile('daily-activity.json', JSON.stringify(activity, null, 2));
+    return activity;
+  });
+
+  dailyActivityWriteQueue = update.then(() => undefined, () => undefined);
+  return update;
+}
+
 async function supabaseRequest<T>(
   endpoint: string,
   init: RequestInit = {}
@@ -177,6 +240,15 @@ app.get('/api/visits', async (req, res, next) => {
 
 });
 
+app.get('/api/today', async (req, res, next) => {
+  try {
+    res.json(await readDailyActivity());
+  } catch (error) {
+    console.error('Failed to read daily activity:', error);
+    next(error);
+  }
+});
+
 let visitsWriteQueue: Promise<void> = Promise.resolve();
 
 function incrementFileVisit(): Promise<number> {
@@ -200,6 +272,10 @@ app.post('/api/visits', async (req, res, next) => {
           body: '{}'
         })
       : await incrementFileVisit();
+
+    if (!supabaseEnabled) {
+      await incrementDailyActivity('visits');
+    }
 
     res.json({
       visits: newVisits
@@ -542,6 +618,7 @@ app.post('/api/likes', async (req, res, next) => {
       const likes = await readLikes();
       likes[image] = (likes[image] || 0) + 1;
       await saveLikes(likes);
+      await incrementDailyActivity('likes');
       return { image, likes: likes[image] };
     });
 

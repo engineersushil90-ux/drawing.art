@@ -8,8 +8,15 @@ create table if not exists public.site_visits (
   visits bigint not null default 0 check (visits >= 0)
 );
 
+create table if not exists public.daily_activity (
+  activity_date date primary key,
+  likes bigint not null default 0 check (likes >= 0),
+  visits bigint not null default 0 check (visits >= 0)
+);
+
 alter table public.likes enable row level security;
 alter table public.site_visits enable row level security;
+alter table public.daily_activity enable row level security;
 
 insert into public.likes as existing (image_path, likes)
 values
@@ -37,6 +44,11 @@ begin
   set likes = existing.likes + 1
   returning likes into updated_count;
 
+  insert into public.daily_activity as existing (activity_date, likes, visits)
+  values ((now() at time zone 'Asia/Kolkata')::date, 1, 0)
+  on conflict (activity_date) do update
+  set likes = existing.likes + 1;
+
   return updated_count;
 end;
 $$;
@@ -56,14 +68,21 @@ begin
   set visits = existing.visits + 1
   returning visits into updated_count;
 
+  insert into public.daily_activity as existing (activity_date, likes, visits)
+  values ((now() at time zone 'Asia/Kolkata')::date, 0, 1)
+  on conflict (activity_date) do update
+  set visits = existing.visits + 1;
+
   return updated_count;
 end;
 $$;
 
 revoke all on table public.likes from anon, authenticated;
 revoke all on table public.site_visits from anon, authenticated;
+revoke all on table public.daily_activity from anon, authenticated;
 grant select, insert, update on table public.likes to service_role;
 grant select, insert, update on table public.site_visits to service_role;
+grant select, insert, update on table public.daily_activity to service_role;
 
 revoke all on function public.increment_like(text) from public, anon, authenticated;
 revoke all on function public.increment_visits() from public, anon, authenticated;

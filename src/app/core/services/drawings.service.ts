@@ -17,6 +17,12 @@ export interface LikeResponse {
   likes: number;
 }
 
+export interface DailyActivityResponse {
+  date: string;
+  likes: number;
+  visits: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -40,6 +46,10 @@ export class DrawingsService {
 
   getVisits(): Observable<number> {
   return this.http.get<number>(`${this.apiBaseUrl}/api/visits`);
+  }
+
+  getTodayActivity(): Observable<DailyActivityResponse> {
+    return this.http.get<DailyActivityResponse>(`${this.apiBaseUrl}/api/today`);
   }
 
   recordVisit(): Observable<VisitResponse> {

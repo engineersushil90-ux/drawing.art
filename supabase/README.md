@@ -1,7 +1,7 @@
 # Supabase setup
 
 1. Create a Supabase project on the Free plan.
-2. Open **SQL Editor**, paste `schema.sql`, and run it. This creates the likes and visit tables, atomic increment functions, and seeds the current counts.
+2. Open **SQL Editor**, paste `schema.sql`, and run it. This creates the likes and visit tables, daily activity counters (using India time), atomic increment functions, and seeds the current counts. Run the updated SQL again after pulling changes so existing projects get the daily counters.
 3. In **Project Settings → API**, copy the Project URL and the server-side `service_role` key.
 4. In Render, open the `drawing.art` service's **Environment** page and add:
    - `SUPABASE_URL` = the Supabase Project URL

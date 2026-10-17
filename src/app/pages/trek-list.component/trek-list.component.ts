@@ -103,6 +103,10 @@ export class DrawingArtComponent implements OnInit {
 
   visits = 0;
 
+  todayLikes = 0;
+
+  todayVisits = 0;
+
 
   // --------------------------------------------------
   // PAGINATION
@@ -268,6 +272,8 @@ private readonly cdr =
 
     this.loadLikes();
 
+    this.loadTodayActivity();
+
   }
 
 
@@ -342,6 +348,21 @@ loadDrawings(): void {
     });
 }
 
+  loadTodayActivity(): void {
+    this.drawingsService
+      .getTodayActivity()
+      .subscribe({
+        next: activity => {
+          this.todayLikes = activity.likes;
+          this.todayVisits = activity.visits;
+          this.cdr.detectChanges();
+        },
+        error: error => {
+          console.error('Failed to load today activity:', error);
+        }
+      });
+  }
+
   // --------------------------------------------------
   // LIKE DRAWING
   // --------------------------------------------------
@@ -365,6 +386,8 @@ loadDrawings(): void {
 
           this.likes[response.image] =
             response.likes;
+
+          this.loadTodayActivity();
 
           this.cdr.detectChanges();
 
@@ -404,6 +427,8 @@ loadDrawings(): void {
       next: response => {
         this.visits =
           response.visits;
+
+        this.loadTodayActivity();
 
         console.log(
           'Total site visits:',
