@@ -58,6 +58,30 @@ export class DrawingArtComponent implements OnInit {
 
   artworks: Artwork[] = [];
 
+  get totalArtworkCount(): number {
+    return this.artworks.filter(
+      artwork => artwork.category !== 'Feature Drawing'
+    ).length;
+  }
+
+  get pencilSketchCount(): number {
+    return this.artworks.filter(
+      artwork => artwork.category === 'Pencil Sketches'
+    ).length;
+  }
+
+  get adultSketchCount(): number {
+    return this.artworks.filter(
+      artwork => artwork.category === '18+ Sketches'
+    ).length;
+  }
+
+  get colorArtCount(): number {
+    return this.artworks.filter(
+      artwork => artwork.category === 'Color Art'
+    ).length;
+  }
+
 
   // --------------------------------------------------
   // LIKES

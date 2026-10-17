@@ -179,9 +179,12 @@
           </div>
         </div>
 
-        <p class="work-note">
-          {{ filteredArtworks.length }} artwork{{ filteredArtworks.length === 1 ? '' : 's' }} currently available.
-        </p>
+        <div class="category-counts" aria-label="Artwork counts by category">
+          <span>Total <strong>{{ totalArtworkCount | number }}</strong></span>
+          <span>Pencil <strong>{{ pencilSketchCount | number }}</strong></span>
+          <span>18+ <strong>{{ adultSketchCount | number }}</strong></span>
+          <span>Color <strong>{{ colorArtCount | number }}</strong></span>
+        </div>
       </div>
 
     </div>
