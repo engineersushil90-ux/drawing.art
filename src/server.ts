@@ -515,25 +515,18 @@ if (
   process.env['pm_id']
 ) {
 
-  const port =
-    process.env['PORT'] || 4000;
+  const port = Number(
+    process.env['PORT'] || 4000
+  );
 
 
   app.listen(
     port,
-    (error) => {
-
-      if (error) {
-
-        throw error;
-
-      }
-
-
+    '0.0.0.0',
+    () => {
       console.log(
-        `Node Express server listening on http://localhost:${port}`
+        `Node Express server listening on 0.0.0.0:${port}`
       );
-
     }
   );
 
