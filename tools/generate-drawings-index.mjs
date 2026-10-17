@@ -174,16 +174,21 @@ async function generateDrawings() {
     );
   }
 
-  // Sort by drawing date, then modification time for drawings from the same day.
+  // Sort by whichever is newer: the drawing date or file modification date.
   allDrawings.sort(
     (a, b) => {
-      const dateOrder = b.date.localeCompare(a.date);
+      const recency = drawing => Math.max(
+        Date.parse(`${drawing.date}T00:00:00.000Z`) || 0,
+        Date.parse(drawing.modifiedAt) || 0
+      );
 
-      if (dateOrder !== 0) {
-        return dateOrder;
+      const recencyOrder = recency(b) - recency(a);
+
+      if (recencyOrder !== 0) {
+        return recencyOrder;
       }
 
-      return b.modifiedAt.localeCompare(a.modifiedAt);
+      return b.date.localeCompare(a.date);
     }
   );
 
