@@ -39,6 +39,34 @@ const drawingsRoot = join(
 
 const defaultDataDirectory = join(process.cwd(), 'data');
 const dataDirectory = process.env['DATA_DIR'] || defaultDataDirectory;
+const supabaseUrl = process.env['SUPABASE_URL']?.replace(/\/+$/, '');
+const supabaseServiceRoleKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+const supabaseEnabled = Boolean(supabaseUrl && supabaseServiceRoleKey);
+
+async function supabaseRequest<T>(
+  endpoint: string,
+  init: RequestInit = {}
+): Promise<T> {
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error('Supabase environment variables are not configured');
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/${endpoint}`, {
+    ...init,
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+      ...init.headers
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Supabase request failed (${response.status}): ${await response.text()}`);
+  }
+
+  return response.json() as Promise<T>;
+}
 
 async function readDataFile(fileName: string): Promise<string> {
   try {
@@ -64,6 +92,13 @@ async function saveDataFile(fileName: string, content: string): Promise<void> {
 }
 
 async function readVisits(): Promise<number> {
+  if (supabaseEnabled) {
+    const rows = await supabaseRequest<Array<{ visits: number }>>(
+      'site_visits?select=visits&id=eq.1'
+    );
+
+    return Number(rows[0]?.visits) || 0;
+  }
 
   try {
 
@@ -119,18 +154,27 @@ app.get('/api/visits', async (req, res, next) => {
 
 let visitsWriteQueue: Promise<void> = Promise.resolve();
 
+function incrementFileVisit(): Promise<number> {
+  const update = visitsWriteQueue.then(async () => {
+    const newVisits = (await readVisits()) + 1;
+    await saveVisits(newVisits);
+    return newVisits;
+  });
+
+  visitsWriteQueue = update.then(() => undefined, () => undefined);
+  return update;
+}
+
 app.post('/api/visits', async (req, res, next) => {
 
   try {
 
-    const update = visitsWriteQueue.then(async () => {
-      const newVisits = (await readVisits()) + 1;
-      await saveVisits(newVisits);
-      return newVisits;
-    });
-
-    visitsWriteQueue = update.then(() => undefined, () => undefined);
-    const newVisits = await update;
+    const newVisits = supabaseEnabled
+      ? await supabaseRequest<number>('rpc/increment_visits', {
+          method: 'POST',
+          body: '{}'
+        })
+      : await incrementFileVisit();
 
     res.json({
       visits: newVisits
@@ -399,6 +443,16 @@ app.get(
 let likesWriteQueue = Promise.resolve();
 
 async function readLikes(): Promise<Record<string, number>> {
+  if (supabaseEnabled) {
+    const rows = await supabaseRequest<Array<{ image_path: string; likes: number }>>(
+      'likes?select=image_path,likes'
+    );
+
+    return Object.fromEntries(
+      rows.map(row => [row.image_path.replace(/^\/+/, ''), Number(row.likes) || 0])
+    );
+  }
+
   try {
     const data = await readDataFile('likes.json');
     const parsed = JSON.parse(data);
@@ -449,17 +503,21 @@ app.post('/api/likes', async (req, res, next) => {
       return;
     }
 
+    if (supabaseEnabled) {
+      const likes = await supabaseRequest<number>('rpc/increment_like', {
+        method: 'POST',
+        body: JSON.stringify({ p_image_path: image })
+      });
+
+      res.json({ image, likes });
+      return;
+    }
+
     const update = likesWriteQueue.then(async () => {
       const likes = await readLikes();
-
       likes[image] = (likes[image] || 0) + 1;
-
       await saveLikes(likes);
-
-      return {
-        image,
-        likes: likes[image]
-      };
+      return { image, likes: likes[image] };
     });
 
     likesWriteQueue = update.then(() => undefined, () => undefined);
