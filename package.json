@@ -1,15 +1,18 @@
 {
   "name": "trekking-app",
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "ng": "ng",
-    "start": "node tools/drawings-dev.mjs",
+    "start": "node dist/trekking-app/server/server.js",
+    "start:dev": "node tools/drawings-dev.mjs",
     "generate-drawings": "node tools/generate-drawings-index.mjs",
      "prebuild": "npm run generate-drawings",
-    "build": "ng build",
+    "build": "ng build && npm run build:server",
+    "build:server": "tsc -p tsconfig.server.json",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:trekking-app": "node dist/trekking-app/server/server.mjs",
+    "serve:ssr:trekking-app": "node dist/trekking-app/server/server.js",
     "json-server": "json-server --watch db.json --port 3000",
     "deploy": "npm run build && git add -A && git commit -m \"Deploy: $(date)\" && git push"
   },

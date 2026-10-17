@@ -1,10 +1,3 @@
-import {
-  AngularNodeAppEngine,
-  createNodeRequestHandler,
-  isMainModule,
-  writeResponseToNodeResponse,
-} from '@angular/ssr/node';
-
 import express from 'express';
 
 import {
@@ -24,8 +17,6 @@ const browserDistFolder =
 
 const app = express();
 app.use(express.json());
-const angularApp =
-  new AngularNodeAppEngine();
 
 
 /*
@@ -479,68 +470,25 @@ app.use(
   )
 );
 
-
-/**
- * Handle all other requests
- * by rendering Angular.
- */
 app.use(
   (req, res, next) => {
+    if (
+      req.method === 'GET' &&
+      !req.path.startsWith('/api/') &&
+      req.accepts('html')
+    ) {
+      res.sendFile(join(browserDistFolder, 'index.html'));
+      return;
+    }
 
-    angularApp
-      .handle(req)
-
-      .then(
-        response =>
-          response
-            ? writeResponseToNodeResponse(
-                response,
-                res
-              )
-            : next()
-      )
-
-      .catch(next);
-
+    next();
   }
 );
 
+const port = Number(process.env['PORT'] || 4000);
 
-/**
- * Start the server.
- */
-if (
-  isMainModule(import.meta.url)
-  ||
-  process.env['pm_id']
-) {
-
-  const port = Number(
-    process.env['PORT'] || 4000
-  );
-
-
-  app.listen(
-    port,
-    '0.0.0.0',
-    () => {
-      console.log(
-        `Node Express server listening on 0.0.0.0:${port}`
-      );
-    }
-  );
-
-}
-
-
-
-
-/**
- * Request handler used by Angular CLI
- * and Firebase Cloud Functions.
- */
-export const reqHandler = createNodeRequestHandler(app);
-
-export default reqHandler;
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Node Express server listening on 0.0.0.0:${port}`);
+});
   
 
