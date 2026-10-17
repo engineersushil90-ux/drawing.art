@@ -65,6 +65,13 @@ export class DrawingArtComponent implements OnInit {
 
   likes: Record<string, number> = {};
 
+  get totalLikes(): number {
+    return Object.values(this.likes).reduce(
+      (total, count) => total + (Number(count) || 0),
+      0
+    );
+  }
+
 
   // --------------------------------------------------
   // VISITS

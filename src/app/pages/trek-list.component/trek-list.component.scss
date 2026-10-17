@@ -307,6 +307,67 @@ h1 em {
   text-align: right;
 }
 
+.gallery-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+
+.gallery-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gallery-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 112px;
+  padding: 9px 12px;
+  border: 1px solid #e3dfd7;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .62);
+}
+
+.gallery-stat svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+}
+
+.total-likes-icon {
+  fill: #e53945;
+}
+
+.total-visits-icon {
+  fill: none;
+  stroke: #647069;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gallery-stat span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gallery-stat strong {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.gallery-stat small {
+  color: #647069;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
 
 /* =========================================================
    FILTERS
@@ -1189,6 +1250,18 @@ footer a {
 
   .section-heading {
     display: block;
+  }
+
+
+  .gallery-summary {
+    align-items: flex-start;
+    margin-top: 20px;
+  }
+
+
+  .gallery-stat {
+    min-width: 0;
+    padding: 8px 10px;
   }
 
 
