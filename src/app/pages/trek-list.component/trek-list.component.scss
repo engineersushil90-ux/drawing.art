@@ -512,15 +512,13 @@ h1 em {
 }
 
 
-.like-button span {
-  font-size: 16px;
-
-  line-height: 1;
-
-  color: #e53945;
-
+.like-button .like-heart {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: #e53945;
   transform-origin: center;
-
   animation: heart-pulse 1.25s ease-in-out infinite;
 }
 
@@ -548,7 +546,7 @@ h1 em {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .like-button span {
+  .like-button .like-heart {
     animation: none;
   }
 }
