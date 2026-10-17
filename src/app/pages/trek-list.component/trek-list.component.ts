@@ -304,7 +304,7 @@ loadDrawings(): void {
           error
         );
 
-        this.likes = this.readLocalLikes();
+        this.likes = {};
 
         this.cdr.detectChanges();
       }
@@ -335,8 +335,6 @@ loadDrawings(): void {
           this.likes[response.image] =
             response.likes;
 
-          this.saveLocalLikes();
-
           this.cdr.detectChanges();
 
 
@@ -354,11 +352,6 @@ loadDrawings(): void {
             'Failed to like drawing:',
             error
           );
-
-          this.likes[artwork.image] =
-            (this.likes[artwork.image] || 0) + 1;
-
-          this.saveLocalLikes();
 
           this.cdr.detectChanges();
 
@@ -381,8 +374,6 @@ loadDrawings(): void {
         this.visits =
           response.visits;
 
-        this.saveLocalVisits();
-
         console.log(
           'Total site visits:',
           this.visits
@@ -396,9 +387,6 @@ loadDrawings(): void {
           'Failed to record visit:',
           error
         );
-
-        this.visits = this.readLocalVisits() + 1;
-        this.saveLocalVisits();
 
         this.cdr.detectChanges();
       }
@@ -460,58 +448,6 @@ loadDrawings(): void {
 
     });
 
-  }
-
-  private readLocalLikes(): Record<string, number> {
-    try {
-      if (typeof localStorage === 'undefined') {
-        return {};
-      }
-
-      return JSON.parse(
-        localStorage.getItem('drawing-art-likes') || '{}'
-      ) as Record<string, number>;
-    } catch {
-      return {};
-    }
-  }
-
-  private saveLocalLikes(): void {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(
-          'drawing-art-likes',
-          JSON.stringify(this.likes)
-        );
-      }
-    } catch (error) {
-      console.error('Failed to save local likes:', error);
-    }
-  }
-
-  private readLocalVisits(): number {
-    try {
-      if (typeof localStorage === 'undefined') {
-        return 0;
-      }
-
-      return Number(localStorage.getItem('drawing-art-visits')) || 0;
-    } catch {
-      return 0;
-    }
-  }
-
-  private saveLocalVisits(): void {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(
-          'drawing-art-visits',
-          String(this.visits)
-        );
-      }
-    } catch (error) {
-      console.error('Failed to save local visits:', error);
-    }
   }
 
 

@@ -6,7 +6,7 @@ import {
   extname,
   basename,
 } from 'node:path';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 
 import { readdir } from 'node:fs/promises';
 
@@ -37,20 +37,37 @@ const drawingsRoot = join(
   'drawings'
 );
 
-const visitsFile = join(
-  process.cwd(),
-  'data',
-  'visits.json'
-);
+const defaultDataDirectory = join(process.cwd(), 'data');
+const dataDirectory = process.env['DATA_DIR'] || defaultDataDirectory;
+
+async function readDataFile(fileName: string): Promise<string> {
+  try {
+    return await readFile(join(dataDirectory, fileName), 'utf8');
+  } catch (error) {
+    if (dataDirectory === defaultDataDirectory) {
+      throw error;
+    }
+
+    // Seed a new persistent disk with the JSON files committed in the repo.
+    return readFile(join(defaultDataDirectory, fileName), 'utf8');
+  }
+}
+
+async function saveDataFile(fileName: string, content: string): Promise<void> {
+  await mkdir(dataDirectory, { recursive: true });
+
+  const filePath = join(dataDirectory, fileName);
+  const temporaryPath = `${filePath}.tmp`;
+
+  await writeFile(temporaryPath, content, 'utf8');
+  await rename(temporaryPath, filePath);
+}
 
 async function readVisits(): Promise<number> {
 
   try {
 
-    const data = await readFile(
-      visitsFile,
-      'utf8'
-    );
+    const data = await readDataFile('visits.json');
 
     const parsed = JSON.parse(data);
 
@@ -68,21 +85,13 @@ async function saveVisits(
   visits: number
 ): Promise<void> {
 
-  await mkdir(
-    join(process.cwd(), 'data'),
-    {
-      recursive: true
-    }
-  );
-
-  await writeFile(
-    visitsFile,
+  await saveDataFile(
+    'visits.json',
     JSON.stringify(
       { visits },
       null,
       2
-    ),
-    'utf8'
+    )
   );
 
 }
@@ -108,15 +117,20 @@ app.get('/api/visits', async (req, res, next) => {
 
 });
 
+let visitsWriteQueue: Promise<void> = Promise.resolve();
+
 app.post('/api/visits', async (req, res, next) => {
 
   try {
 
-    const visits = await readVisits();
+    const update = visitsWriteQueue.then(async () => {
+      const newVisits = (await readVisits()) + 1;
+      await saveVisits(newVisits);
+      return newVisits;
+    });
 
-    const newVisits = visits + 1;
-
-    await saveVisits(newVisits);
+    visitsWriteQueue = update.then(() => undefined, () => undefined);
+    const newVisits = await update;
 
     res.json({
       visits: newVisits
@@ -382,30 +396,30 @@ app.get(
   }
 );
 
-const likesFile = join(process.cwd(), 'data', 'likes.json');
-
 let likesWriteQueue = Promise.resolve();
 
 async function readLikes(): Promise<Record<string, number>> {
   try {
-    const data = await readFile(likesFile, 'utf8');
+    const data = await readDataFile('likes.json');
     const parsed = JSON.parse(data);
+    const storedLikes = parsed.likes ?? {};
+    const likes: Record<string, number> = {};
 
-    return parsed.likes ?? {};
+    for (const [image, count] of Object.entries(storedLikes)) {
+      const normalizedImage = image.replace(/^\/+/, '');
+      likes[normalizedImage] = (likes[normalizedImage] || 0) + (Number(count) || 0);
+    }
+
+    return likes;
   } catch {
     return {};
   }
 }
 
 async function saveLikes(likes: Record<string, number>): Promise<void> {
-  await mkdir(join(process.cwd(), 'data'), {
-    recursive: true
-  });
-
-  await writeFile(
-    likesFile,
+  await saveDataFile(
+    'likes.json',
     JSON.stringify({ likes }, null, 2),
-    'utf8'
   );
 }
 
@@ -435,20 +449,21 @@ app.post('/api/likes', async (req, res, next) => {
       return;
     }
 
-    likesWriteQueue = likesWriteQueue.then(async () => {
+    const update = likesWriteQueue.then(async () => {
       const likes = await readLikes();
 
       likes[image] = (likes[image] || 0) + 1;
 
       await saveLikes(likes);
 
-      res.json({
+      return {
         image,
         likes: likes[image]
-      });
-    }).catch(error => {
-      next(error);
+      };
     });
+
+    likesWriteQueue = update.then(() => undefined, () => undefined);
+    res.json(await update);
 
   } catch (error) {
     next(error);
