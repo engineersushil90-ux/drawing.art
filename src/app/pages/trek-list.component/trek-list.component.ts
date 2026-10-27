@@ -33,7 +33,7 @@ export class DrawingArtComponent implements OnInit {
   readonly categories = [
     'All Drawings',
     'Pencil Sketches',
-    '18+ Sketches',
+    // '18+ Sketches',
     'Color Art'
   ];
 

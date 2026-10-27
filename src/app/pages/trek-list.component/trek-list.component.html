@@ -201,9 +201,11 @@
           <button type="button" [class.active]="activeCategory === 'Pencil Sketches'" (click)="selectCategory('Pencil Sketches')" aria-label="Show pencil sketches">
             Pencil <strong>{{ pencilSketchCount | number }}</strong>
           </button>
+          <!--
           <button type="button" [class.active]="activeCategory === '18+ Sketches'" (click)="selectCategory('18+ Sketches')" aria-label="Show 18 plus sketches">
             18+ <strong>{{ adultSketchCount | number }}</strong>
           </button>
+          -->
           <button type="button" [class.active]="activeCategory === 'Color Art'" (click)="selectCategory('Color Art')" aria-label="Show color art">
             Color <strong>{{ colorArtCount | number }}</strong>
           </button>
@@ -413,7 +415,7 @@
 
     </a>
 
-
+    <!-- Temporarily hidden
     <a
       href="#work"
       (click)="selectCategory('18+ Sketches')"
@@ -432,6 +434,7 @@
       </em>
 
     </a>
+    -->
 
   </section>
 
