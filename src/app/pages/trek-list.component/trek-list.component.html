@@ -201,11 +201,9 @@
           <button type="button" [class.active]="activeCategory === 'Pencil Sketches'" (click)="selectCategory('Pencil Sketches')" aria-label="Show pencil sketches">
             Pencil <strong>{{ pencilSketchCount | number }}</strong>
           </button>
-          <!--
           <button type="button" [class.active]="activeCategory === '18+ Sketches'" (click)="selectCategory('18+ Sketches')" aria-label="Show 18 plus sketches">
             18+ <strong>{{ adultSketchCount | number }}</strong>
           </button>
-          -->
           <button type="button" [class.active]="activeCategory === 'Color Art'" (click)="selectCategory('Color Art')" aria-label="Show color art">
             Color <strong>{{ colorArtCount | number }}</strong>
           </button>
@@ -277,6 +275,7 @@
           <img
             [src]="artwork.image"
             [alt]="artwork.alt"
+            [attr.crossorigin]="artwork.category === '18+ Sketches' ? 'use-credentials' : null"
             loading="lazy"
           />
 
@@ -296,6 +295,7 @@
             type="button"
             class="like-button"
             (click)="likeDrawing($event, artwork)"
+            [disabled]="artwork.category === '18+ Sketches'"
             [attr.aria-label]="'Like ' + artwork.title"
           >
 
@@ -699,6 +699,7 @@
       <img
         [src]="selectedArtwork.image"
         [alt]="selectedArtwork.alt"
+        [attr.crossorigin]="selectedArtwork.category === '18+ Sketches' ? 'use-credentials' : null"
       />
 
 
@@ -720,4 +721,23 @@
 
   </div>
 
-</main>
+  </main>
+
+  <div class="age-gate-backdrop" *ngIf="adultAccessOpen" role="presentation">
+    <section class="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
+      <button type="button" class="age-gate-close" aria-label="Close" (click)="adultAccessOpen = false">×</button>
+      <p class="eyebrow">Age restricted</p>
+      <h2 id="age-gate-title">18+ Sketches</h2>
+      <p>Enter your name and email, then confirm that you are at least 18 years old to continue. Your details will be stored by the site owner to keep an access record.</p>
+      <form (ngSubmit)="confirmAdultAccess()">
+        <label>Name<input name="adultName" type="text" autocomplete="name" [(ngModel)]="adultName" maxlength="100" required></label>
+        <label>Email<input name="adultEmail" type="email" autocomplete="email" [(ngModel)]="adultEmail" maxlength="254" required></label>
+        <label class="age-check"><input name="isAdultConfirmed" type="checkbox" [(ngModel)]="isAdultConfirmed" required><span>I confirm that I am 18 years of age or older.</span></label>
+        <p class="age-gate-error" *ngIf="adultAccessError" role="alert">{{ adultAccessError }}</p>
+        <div class="age-gate-actions">
+          <button type="button" class="age-cancel" (click)="adultAccessOpen = false">Cancel</button>
+          <button type="submit" [disabled]="adultAccessBusy || !isAdultConfirmed">{{ adultAccessBusy ? 'Saving…' : 'Continue' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>

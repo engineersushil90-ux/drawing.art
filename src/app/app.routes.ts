@@ -4,6 +4,7 @@ import { PrivacyPolicyComponent } from './pages/privacy-policy/privacy-policy.co
 import { TermsOfServiceComponent } from './pages/terms-of-service/terms-of-service.component';
 import { AboutComponent } from './pages/about/about.component';
 import { ContactComponent } from './pages/contact/contact.component';
+import { AdminViewersComponent } from './pages/admin-viewers/admin-viewers.component';
 
 export const routes: Routes = [
   { path: 'drawing-art', component: DrawingArtComponent },
@@ -11,6 +12,7 @@ export const routes: Routes = [
   { path: 'terms-of-service', component: TermsOfServiceComponent },
   { path: 'about', component: AboutComponent },
   { path: 'contact', component: ContactComponent },
+  { path: 'admin', component: AdminViewersComponent },
   { path: '', redirectTo: '/drawing-art', pathMatch: 'full' }
 ];
 

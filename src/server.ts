@@ -1,10 +1,13 @@
 import express from 'express';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import {
   join,
   relative,
+  sep,
   extname,
   basename,
+  resolve,
 } from 'node:path';
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 
@@ -31,6 +34,7 @@ app.use('/api', (req, res, next) => {
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
 
   if (req.method === 'OPTIONS') {
@@ -42,6 +46,160 @@ app.use('/api', (req, res, next) => {
 });
 
 app.use(express.json());
+
+const authSecret = process.env['AUTH_SECRET'];
+const adminEmail = process.env['ADMIN_EMAIL']?.trim().toLowerCase();
+const adminPassword = process.env['ADMIN_PASSWORD'];
+const ageCookieName = 'adult_access';
+const adminCookieName = 'owner_session';
+
+function makeSignedToken(value: string, expiresAt: number): string {
+  const payload = Buffer.from(`${value}:${expiresAt}`).toString('base64url');
+  const signature = createHmac('sha256', authSecret || 'not-configured').update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function hasValidToken(req: express.Request, cookieName: string, expectedValue: string): boolean {
+  if (!authSecret || authSecret.length < 32) return false;
+  const cookieHeader = req.headers.cookie || '';
+  const token = cookieHeader.split(';').map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
+  if (!token) return false;
+
+  const [payload, suppliedSignature] = token.split('.');
+  if (!payload || !suppliedSignature) return false;
+  const expectedSignature = createHmac('sha256', authSecret).update(payload).digest('base64url');
+  const supplied = Buffer.from(suppliedSignature);
+  const expected = Buffer.from(expectedSignature);
+  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return false;
+
+  try {
+    const decoded = Buffer.from(payload, 'base64url').toString('utf8');
+    const separator = decoded.lastIndexOf(':');
+    return decoded.slice(0, separator) === expectedValue && Number(decoded.slice(separator + 1)) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+function setSignedCookie(req: express.Request, res: express.Response, name: string, value: string, maxAgeSeconds: number): void {
+  const secure = process.env['NODE_ENV'] === 'production' || req.headers['x-forwarded-proto']?.toString().split(',')[0] === 'https';
+  const sameSite = secure ? 'None' : 'Lax';
+  const secureFlag = secure ? '; Secure' : '';
+  res.setHeader('Set-Cookie', `${name}=${makeSignedToken(value, Date.now() + maxAgeSeconds * 1000)}; Max-Age=${maxAgeSeconds}; Path=/; HttpOnly; SameSite=${sameSite}${secureFlag}`);
+}
+
+function requireOwner(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  if (!hasValidToken(req, adminCookieName, 'owner')) {
+    res.status(401).json({ error: 'Owner login required' });
+    return;
+  }
+  next();
+}
+
+function hasAdultAccess(req: express.Request): boolean {
+  return hasValidToken(req, ageCookieName, 'adult');
+}
+
+interface AdultViewer {
+  name: string;
+  email: string;
+  firstViewedAt: string;
+  lastViewedAt: string;
+  views: number;
+}
+
+async function readAdultViewers(): Promise<AdultViewer[]> {
+  try {
+    return JSON.parse(await readDataFile('adult-sketch-viewers.json')) as AdultViewer[];
+  } catch {
+    return [];
+  }
+}
+
+let adultViewersWriteQueue: Promise<void> = Promise.resolve();
+
+function recordAdultViewer(name: string, email: string): Promise<void> {
+  const update = adultViewersWriteQueue.then(async () => {
+    const viewers = await readAdultViewers();
+    const now = new Date().toISOString();
+    const existing = viewers.find(viewer => viewer.email === email);
+    if (existing) {
+      existing.name = name;
+      existing.lastViewedAt = now;
+      existing.views += 1;
+    } else {
+      viewers.push({ name, email, firstViewedAt: now, lastViewedAt: now, views: 1 });
+    }
+    await saveDataFile('adult-sketch-viewers.json', JSON.stringify(viewers, null, 2));
+  });
+  adultViewersWriteQueue = update.catch(() => undefined);
+  return update;
+}
+
+app.post('/api/18plus/confirm', async (req, res, next) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const isAdult = req.body?.isAdult === true;
+  if (!name || name.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !isAdult) {
+    res.status(400).json({ error: 'Enter your name and a valid email, and confirm you are 18 or older.' });
+    return;
+  }
+  if (!authSecret || authSecret.length < 32) {
+    res.status(503).json({ error: 'Age access is not configured on the server.' });
+    return;
+  }
+  try {
+    await recordAdultViewer(name, email);
+    setSignedCookie(req, res, ageCookieName, 'adult', 60 * 60 * 24 * 30);
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/admin/login', (req, res) => {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+  if (!authSecret || authSecret.length < 32 || !adminEmail || !adminPassword) {
+    res.status(503).json({ error: 'Admin login is not configured on the server.' });
+    return;
+  }
+  const submittedPassword = Buffer.from(password);
+  const configuredPassword = Buffer.from(adminPassword);
+  const passwordMatches = submittedPassword.length === configuredPassword.length && timingSafeEqual(submittedPassword, configuredPassword);
+  if (email !== adminEmail || !passwordMatches) {
+    res.status(401).json({ error: 'Invalid credentials' });
+    return;
+  }
+  setSignedCookie(req, res, adminCookieName, 'owner', 60 * 60 * 8);
+  res.json({ ok: true });
+});
+
+app.get('/api/admin/18plus-viewers', requireOwner, async (_req, res, next) => {
+  try {
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(await readAdultViewers());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/18plus/image', (req, res, next) => {
+  if (!hasAdultAccess(req)) {
+    res.sendStatus(403);
+    return;
+  }
+  const file = typeof req.query['file'] === 'string' ? req.query['file'] : '';
+  const adultRoot = resolve(drawingsRoot, '18+Sketches');
+  const imagePath = resolve(adultRoot, file);
+  const pathFromAdultRoot = relative(adultRoot, imagePath);
+  if (!file || !pathFromAdultRoot || pathFromAdultRoot.startsWith('..') || imagePath === adultRoot || !imagePath.startsWith(`${adultRoot}${sep}`) || !imageExtensions.has(extname(imagePath).toLowerCase())) {
+    res.sendStatus(404);
+    return;
+  }
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.sendFile(imagePath, error => error && next(error));
+});
 
 
 /*
@@ -474,12 +632,12 @@ async function scanDrawings(
        * Build browser URL.
        */
       const imagePath =
-        '/drawings/' +
-        pathParts
-          .map(part =>
-            encodeURIComponent(part)
-          )
-          .join('/');
+        category === '18+ Sketches'
+          ? `/api/18plus/image?file=${encodeURIComponent(pathParts.slice(1).join('/'))}`
+          : '/drawings/' +
+            pathParts
+              .map(part => encodeURIComponent(part))
+              .join('/');
 
 
       drawings.push({
@@ -525,7 +683,10 @@ app.get(
       const drawings =
         await scanDrawings();
 
-      res.json(drawings);
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.json(hasAdultAccess(req)
+        ? drawings
+        : drawings.filter(drawing => drawing.category !== '18+ Sketches'));
 
     } catch (error) {
 

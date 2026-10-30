@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import {
@@ -17,7 +18,7 @@ import {
 
 @Component({
   selector: 'app-drawing-art',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './trek-list.component.html',
   styleUrl: './trek-list.component.scss'
 })
@@ -33,7 +34,7 @@ export class DrawingArtComponent implements OnInit {
   readonly categories = [
     'All Drawings',
     'Pencil Sketches',
-    // '18+ Sketches',//Tempary commit
+    '18+ Sketches',
     'Color Art'
   ];
 
@@ -50,6 +51,13 @@ export class DrawingArtComponent implements OnInit {
   isMenuOpen = false;
 
   isLoading = true;
+
+  adultAccessOpen = false;
+  adultAccessBusy = false;
+  adultAccessError = '';
+  adultName = '';
+  adultEmail = '';
+  isAdultConfirmed = false;
 
 
   // --------------------------------------------------
@@ -458,6 +466,12 @@ loadDrawings(): void {
     category: string
   ): void {
 
+    if (category === '18+ Sketches') {
+      this.adultAccessError = '';
+      this.adultAccessOpen = true;
+      return;
+    }
+
     this.activeCategory =
       category;
 
@@ -467,6 +481,31 @@ loadDrawings(): void {
 
     this.currentPage = 1;
 
+  }
+
+  confirmAdultAccess(): void {
+    if (!this.isAdultConfirmed || this.adultAccessBusy) return;
+    this.adultAccessBusy = true;
+    this.adultAccessError = '';
+    this.drawingsService.confirmAdultAccess({
+      name: this.adultName.trim(),
+      email: this.adultEmail.trim(),
+      isAdult: this.isAdultConfirmed
+    }).subscribe({
+      next: () => {
+        this.adultAccessOpen = false;
+        this.adultAccessBusy = false;
+        this.activeCategory = '18+ Sketches';
+        this.currentPage = 1;
+        this.loadDrawings();
+        this.cdr.detectChanges();
+      },
+      error: error => {
+        this.adultAccessBusy = false;
+        this.adultAccessError = error?.error?.error || 'Confirmation could not be saved. Try again.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
 

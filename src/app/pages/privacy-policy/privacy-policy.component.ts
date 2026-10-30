@@ -13,7 +13,8 @@ import { RouterModule } from '@angular/router';
       
       <section>
         <h2>1. Information We Collect</h2>
-        <p>We do not collect personal identification information from users. We may collect non-personal identification information about users whenever they interact with our site, such as browser name, type of computer, and technical information about users' means of connection to our site.</p>
+        <p>When a visitor requests access to 18+ Sketches, we collect the name and email address they enter, their confirmation that they are at least 18, and the date and time of access. We use these details to record access to the age-restricted gallery. The site owner can view this record through a password-protected admin page. Details are stored in the site's server data directory until the site owner deletes them. The age confirmation is self-reported and does not verify identity or age.</p>
+        <p>We also collect non-personal technical information needed to operate the site, such as browser and connection details.</p>
       </section>
 
       <section>

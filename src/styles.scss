@@ -1,2 +1,18 @@
 html { scroll-behavior: smooth; }
 body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9; }
+
+.age-gate-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 20px; background: rgba(22, 29, 25, .72); }
+.age-gate { position: relative; width: min(100%, 520px); max-height: 90vh; overflow: auto; padding: clamp(24px, 5vw, 42px); border-radius: 16px; background: #fffdf9; color: #26342d; box-shadow: 0 24px 80px rgba(0, 0, 0, .25); }
+.age-gate h2 { margin: 0 0 12px; font: 38px Georgia, serif; }
+.age-gate > p:not(.eyebrow) { line-height: 1.6; color: #606861; }
+.age-gate form { display: grid; gap: 16px; margin-top: 24px; }
+.age-gate form > label:not(.age-check) { display: grid; gap: 7px; font-size: 13px; }
+.age-gate input[type="text"], .age-gate input[type="email"] { width: 100%; padding: 12px; border: 1px solid #d8d4cc; border-radius: 7px; font: inherit; }
+.age-check { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.5; }
+.age-check input { margin-top: 3px; accent-color: #26342d; }
+.age-gate-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.age-gate-actions button { padding: 11px 16px; border: 0; border-radius: 7px; background: #26342d; color: white; cursor: pointer; }
+.age-gate-actions button:disabled { opacity: .55; cursor: not-allowed; }
+.age-gate-actions .age-cancel { background: transparent; color: #26342d; }
+.age-gate-close { position: absolute; top: 14px; right: 17px; border: 0; background: none; font-size: 26px; cursor: pointer; }
+.age-gate-error { margin: 0; color: #9a3428; font-size: 13px; }

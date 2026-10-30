@@ -50,6 +50,11 @@ async function scanDirectory(
     const fullPath =
       join(directory, entry.name);
 
+    // Adult artwork is served only by the age-gated API, never from the public index.
+    if (category === '18+ Sketches') {
+      continue;
+    }
+
     // If directory, scan it recursively
     if (entry.isDirectory()) {
 
