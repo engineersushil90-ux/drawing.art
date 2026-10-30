@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { timeout } from 'rxjs/operators';
 
 export interface Artwork {
   title: string;
@@ -56,7 +57,7 @@ export class DrawingsService {
   adminLogin(details: { email: string; password: string }): Observable<{ ok: boolean }> {
     return this.http.post<{ ok: boolean }>(`${this.apiBaseUrl}/api/admin/login`, details, {
       withCredentials: true
-    });
+    }).pipe(timeout(60000));
   }
 
   getAdultViewers(): Observable<AdultViewer[]> {

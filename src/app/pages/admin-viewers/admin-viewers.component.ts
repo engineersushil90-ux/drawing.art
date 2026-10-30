@@ -64,12 +64,18 @@ export class AdminViewersComponent implements OnInit {
     this.message = '';
     this.drawingsService.adminLogin({ email: this.email.trim(), password: this.password }).subscribe({
       next: () => {
+        this.busy = false;
         this.authenticated = true;
         this.password = '';
         this.loadViewers();
       },
-      error: () => this.message = 'Login failed. Check your credentials and server configuration.',
-      complete: () => this.busy = false
+      error: error => {
+        this.busy = false;
+        this.message = error?.error?.error
+          || (error?.name === 'TimeoutError'
+            ? 'The server took too long to respond. Wait a minute and try again.'
+            : 'Login failed. Check your credentials and server configuration.');
+      }
     });
   }
 
