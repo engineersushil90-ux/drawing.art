@@ -108,7 +108,28 @@ interface AdultViewer {
   views: number;
 }
 
+interface AdultViewerRow {
+  name: string;
+  email: string;
+  first_viewed_at: string;
+  last_viewed_at: string;
+  views: number;
+}
+
 async function readAdultViewers(): Promise<AdultViewer[]> {
+  if (supabaseEnabled) {
+    const rows = await supabaseRequest<AdultViewerRow[]>(
+      'adult_sketch_viewers?select=name,email,first_viewed_at,last_viewed_at,views&order=last_viewed_at.desc'
+    );
+    return rows.map(row => ({
+      name: row.name,
+      email: row.email,
+      firstViewedAt: row.first_viewed_at,
+      lastViewedAt: row.last_viewed_at,
+      views: Number(row.views) || 0
+    }));
+  }
+
   try {
     return JSON.parse(await readDataFile('adult-sketch-viewers.json')) as AdultViewer[];
   } catch {
@@ -120,6 +141,17 @@ let adultViewersWriteQueue: Promise<void> = Promise.resolve();
 
 function recordAdultViewer(name: string, email: string): Promise<void> {
   const update = adultViewersWriteQueue.then(async () => {
+    if (supabaseEnabled) {
+      await supabaseRequest<AdultViewerRow>(
+        'rpc/record_adult_sketch_viewer',
+        {
+          method: 'POST',
+          body: JSON.stringify({ p_name: name, p_email: email })
+        }
+      );
+      return;
+    }
+
     const viewers = await readAdultViewers();
     const now = new Date().toISOString();
     const existing = viewers.find(viewer => viewer.email === email);
