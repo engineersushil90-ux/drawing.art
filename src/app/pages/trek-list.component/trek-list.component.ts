@@ -58,6 +58,7 @@ export class DrawingArtComponent implements OnInit {
   adultName = '';
   adultEmail = '';
   isAdultConfirmed = false;
+  private adultAccessConfirmedThisSession = false;
 
 
   // --------------------------------------------------
@@ -467,6 +468,11 @@ loadDrawings(): void {
   ): void {
 
     if (category === '18+ Sketches') {
+      if (this.hasAdultAccessForCurrentSession()) {
+        this.activeCategory = category;
+        this.currentPage = 1;
+        return;
+      }
       this.adultAccessError = '';
       this.adultAccessOpen = true;
       return;
@@ -493,6 +499,7 @@ loadDrawings(): void {
       isAdult: this.isAdultConfirmed
     }).subscribe({
       next: () => {
+        this.rememberAdultAccessForCurrentSession();
         this.adultAccessOpen = false;
         this.adultAccessBusy = false;
         this.activeCategory = '18+ Sketches';
@@ -506,6 +513,25 @@ loadDrawings(): void {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private hasAdultAccessForCurrentSession(): boolean {
+    if (this.adultAccessConfirmedThisSession) return true;
+    try {
+      this.adultAccessConfirmedThisSession = sessionStorage.getItem('adultSketchAgeConfirmed') === 'true';
+    } catch {
+      return false;
+    }
+    return this.adultAccessConfirmedThisSession;
+  }
+
+  private rememberAdultAccessForCurrentSession(): void {
+    this.adultAccessConfirmedThisSession = true;
+    try {
+      sessionStorage.setItem('adultSketchAgeConfirmed', 'true');
+    } catch {
+      // Keep the confirmation in memory if browser storage is unavailable.
+    }
   }
 
 
