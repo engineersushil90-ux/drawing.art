@@ -48,7 +48,7 @@ app.use('/api', (req, res, next) => {
 app.use(express.json());
 
 const authSecret = process.env['AUTH_SECRET'];
-const adminEmail = process.env['ADMIN_EMAIL']?.trim().toLowerCase();
+const adminUsername = (process.env['ADMIN_USERNAME'] || process.env['ADMIN_EMAIL'])?.trim().toLowerCase();
 const adminPassword = process.env['ADMIN_PASSWORD'];
 const ageCookieName = 'adult_access';
 const adminCookieName = 'owner_session';
@@ -190,16 +190,20 @@ app.post('/api/18plus/confirm', async (req, res, next) => {
 });
 
 app.post('/api/admin/login', (req, res) => {
-  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const username = typeof req.body?.username === 'string'
+    ? req.body.username.trim().toLowerCase()
+    : typeof req.body?.email === 'string'
+      ? req.body.email.trim().toLowerCase()
+      : '';
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
-  if (!authSecret || authSecret.length < 32 || !adminEmail || !adminPassword) {
+  if (!authSecret || authSecret.length < 32 || !adminUsername || !adminPassword) {
     res.status(503).json({ error: 'Admin login is not configured on the server.' });
     return;
   }
   const submittedPassword = Buffer.from(password);
   const configuredPassword = Buffer.from(adminPassword);
   const passwordMatches = submittedPassword.length === configuredPassword.length && timingSafeEqual(submittedPassword, configuredPassword);
-  if (email !== adminEmail || !passwordMatches) {
+  if (username !== adminUsername || !passwordMatches) {
     res.status(401).json({ error: 'Invalid credentials' });
     return;
   }

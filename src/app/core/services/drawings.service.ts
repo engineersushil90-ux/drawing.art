@@ -54,7 +54,7 @@ export class DrawingsService {
     });
   }
 
-  adminLogin(details: { email: string; password: string }): Observable<{ ok: boolean }> {
+  adminLogin(details: { username: string; password: string }): Observable<{ ok: boolean }> {
     return this.http.post<{ ok: boolean }>(`${this.apiBaseUrl}/api/admin/login`, details, {
       withCredentials: true
     }).pipe(timeout(60000));

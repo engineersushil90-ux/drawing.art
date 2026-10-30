@@ -7,7 +7,7 @@ When Supabase is configured, age confirmations are stored in its `adult_sketch_v
 Configure these environment variables on the API server before enabling the feature:
 
 - `AUTH_SECRET`: a long random secret used to sign access cookies (use at least 32 random characters).
-- `ADMIN_EMAIL`: the owner's login email.
+- `ADMIN_USERNAME`: the owner's login name (or use `ADMIN_EMAIL` to keep email-based login).
 - `ADMIN_PASSWORD`: a strong owner login password.
 - `DATA_DIR`: only needed for the local JSON fallback; with Supabase configured, the persistent disk is not required for viewer records.
 

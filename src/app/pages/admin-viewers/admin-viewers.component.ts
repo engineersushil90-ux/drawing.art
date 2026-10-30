@@ -15,7 +15,7 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
         <h1>18+ Sketches viewers</h1>
 
         <form *ngIf="!authenticated" (ngSubmit)="login()">
-          <label>Admin email<input name="email" type="email" autocomplete="username" [(ngModel)]="email" required></label>
+          <label>Admin username or email<input name="username" type="text" autocomplete="username" [(ngModel)]="username" required></label>
           <label>Password<input name="password" type="password" autocomplete="current-password" [(ngModel)]="password" required></label>
           <button type="submit" [disabled]="busy">{{ busy ? 'Signing in…' : 'Sign in' }}</button>
         </form>
@@ -50,7 +50,7 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
 })
 export class AdminViewersComponent implements OnInit {
   private readonly drawingsService = inject(DrawingsService);
-  email = '';
+  username = '';
   password = '';
   busy = false;
   authenticated = false;
@@ -62,7 +62,7 @@ export class AdminViewersComponent implements OnInit {
   login(): void {
     this.busy = true;
     this.message = '';
-    this.drawingsService.adminLogin({ email: this.email.trim(), password: this.password }).subscribe({
+    this.drawingsService.adminLogin({ username: this.username.trim(), password: this.password }).subscribe({
       next: () => {
         this.busy = false;
         this.authenticated = true;
