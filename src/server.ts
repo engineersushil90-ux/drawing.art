@@ -733,6 +733,7 @@ app.get(
         await scanDrawings();
 
       res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('Referrer-Policy', 'no-referrer');
       res.json(hasAdultAccess(req)
         ? drawings
         : drawings.filter(drawing => drawing.category !== '18+ Sketches'));

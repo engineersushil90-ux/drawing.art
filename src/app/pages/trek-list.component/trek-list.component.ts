@@ -286,7 +286,7 @@ private readonly cdr =
 
   ngOnInit(): void {
 
-    this.loadDrawings();
+    this.loadDrawings(this.adultImageAccessToken);
 
     this.loadLikes();
 
@@ -298,13 +298,13 @@ private readonly cdr =
   // --------------------------------------------------
   // LOAD DRAWINGS
   // --------------------------------------------------
-loadDrawings(): void {
+loadDrawings(imageAccessToken = ''): void {
   this.isLoading = true;
 
   console.log('Loading drawings.json...');
 
   this.drawingsService
-    .getDrawings()
+    .getDrawings(imageAccessToken)
     .subscribe({
       next: drawings => {
         console.log(
@@ -480,6 +480,7 @@ loadDrawings(): void {
       if (this.hasAdultAccessForCurrentSession()) {
         this.activeCategory = category;
         this.currentPage = 1;
+        this.loadDrawings(this.adultImageAccessToken);
         return;
       }
       this.adultAccessError = '';

@@ -45,8 +45,11 @@ export class DrawingsService {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = 'https://drawing-art.onrender.com';
 
-  getDrawings(): Observable<Artwork[]> {
-    return this.http.get<Artwork[]>(`${this.apiBaseUrl}/api/drawings`, {
+  getDrawings(imageAccessToken = ''): Observable<Artwork[]> {
+    const tokenQuery = imageAccessToken
+      ? `?access_token=${encodeURIComponent(imageAccessToken)}`
+      : '';
+    return this.http.get<Artwork[]>(`${this.apiBaseUrl}/api/drawings${tokenQuery}`, {
       withCredentials: true
     }).pipe(map(drawings => drawings.map(artwork => artwork.category === '18+ Sketches'
       ? { ...artwork, image: `${this.apiBaseUrl}${artwork.image}` }
