@@ -520,7 +520,7 @@ loadDrawings(imageAccessToken = ''): void {
         this.adultAccessBusy = false;
         this.activeCategory = '18+ Sketches';
         this.currentPage = 1;
-        this.loadDrawings();
+        this.loadDrawings(this.adultImageAccessToken);
         this.cdr.detectChanges();
       },
       error: error => {
