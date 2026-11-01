@@ -172,7 +172,6 @@ private readonly cdr =
   // --------------------------------------------------
   // FILTERED DRAWINGS
   // --------------------------------------------------
-  //
   // All Drawings:
   //   - Pencil Sketches
   //   - Color Art
