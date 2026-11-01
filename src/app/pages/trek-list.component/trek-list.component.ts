@@ -554,7 +554,7 @@ loadDrawings(imageAccessToken = ''): void {
 
 
   // --------------------------------------------------
-  // PAGINATION
+  // PAGINATION 
   // --------------------------------------------------
 
   goToPage(
