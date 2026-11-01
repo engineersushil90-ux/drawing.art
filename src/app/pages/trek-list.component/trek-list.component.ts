@@ -58,6 +58,7 @@ export class DrawingArtComponent implements OnInit {
   adultName = '';
   adultEmail = '';
   isAdultConfirmed = false;
+  adultImageAccessToken = '';
   private adultAccessConfirmedThisSession = false;
 
 
@@ -166,6 +167,15 @@ private readonly cdr =
         artwork.category === 'Feature Drawing'
     ) ?? null;
 
+  }
+
+  getArtworkImage(artwork: Artwork): string {
+    if (artwork.category !== '18+ Sketches' || !this.adultImageAccessToken) {
+      return artwork.image;
+    }
+
+    const separator = artwork.image.includes('?') ? '&' : '?';
+    return `${artwork.image}${separator}access_token=${encodeURIComponent(this.adultImageAccessToken)}`;
   }
 
 
@@ -497,8 +507,14 @@ loadDrawings(): void {
       email: this.adultEmail.trim(),
       isAdult: this.isAdultConfirmed
     }).subscribe({
-      next: () => {
-        this.rememberAdultAccessForCurrentSession();
+      next: response => {
+        if (!response.imageAccessToken) {
+          this.adultAccessBusy = false;
+          this.adultAccessError = 'Image access could not be initialized. Please try again.';
+          this.cdr.detectChanges();
+          return;
+        }
+        this.rememberAdultAccessForCurrentSession(response.imageAccessToken);
         this.adultAccessOpen = false;
         this.adultAccessBusy = false;
         this.activeCategory = '18+ Sketches';
@@ -515,19 +531,21 @@ loadDrawings(): void {
   }
 
   private hasAdultAccessForCurrentSession(): boolean {
-    if (this.adultAccessConfirmedThisSession) return true;
+    if (this.adultAccessConfirmedThisSession && this.adultImageAccessToken) return true;
     try {
-      this.adultAccessConfirmedThisSession = sessionStorage.getItem('adultSketchAgeConfirmed') === 'true';
+      this.adultImageAccessToken = sessionStorage.getItem('adultSketchImageAccessToken') || '';
+      this.adultAccessConfirmedThisSession = Boolean(this.adultImageAccessToken);
     } catch {
       return false;
     }
     return this.adultAccessConfirmedThisSession;
   }
 
-  private rememberAdultAccessForCurrentSession(): void {
+  private rememberAdultAccessForCurrentSession(imageAccessToken: string): void {
+    this.adultImageAccessToken = imageAccessToken;
     this.adultAccessConfirmedThisSession = true;
     try {
-      sessionStorage.setItem('adultSketchAgeConfirmed', 'true');
+      sessionStorage.setItem('adultSketchImageAccessToken', imageAccessToken);
     } catch {
       // Keep the confirmation in memory if browser storage is unavailable.
     }

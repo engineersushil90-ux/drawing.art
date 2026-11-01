@@ -33,6 +33,11 @@ export interface AdultViewer {
   views: number;
 }
 
+export interface AdultAccessResponse {
+  ok: boolean;
+  imageAccessToken: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -48,8 +53,8 @@ export class DrawingsService {
       : artwork)));
   }
 
-  confirmAdultAccess(details: { name: string; email: string; isAdult: boolean }): Observable<{ ok: boolean }> {
-    return this.http.post<{ ok: boolean }>(`${this.apiBaseUrl}/api/18plus/confirm`, details, {
+  confirmAdultAccess(details: { name: string; email: string; isAdult: boolean }): Observable<AdultAccessResponse> {
+    return this.http.post<AdultAccessResponse>(`${this.apiBaseUrl}/api/18plus/confirm`, details, {
       withCredentials: true
     });
   }

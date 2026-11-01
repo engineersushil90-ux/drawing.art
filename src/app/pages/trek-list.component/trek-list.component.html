@@ -273,7 +273,7 @@
         <div class="image-wrap">
 
           <img
-            [src]="artwork.image"
+            [src]="getArtworkImage(artwork)"
             [alt]="artwork.alt"
             [attr.crossorigin]="artwork.category === '18+ Sketches' ? 'use-credentials' : null"
             loading="lazy"
@@ -696,7 +696,7 @@
     >
 
       <img
-        [src]="selectedArtwork.image"
+        [src]="getArtworkImage(selectedArtwork)"
         [alt]="selectedArtwork.alt"
         [attr.crossorigin]="selectedArtwork.category === '18+ Sketches' ? 'use-credentials' : null"
       />

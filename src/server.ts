@@ -59,10 +59,8 @@ function makeSignedToken(value: string, expiresAt: number): string {
   return `${payload}.${signature}`;
 }
 
-function hasValidToken(req: express.Request, cookieName: string, expectedValue: string): boolean {
+function hasValidSignedToken(token: string | undefined, expectedValue: string): boolean {
   if (!authSecret || authSecret.length < 32) return false;
-  const cookieHeader = req.headers.cookie || '';
-  const token = cookieHeader.split(';').map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
   if (!token) return false;
 
   const [payload, suppliedSignature] = token.split('.');
@@ -81,6 +79,12 @@ function hasValidToken(req: express.Request, cookieName: string, expectedValue: 
   }
 }
 
+function hasValidToken(req: express.Request, cookieName: string, expectedValue: string): boolean {
+  const cookieHeader = req.headers.cookie || '';
+  const token = cookieHeader.split(';').map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
+  return hasValidSignedToken(token, expectedValue);
+}
+
 function setSignedCookie(req: express.Request, res: express.Response, name: string, value: string, maxAgeSeconds: number): void {
   const secure = process.env['NODE_ENV'] === 'production' || req.headers['x-forwarded-proto']?.toString().split(',')[0] === 'https';
   const sameSite = secure ? 'None' : 'Lax';
@@ -97,7 +101,11 @@ function requireOwner(req: express.Request, res: express.Response, next: express
 }
 
 function hasAdultAccess(req: express.Request): boolean {
-  return hasValidToken(req, ageCookieName, 'adult');
+  const imageAccessToken = typeof req.query['access_token'] === 'string'
+    ? req.query['access_token']
+    : undefined;
+  return hasValidToken(req, ageCookieName, 'adult')
+    || hasValidSignedToken(imageAccessToken, 'adult-image');
 }
 
 interface AdultViewer {
@@ -182,8 +190,12 @@ app.post('/api/18plus/confirm', async (req, res, next) => {
   }
   try {
     await recordAdultViewer(name, email);
+    const tokenExpiresAt = Date.now() + 60 * 60 * 24 * 30 * 1000;
     setSignedCookie(req, res, ageCookieName, 'adult', 60 * 60 * 24 * 30);
-    res.json({ ok: true });
+    res.json({
+      ok: true,
+      imageAccessToken: makeSignedToken('adult-image', tokenExpiresAt)
+    });
   } catch (error) {
     next(error);
   }
@@ -221,6 +233,8 @@ app.get('/api/admin/18plus-viewers', requireOwner, async (_req, res, next) => {
 });
 
 app.get('/api/18plus/image', (req, res, next) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
   if (!hasAdultAccess(req)) {
     res.sendStatus(403);
     return;
@@ -233,7 +247,6 @@ app.get('/api/18plus/image', (req, res, next) => {
     res.sendStatus(404);
     return;
   }
-  res.setHeader('Cache-Control', 'private, no-store');
   res.sendFile(imagePath, error => error && next(error));
 });
 
@@ -863,4 +876,3 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`Node Express server listening on 0.0.0.0:${port}`);
 });
   
-
