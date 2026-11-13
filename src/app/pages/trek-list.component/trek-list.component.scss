@@ -507,9 +507,9 @@ h1 em {
 
   height: 355px;
 
-  object-fit: cover;
+  object-fit: contain;
 
-  transition: transform .45s ease;
+  transition: opacity .2s ease;
 }
 
 
@@ -519,7 +519,7 @@ h1 em {
 
 
 .art-card:hover img {
-  transform: scale(1.045);
+  opacity: .96;
 }
 
 
