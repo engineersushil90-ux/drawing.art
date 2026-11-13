@@ -37,7 +37,13 @@ begin
 end;
 $$;
 
-revoke all on function public.record_adult_sketch_viewer(text, text) from public;
-revoke all on function public.record_adult_sketch_viewer(text, text) from anon, authenticated;
+do $revoke_legacy_function$
+begin
+  if to_regprocedure('public.record_adult_sketch_viewer(text,text)') is not null then
+    execute 'revoke all on function public.record_adult_sketch_viewer(text, text) from public, anon, authenticated';
+  end if;
+end
+$revoke_legacy_function$;
+
 revoke all on function public.record_adult_sketch_viewer(text, text, uuid) from public, anon, authenticated;
 grant execute on function public.record_adult_sketch_viewer(text, text, uuid) to service_role;
