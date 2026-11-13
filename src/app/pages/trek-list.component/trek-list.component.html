@@ -267,6 +267,7 @@
       <article
         *ngFor="let artwork of visibleArtworks"
         class="art-card"
+        [class.locked-artwork]="isLockedArtwork(artwork)"
         (click)="openArtwork(artwork)"
       >
 
@@ -279,6 +280,10 @@
             loading="lazy"
           />
 
+          <div class="locked-art-overlay" *ngIf="isLockedArtwork(artwork)" aria-hidden="true">
+            <strong>Locked</strong>
+            <span>₹20 one-time unlock</span>
+          </div>
 
           <!-- VIEW -->
 
@@ -727,16 +732,38 @@
       <button type="button" class="age-gate-close" aria-label="Close" (click)="adultAccessOpen = false">×</button>
       <p class="eyebrow">Age restricted</p>
       <h2 id="age-gate-title">18+ Sketches</h2>
-      <p>Enter your name and email, then confirm that you are at least 18 years old to continue. Your details will be stored by the site owner to keep an access record.</p>
-      <form (ngSubmit)="confirmAdultAccess()">
+      <p *ngIf="!adultOtpSent">The five TopFive previews are free. To continue, enter your name and email and confirm that you are at least 18. We will email you a verification code. Your details will be stored by the site owner.</p>
+      <form *ngIf="!adultOtpSent" (ngSubmit)="confirmAdultAccess()">
         <label>Name<input name="adultName" type="text" autocomplete="name" [(ngModel)]="adultName" maxlength="100" required></label>
         <label>Email<input name="adultEmail" type="email" autocomplete="email" [(ngModel)]="adultEmail" maxlength="254" required></label>
         <label class="age-check"><input name="isAdultConfirmed" type="checkbox" [(ngModel)]="isAdultConfirmed" required><span>I confirm that I am 18 years of age or older.</span></label>
         <p class="age-gate-error" *ngIf="adultAccessError" role="alert">{{ adultAccessError }}</p>
         <div class="age-gate-actions">
           <button type="button" class="age-cancel" (click)="adultAccessOpen = false">Cancel</button>
-          <button type="submit" [disabled]="adultAccessBusy || !isAdultConfirmed">{{ adultAccessBusy ? 'Saving…' : 'Continue' }}</button>
+          <button type="submit" [disabled]="adultAccessBusy || !isAdultConfirmed">{{ adultAccessBusy ? 'Sending code…' : 'Send verification code' }}</button>
         </div>
       </form>
+      <form *ngIf="adultOtpSent" (ngSubmit)="verifyAdultEmail()">
+        <p>Enter the verification code sent to <strong>{{ adultEmail }}</strong>.</p>
+        <label>Verification code<input name="adultOtp" type="text" inputmode="numeric" autocomplete="one-time-code" [(ngModel)]="adultOtp" maxlength="10" required></label>
+        <p class="age-gate-error" *ngIf="adultAccessError" role="alert">{{ adultAccessError }}</p>
+        <div class="age-gate-actions">
+          <button type="button" class="age-cancel" (click)="adultOtpSent = false; adultOtp = ''; adultAccessError = ''">Change email</button>
+          <button type="submit" [disabled]="adultAccessBusy || !adultOtp.trim()">{{ adultAccessBusy ? 'Verifying…' : 'Verify email' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="age-gate-backdrop" *ngIf="paymentInfoOpen" role="presentation">
+    <section class="age-gate" role="dialog" aria-modal="true" aria-labelledby="payment-info-title">
+      <button type="button" class="age-gate-close" aria-label="Close" (click)="paymentInfoOpen = false">×</button>
+      <p class="eyebrow">Full collection</p>
+      <h2 id="payment-info-title">Unlock all 18+ sketches</h2>
+      <p>TopFive previews are free. The rest of the gallery costs ₹20 one time. UPI payment details will be added soon; contact the site owner to arrange payment and include the email you verified.</p>
+      <div class="age-gate-actions">
+        <button type="button" class="age-cancel" (click)="paymentInfoOpen = false">Close</button>
+        <a class="payment-contact" href="mailto:sushil@smarttraffic.in?subject=18%2B%20sketches%20access">Contact to pay</a>
+      </div>
     </section>
   </div>

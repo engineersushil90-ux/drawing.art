@@ -12,6 +12,8 @@ export interface Artwork {
   modifiedAt?: string;
   image: string;
   alt: string;
+  isFreePreview?: boolean;
+  isPayment?: boolean;
 }
 
 export interface LikeResponse {
@@ -31,11 +33,17 @@ export interface AdultViewer {
   firstViewedAt: string;
   lastViewedAt: string;
   views: number;
+  isPayment: boolean;
+}
+
+export interface AdultAccessOtpResponse {
+  ok: boolean;
 }
 
 export interface AdultAccessResponse {
   ok: boolean;
   imageAccessToken: string;
+  isPayment: boolean;
 }
 
 @Injectable({
@@ -56,8 +64,14 @@ export class DrawingsService {
       : artwork)));
   }
 
-  confirmAdultAccess(details: { name: string; email: string; isAdult: boolean }): Observable<AdultAccessResponse> {
-    return this.http.post<AdultAccessResponse>(`${this.apiBaseUrl}/api/18plus/confirm`, details, {
+  beginAdultEmailVerification(details: { name: string; email: string; isAdult: boolean }): Observable<AdultAccessOtpResponse> {
+    return this.http.post<AdultAccessOtpResponse>(`${this.apiBaseUrl}/api/18plus/confirm`, details, {
+      withCredentials: true
+    });
+  }
+
+  verifyAdultEmail(details: { name: string; email: string; isAdult: boolean; token: string }): Observable<AdultAccessResponse> {
+    return this.http.post<AdultAccessResponse>(`${this.apiBaseUrl}/api/18plus/verify`, details, {
       withCredentials: true
     });
   }
@@ -72,6 +86,14 @@ export class DrawingsService {
     return this.http.get<AdultViewer[]>(`${this.apiBaseUrl}/api/admin/18plus-viewers`, {
       withCredentials: true
     });
+  }
+
+  setAdultViewerPayment(email: string, isPayment: boolean): Observable<{ ok: boolean; isPayment: boolean }> {
+    return this.http.patch<{ ok: boolean; isPayment: boolean }>(
+      `${this.apiBaseUrl}/api/admin/18plus-viewers/payment`,
+      { email, isPayment },
+      { withCredentials: true }
+    );
   }
 
   getLikes(): Observable<Record<string, number>> {

@@ -26,11 +26,17 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
           <p *ngIf="!viewers.length">No confirmed viewers yet.</p>
           <div class="table-wrap" *ngIf="viewers.length">
             <table>
-              <thead><tr><th>Name</th><th>Email</th><th>First view</th><th>Last view</th><th>Views</th></tr></thead>
+              <thead><tr><th>Name</th><th>Email</th><th>First view</th><th>Last view</th><th>Views</th><th>Payment</th></tr></thead>
               <tbody><tr *ngFor="let viewer of viewers">
                 <td>{{ viewer.name }}</td><td>{{ viewer.email }}</td>
                 <td>{{ viewer.firstViewedAt | date:'medium' }}</td>
                 <td>{{ viewer.lastViewedAt | date:'medium' }}</td><td>{{ viewer.views }}</td>
+                <td>
+                  <button type="button" class="payment-toggle" [disabled]="paymentBusyEmail === viewer.email"
+                    [attr.aria-pressed]="viewer.isPayment" (click)="togglePayment(viewer)">
+                    {{ paymentBusyEmail === viewer.email ? 'Saving…' : viewer.isPayment ? 'Paid · revoke' : 'Unpaid · approve' }}
+                  </button>
+                </td>
               </tr></tbody>
             </table>
           </div>
@@ -46,6 +52,7 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
     form{display:grid;gap:18px;max-width:430px}label{display:grid;gap:8px;font-size:14px}input{padding:13px;border:1px solid #d8d4cc;border-radius:8px;font:inherit}
     button{padding:13px 18px;border:0;border-radius:8px;background:#26342d;color:white;font:inherit;cursor:pointer}button:disabled{opacity:.6}
     .message{color:#9a3428}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}th,td{padding:12px;border-bottom:1px solid #e8e2d9;white-space:nowrap}th{font-weight:600}
+    .payment-toggle{padding:8px 10px;font-size:12px}
   `]
 })
 export class AdminViewersComponent implements OnInit {
@@ -56,6 +63,7 @@ export class AdminViewersComponent implements OnInit {
   authenticated = false;
   message = '';
   viewers: AdultViewer[] = [];
+  paymentBusyEmail = '';
 
   ngOnInit(): void {}
 
@@ -83,6 +91,23 @@ export class AdminViewersComponent implements OnInit {
     this.drawingsService.getAdultViewers().subscribe({
       next: viewers => this.viewers = viewers,
       error: () => { this.authenticated = false; this.message = 'Could not load the viewer list. Please sign in again.'; }
+    });
+  }
+
+  togglePayment(viewer: AdultViewer): void {
+    if (this.paymentBusyEmail) return;
+    this.paymentBusyEmail = viewer.email;
+    this.message = '';
+    this.drawingsService.setAdultViewerPayment(viewer.email, !viewer.isPayment).subscribe({
+      next: response => {
+        viewer.isPayment = response.isPayment;
+        this.paymentBusyEmail = '';
+        this.message = `${viewer.email} is now marked ${response.isPayment ? 'paid' : 'unpaid'}.`;
+      },
+      error: error => {
+        this.paymentBusyEmail = '';
+        this.message = error?.error?.error || 'Could not update payment status. Please try again.';
+      }
     });
   }
 }

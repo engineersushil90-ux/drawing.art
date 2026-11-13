@@ -57,9 +57,13 @@ export class DrawingArtComponent implements OnInit {
   adultAccessError = '';
   adultName = '';
   adultEmail = '';
+  adultOtp = '';
+  adultOtpSent = false;
   isAdultConfirmed = false;
   adultImageAccessToken = '';
+  isPayment = false;
   private adultAccessConfirmedThisSession = false;
+  paymentInfoOpen = false;
 
 
   // --------------------------------------------------
@@ -212,6 +216,10 @@ private readonly cdr =
     }
 
     return filtered.sort((a, b) => {
+      if (this.activeCategory === '18+ Sketches' && a.isFreePreview !== b.isFreePreview) {
+        return a.isFreePreview ? -1 : 1;
+      }
+
       const recency = (artwork: Artwork): number => Math.max(
         Date.parse(`${artwork.date || ''}T00:00:00.000Z`) || 0,
         Date.parse(artwork.modifiedAt || '') || 0
@@ -313,6 +321,8 @@ loadDrawings(imageAccessToken = ''): void {
         );
 
         this.artworks = drawings;
+        const adultDrawing = drawings.find(artwork => artwork.category === '18+ Sketches');
+        if (adultDrawing) this.isPayment = adultDrawing.isPayment ?? this.isPayment;
         this.isLoading = false;
 
         // Force UI refresh
@@ -500,21 +510,45 @@ loadDrawings(imageAccessToken = ''): void {
   }
 
   confirmAdultAccess(): void {
-    if (!this.isAdultConfirmed || this.adultAccessBusy) return;
+    if (!this.isAdultConfirmed || this.adultAccessBusy || this.adultOtpSent) return;
     this.adultAccessBusy = true;
     this.adultAccessError = '';
-    this.drawingsService.confirmAdultAccess({
+    this.drawingsService.beginAdultEmailVerification({
       name: this.adultName.trim(),
       email: this.adultEmail.trim(),
       isAdult: this.isAdultConfirmed
     }).subscribe({
+      next: () => {
+        this.adultOtpSent = true;
+        this.adultAccessBusy = false;
+        this.cdr.detectChanges();
+      },
+      error: error => {
+        this.adultAccessBusy = false;
+        this.adultAccessError = error?.error?.error || 'Verification code could not be sent. Please try again.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  verifyAdultEmail(): void {
+    if (!this.isAdultConfirmed || this.adultAccessBusy || !this.adultOtp.trim()) return;
+    this.adultAccessBusy = true;
+    this.adultAccessError = '';
+    this.drawingsService.verifyAdultEmail({
+      name: this.adultName.trim(),
+      email: this.adultEmail.trim(),
+      isAdult: this.isAdultConfirmed,
+      token: this.adultOtp.trim()
+    }).subscribe({
       next: response => {
         if (!response.imageAccessToken) {
           this.adultAccessBusy = false;
-          this.adultAccessError = 'Image access could not be initialized. Please try again.';
+          this.adultAccessError = 'Email verification could not be completed. Please try again.';
           this.cdr.detectChanges();
           return;
         }
+        this.isPayment = response.isPayment;
         this.rememberAdultAccessForCurrentSession(response.imageAccessToken);
         this.adultAccessOpen = false;
         this.adultAccessBusy = false;
@@ -525,10 +559,14 @@ loadDrawings(imageAccessToken = ''): void {
       },
       error: error => {
         this.adultAccessBusy = false;
-        this.adultAccessError = error?.error?.error || 'Confirmation could not be saved. Try again.';
+        this.adultAccessError = error?.error?.error || 'That code could not be verified. Check it and try again.';
         this.cdr.detectChanges();
       }
     });
+  }
+
+  isLockedArtwork(artwork: Artwork): boolean {
+    return artwork.category === '18+ Sketches' && !artwork.isFreePreview && !this.isPayment;
   }
 
   private hasAdultAccessForCurrentSession(): boolean {
@@ -636,6 +674,11 @@ loadDrawings(imageAccessToken = ''): void {
   openArtwork(
     artwork: Artwork
   ): void {
+
+    if (this.isLockedArtwork(artwork)) {
+      this.paymentInfoOpen = true;
+      return;
+    }
 
     this.selectedArtwork =
       artwork;

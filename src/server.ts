@@ -1,5 +1,6 @@
 import express from 'express';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import sharp from 'sharp';
 
 import {
   join,
@@ -9,7 +10,7 @@ import {
   basename,
   resolve,
 } from 'node:path';
-import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, stat as statFile } from 'node:fs/promises';
 
 import { readdir } from 'node:fs/promises';
 
@@ -32,7 +33,7 @@ app.use('/api', (req, res, next) => {
   if (origin && allowedApiOrigins.has(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
@@ -60,22 +61,29 @@ function makeSignedToken(value: string, expiresAt: number): string {
 }
 
 function hasValidSignedToken(token: string | undefined, expectedValue: string): boolean {
-  if (!authSecret || authSecret.length < 32) return false;
-  if (!token) return false;
+  return getSignedTokenValue(token) === expectedValue;
+}
+
+function getSignedTokenValue(token: string | undefined): string | null {
+  if (!authSecret || authSecret.length < 32) return null;
+  if (!token) return null;
 
   const [payload, suppliedSignature] = token.split('.');
-  if (!payload || !suppliedSignature) return false;
+  if (!payload || !suppliedSignature) return null;
   const expectedSignature = createHmac('sha256', authSecret).update(payload).digest('base64url');
   const supplied = Buffer.from(suppliedSignature);
   const expected = Buffer.from(expectedSignature);
-  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return false;
+  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
 
   try {
     const decoded = Buffer.from(payload, 'base64url').toString('utf8');
     const separator = decoded.lastIndexOf(':');
-    return decoded.slice(0, separator) === expectedValue && Number(decoded.slice(separator + 1)) > Date.now();
+    const expiresAt = Number(decoded.slice(separator + 1));
+    return separator > 0 && expiresAt > Date.now()
+      ? decoded.slice(0, separator)
+      : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -100,12 +108,24 @@ function requireOwner(req: express.Request, res: express.Response, next: express
   next();
 }
 
-function hasAdultAccess(req: express.Request): boolean {
+function getAdultAccessId(req: express.Request): string | null {
   const imageAccessToken = typeof req.query['access_token'] === 'string'
     ? req.query['access_token']
     : undefined;
-  return hasValidToken(req, ageCookieName, 'adult')
-    || hasValidSignedToken(imageAccessToken, 'adult-image');
+  const cookieHeader = req.headers.cookie || '';
+  const cookieToken = cookieHeader.split(';')
+    .map(part => part.trim())
+    .find(part => part.startsWith(`${ageCookieName}=`))
+    ?.slice(ageCookieName.length + 1);
+  const accessIdPattern = /^adult-image:([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
+
+  for (const token of [imageAccessToken, cookieToken]) {
+    const value = getSignedTokenValue(token);
+    const match = value?.match(accessIdPattern);
+    if (match) return match[1];
+  }
+
+  return null;
 }
 
 interface AdultViewer {
@@ -114,6 +134,8 @@ interface AdultViewer {
   firstViewedAt: string;
   lastViewedAt: string;
   views: number;
+  accessId?: string;
+  isPayment: boolean;
 }
 
 interface AdultViewerRow {
@@ -122,42 +144,70 @@ interface AdultViewerRow {
   first_viewed_at: string;
   last_viewed_at: string;
   views: number;
+  access_id: string | null;
+  is_payment: boolean;
 }
 
 async function readAdultViewers(): Promise<AdultViewer[]> {
   if (supabaseEnabled) {
     const rows = await supabaseRequest<AdultViewerRow[]>(
-      'adult_sketch_viewers?select=name,email,first_viewed_at,last_viewed_at,views&order=last_viewed_at.desc'
+      'adult_sketch_viewers?select=name,email,first_viewed_at,last_viewed_at,views,access_id,is_payment&order=last_viewed_at.desc'
     );
     return rows.map(row => ({
       name: row.name,
       email: row.email,
       firstViewedAt: row.first_viewed_at,
       lastViewedAt: row.last_viewed_at,
-      views: Number(row.views) || 0
+      views: Number(row.views) || 0,
+      accessId: row.access_id || undefined,
+      isPayment: Boolean(row.is_payment)
     }));
   }
 
   try {
-    return JSON.parse(await readDataFile('adult-sketch-viewers.json')) as AdultViewer[];
+    const viewers = JSON.parse(await readDataFile('adult-sketch-viewers.json')) as Array<Partial<AdultViewer> & Pick<AdultViewer, 'name' | 'email' | 'firstViewedAt' | 'lastViewedAt' | 'views'>>;
+    return viewers.map(viewer => ({
+      ...viewer,
+      isPayment: viewer.isPayment === true
+    }));
   } catch {
     return [];
   }
 }
 
+async function findAdultViewerByAccessId(accessId: string): Promise<AdultViewer | undefined> {
+  if (supabaseEnabled) {
+    const rows = await supabaseRequest<AdultViewerRow[]>(
+      `adult_sketch_viewers?select=name,email,first_viewed_at,last_viewed_at,views,access_id,is_payment&access_id=eq.${encodeURIComponent(accessId)}&limit=1`
+    );
+    const row = rows[0];
+    return row && {
+      name: row.name,
+      email: row.email,
+      firstViewedAt: row.first_viewed_at,
+      lastViewedAt: row.last_viewed_at,
+      views: Number(row.views) || 0,
+      accessId: row.access_id || undefined,
+      isPayment: Boolean(row.is_payment)
+    };
+  }
+
+  return (await readAdultViewers()).find(viewer => viewer.accessId === accessId);
+}
+
 let adultViewersWriteQueue: Promise<void> = Promise.resolve();
 
-function recordAdultViewer(name: string, email: string): Promise<void> {
+function recordAdultViewer(name: string, email: string, accessId: string): Promise<boolean> {
   const update = adultViewersWriteQueue.then(async () => {
     if (supabaseEnabled) {
-      await supabaseRequest<AdultViewerRow>(
+      const saved = await supabaseRequest<AdultViewerRow>(
         'rpc/record_adult_sketch_viewer',
         {
           method: 'POST',
-          body: JSON.stringify({ p_name: name, p_email: email })
+          body: JSON.stringify({ p_name: name, p_email: email, p_access_id: accessId })
         }
       );
-      return;
+      return Boolean(saved.is_payment);
     }
 
     const viewers = await readAdultViewers();
@@ -167,13 +217,36 @@ function recordAdultViewer(name: string, email: string): Promise<void> {
       existing.name = name;
       existing.lastViewedAt = now;
       existing.views += 1;
+      existing.accessId = accessId;
     } else {
-      viewers.push({ name, email, firstViewedAt: now, lastViewedAt: now, views: 1 });
+      viewers.push({ name, email, firstViewedAt: now, lastViewedAt: now, views: 1, accessId, isPayment: false });
     }
     await saveDataFile('adult-sketch-viewers.json', JSON.stringify(viewers, null, 2));
+    return existing?.isPayment === true;
   });
-  adultViewersWriteQueue = update.catch(() => undefined);
+  adultViewersWriteQueue = update.then(() => undefined, () => undefined);
   return update;
+}
+
+async function setAdultViewerPayment(email: string, isPayment: boolean): Promise<boolean | undefined> {
+  if (supabaseEnabled) {
+    const rows = await supabaseRequest<AdultViewerRow[]>(
+      `adult_sketch_viewers?email=eq.${encodeURIComponent(email)}`,
+      {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({ is_payment: isPayment })
+      }
+    );
+    return rows[0] ? Boolean(rows[0].is_payment) : undefined;
+  }
+
+  const viewers = await readAdultViewers();
+  const viewer = viewers.find(item => item.email === email);
+  if (!viewer) return undefined;
+  viewer.isPayment = isPayment;
+  await saveDataFile('adult-sketch-viewers.json', JSON.stringify(viewers, null, 2));
+  return viewer.isPayment;
 }
 
 app.post('/api/18plus/confirm', async (req, res, next) => {
@@ -188,14 +261,62 @@ app.post('/api/18plus/confirm', async (req, res, next) => {
     res.status(503).json({ error: 'Age access is not configured on the server.' });
     return;
   }
+  if (!supabaseUrl || !supabaseAnonKey) {
+    res.status(503).json({ error: 'Email verification is not configured on the server.' });
+    return;
+  }
   try {
-    await recordAdultViewer(name, email);
+    await supabaseAuthRequest('otp', { email, create_user: true });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Failed to send adult gallery verification code:', error);
+    res.status(502).json({ error: 'Verification email could not be sent. Please try again later.' });
+  }
+});
+
+app.post('/api/18plus/verify', async (req, res, next) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+  const isAdult = req.body?.isAdult === true;
+  if (!name || name.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !/^\d{4,10}$/.test(token) || !isAdult) {
+    res.status(400).json({ error: 'Enter your name, a valid email, the email code, and confirm you are 18 or older.' });
+    return;
+  }
+  if (!authSecret || authSecret.length < 32) {
+    res.status(503).json({ error: 'Age access is not configured on the server.' });
+    return;
+  }
+  if (!supabaseUrl || !supabaseAnonKey) {
+    res.status(503).json({ error: 'Email verification is not configured on the server.' });
+    return;
+  }
+
+  let verifiedEmail: string | undefined;
+  try {
+    const result = await supabaseAuthRequest<{ user?: { email?: string } }>(
+      'verify',
+      { email, token, type: 'email' }
+    );
+    verifiedEmail = result.user?.email?.trim().toLowerCase();
+  } catch (error) {
+    console.warn('Adult gallery email verification failed:', error);
+    res.status(401).json({ error: 'That code is invalid or expired. Request a new code and try again.' });
+    return;
+  }
+
+  if (verifiedEmail !== email) {
+    res.status(401).json({ error: 'The verified email did not match. Request a new code and try again.' });
+    return;
+  }
+
+  try {
+    const accessId = randomUUID();
+    const isPayment = await recordAdultViewer(name, email, accessId);
     const tokenExpiresAt = Date.now() + 60 * 60 * 24 * 30 * 1000;
-    setSignedCookie(req, res, ageCookieName, 'adult', 60 * 60 * 24 * 30);
-    res.json({
-      ok: true,
-      imageAccessToken: makeSignedToken('adult-image', tokenExpiresAt)
-    });
+    const accessToken = makeSignedToken(`adult-image:${accessId}`, tokenExpiresAt);
+    setSignedCookie(req, res, ageCookieName, `adult-image:${accessId}`, 60 * 60 * 24 * 30);
+    res.json({ ok: true, imageAccessToken: accessToken, isPayment });
   } catch (error) {
     next(error);
   }
@@ -226,16 +347,71 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/api/admin/18plus-viewers', requireOwner, async (_req, res, next) => {
   try {
     res.setHeader('Cache-Control', 'private, no-store');
-    res.json(await readAdultViewers());
+    res.json((await readAdultViewers()).map(({ name, email, firstViewedAt, lastViewedAt, views, isPayment }) => ({
+      name, email, firstViewedAt, lastViewedAt, views, isPayment
+    })));
   } catch (error) {
     next(error);
   }
 });
 
-app.get('/api/18plus/image', (req, res, next) => {
+app.patch('/api/admin/18plus-viewers/payment', requireOwner, async (req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || !allowedApiOrigins.has(origin)) {
+    res.status(403).json({ error: 'Payment status updates are only allowed from the site.' });
+    return;
+  }
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const isPayment = req.body?.isPayment;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || typeof isPayment !== 'boolean') {
+    res.status(400).json({ error: 'Provide a valid email and a true or false payment status.' });
+    return;
+  }
+  try {
+    const savedPaymentStatus = await setAdultViewerPayment(email, isPayment);
+    if (savedPaymentStatus === undefined) {
+      res.status(404).json({ error: 'No verified viewer was found for that email.' });
+      return;
+    }
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ ok: true, isPayment: savedPaymentStatus });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const blurredPreviewCache = new Map<string, Promise<Buffer>>();
+
+async function getBlurredPreview(imagePath: string): Promise<Buffer> {
+  const fileInfo = await statFile(imagePath);
+  const cacheKey = `${imagePath}:${fileInfo.mtimeMs}`;
+  let preview = blurredPreviewCache.get(cacheKey);
+  if (!preview) {
+    preview = sharp(imagePath)
+      .resize({ width: 720, withoutEnlargement: true })
+      .blur(36)
+      .jpeg({ quality: 48 })
+      .toBuffer();
+    blurredPreviewCache.set(cacheKey, preview);
+    if (blurredPreviewCache.size > 100) {
+      const oldestKey = blurredPreviewCache.keys().next().value;
+      if (oldestKey) blurredPreviewCache.delete(oldestKey);
+    }
+    preview.catch(() => blurredPreviewCache.delete(cacheKey));
+  }
+  return preview;
+}
+
+app.get('/api/18plus/image', async (req, res, next) => {
   res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('Referrer-Policy', 'no-referrer');
-  if (!hasAdultAccess(req)) {
+  const accessId = getAdultAccessId(req);
+  if (!accessId) {
+    res.sendStatus(403);
+    return;
+  }
+  const viewer = await findAdultViewerByAccessId(accessId);
+  if (!viewer) {
     res.sendStatus(403);
     return;
   }
@@ -245,6 +421,15 @@ app.get('/api/18plus/image', (req, res, next) => {
   const pathFromAdultRoot = relative(adultRoot, imagePath);
   if (!file || !pathFromAdultRoot || pathFromAdultRoot.startsWith('..') || imagePath === adultRoot || !imagePath.startsWith(`${adultRoot}${sep}`) || !imageExtensions.has(extname(imagePath).toLowerCase())) {
     res.sendStatus(404);
+    return;
+  }
+  const isFreePreview = file.split(/[\\/]/).includes('TopFive');
+  if (!viewer.isPayment && !isFreePreview) {
+    try {
+      res.type('image/jpeg').send(await getBlurredPreview(imagePath));
+    } catch (error) {
+      next(error);
+    }
     return;
   }
   res.sendFile(imagePath, error => error && next(error));
@@ -273,6 +458,7 @@ const defaultDataDirectory = join(process.cwd(), 'data');
 const dataDirectory = process.env['DATA_DIR'] || defaultDataDirectory;
 const supabaseUrl = process.env['SUPABASE_URL']?.replace(/\/+$/, '');
 const supabaseServiceRoleKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+const supabaseAnonKey = process.env['SUPABASE_ANON_KEY'];
 const supabaseEnabled = Boolean(supabaseUrl && supabaseServiceRoleKey);
 
 function currentIndiaDate(): string {
@@ -361,6 +547,32 @@ async function supabaseRequest<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+async function supabaseAuthRequest<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase Auth environment variables are not configured');
+  }
+  const response = await fetch(`${supabaseUrl}/auth/v1/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  const responseText = await response.text();
+  let responseBody: unknown;
+  try {
+    responseBody = responseText ? JSON.parse(responseText) : {};
+  } catch {
+    responseBody = responseText;
+  }
+  if (!response.ok) {
+    throw new Error(`Supabase Auth request failed (${response.status}): ${JSON.stringify(responseBody)}`);
+  }
+  return responseBody as T;
 }
 
 async function readDataFile(fileName: string): Promise<string> {
@@ -549,6 +761,10 @@ interface Artwork {
 
   alt: string;
 
+  isFreePreview?: boolean;
+
+  isPayment?: boolean;
+
 }
 
 
@@ -705,6 +921,10 @@ async function scanDrawings(
 
         alt: title,
 
+        ...(category === '18+ Sketches'
+          ? { isFreePreview: pathParts.includes('TopFive') }
+          : {}),
+
       });
 
     }
@@ -734,8 +954,12 @@ app.get(
 
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader('Referrer-Policy', 'no-referrer');
-      res.json(hasAdultAccess(req)
-        ? drawings
+      const accessId = getAdultAccessId(req);
+      const viewer = accessId ? await findAdultViewerByAccessId(accessId) : undefined;
+      res.json(viewer
+        ? drawings.map(drawing => drawing.category === '18+ Sketches'
+          ? { ...drawing, isPayment: viewer.isPayment }
+          : drawing)
         : drawings.filter(drawing => drawing.category !== '18+ Sketches'));
 
     } catch (error) {
