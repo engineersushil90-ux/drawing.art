@@ -122,7 +122,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
         this.busy = false;
         this.message = error?.error?.error
           || (error?.name === 'TimeoutError'
-            ? 'The server took too long to respond. Wait a minute and try again.'
+            ? 'Login timed out. Check that the Render service is Live and try again.'
             : 'Login failed. Check your credentials and server configuration.');
       }
     });
