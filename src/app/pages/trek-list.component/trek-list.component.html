@@ -751,10 +751,18 @@
       <button type="button" class="age-gate-close" aria-label="Close" (click)="paymentInfoOpen = false">×</button>
       <p class="eyebrow">Full collection</p>
       <h2 id="payment-info-title">Unlock all 18+ sketches</h2>
-      <p>TopFive previews are free. The rest of the gallery costs ₹20 one time. UPI payment details will be added soon; contact the site owner to arrange payment and include the same email you entered. Email ownership is not verified.</p>
+      <p>TopFive previews are free. Pay ₹20 once to unlock the rest of the gallery. Scan this QR code or pay using the UPI ID below.</p>
+      <img class="payment-qr" src="/QRCode.jpeg" alt="Kanchan's UPI payment QR code">
+      <p class="payment-upi"><strong>UPI ID:</strong> <span>{{ adultPaymentUpiId }}</span>
+        <button type="button" class="payment-copy" (click)="copyAdultPaymentUpiId()">Copy UPI ID</button>
+      </p>
+      <p class="age-gate-error" *ngIf="paymentCopyMessage" role="status">{{ paymentCopyMessage }}</p>
+      <div class="age-gate-actions">
+        <a class="payment-contact" [href]="adultUpiPaymentUrl">Pay with UPI app</a>
+      </div>
+      <p>After paying, email <a href="mailto:sushil@smarttraffic.in?subject=18%2B%20sketches%20payment&body=I%20paid%20%E2%82%B920%20for%2018%2B%20sketches.%20My%20website%20email%20is%3A%20">sushil@smarttraffic.in</a> with the same email you entered on the site and your payment reference. Access will be enabled after payment is manually confirmed. Email ownership is not verified.</p>
       <div class="age-gate-actions">
         <button type="button" class="age-cancel" (click)="paymentInfoOpen = false">Close</button>
-        <a class="payment-contact" href="mailto:sushil@smarttraffic.in?subject=18%2B%20sketches%20access">Contact to pay</a>
       </div>
     </section>
   </div>

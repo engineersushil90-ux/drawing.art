@@ -62,6 +62,9 @@ export class DrawingArtComponent implements OnInit {
   isPayment = false;
   private adultAccessConfirmedThisSession = false;
   paymentInfoOpen = false;
+  readonly adultPaymentUpiId = 'kanchan.sushil90-1@oksbi';
+  readonly adultUpiPaymentUrl = `upi://pay?pa=${encodeURIComponent(this.adultPaymentUpiId)}&pn=Kanchan&am=20&cu=INR&tn=${encodeURIComponent('18+ Sketches')}`;
+  paymentCopyMessage = '';
 
 
   // --------------------------------------------------
@@ -579,7 +582,6 @@ loadDrawings(imageAccessToken = ''): void {
       this.cdr.detectChanges();
       return;
     }
-    localStorage.removeItem('pendingAdultEmailVerification');
     this.isPayment = response.isPayment;
     this.rememberAdultAccessForCurrentSession(response.imageAccessToken);
     this.adultAccessOpen = false;
@@ -588,6 +590,15 @@ loadDrawings(imageAccessToken = ''): void {
     this.currentPage = 1;
     this.loadDrawings(this.adultImageAccessToken);
     this.cdr.detectChanges();
+  }
+
+  async copyAdultPaymentUpiId(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.adultPaymentUpiId);
+      this.paymentCopyMessage = 'UPI ID copied.';
+    } catch {
+      this.paymentCopyMessage = 'Copy failed. Select and copy the UPI ID above.';
+    }
   }
 
   isLockedArtwork(artwork: Artwork): boolean {

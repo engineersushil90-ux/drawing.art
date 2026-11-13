@@ -16,6 +16,10 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9
 .age-gate-actions .age-cancel { background: transparent; color: #26342d; }
 .age-gate-close { position: absolute; top: 14px; right: 17px; border: 0; background: none; font-size: 26px; cursor: pointer; }
 .age-gate-error { margin: 0; color: #9a3428; font-size: 13px; }
+.payment-qr { display: block; width: min(100%, 240px); height: auto; margin: 18px auto; border-radius: 12px; }
+.payment-upi { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; overflow-wrap: anywhere; }
+.payment-copy { padding: 8px 11px; border: 1px solid #26342d; border-radius: 7px; background: transparent; color: #26342d; cursor: pointer; }
+.payment-upi + .age-gate-error { color: #356b3a; }
 .locked-artwork .image-wrap img { filter: blur(12px); transform: scale(1.06); }
 .locked-art-overlay { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: rgba(26, 34, 29, .36); color: white; text-align: center; pointer-events: none; }
 .locked-art-overlay strong { font: 24px Georgia, serif; }
