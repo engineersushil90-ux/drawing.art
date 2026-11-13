@@ -1,5 +1,5 @@
 import express from 'express';
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import sharp from 'sharp';
 
 import {
@@ -53,6 +53,25 @@ const adminUsername = (process.env['ADMIN_USERNAME'] || process.env['ADMIN_EMAIL
 const adminPassword = process.env['ADMIN_PASSWORD'];
 const ageCookieName = 'adult_access';
 const adminCookieName = 'owner_session';
+
+function hashAdminPassword(password: string): string {
+  const salt = randomBytes(16);
+  const hash = scryptSync(password, salt, 64);
+  return `scrypt$${salt.toString('base64url')}$${hash.toString('base64url')}`;
+}
+
+function isAdminPasswordValid(password: string, storedHash: string): boolean {
+  const [algorithm, saltValue, hashValue] = storedHash.split('$');
+  if (algorithm !== 'scrypt' || !saltValue || !hashValue) return false;
+  try {
+    const salt = Buffer.from(saltValue, 'base64url');
+    const expectedHash = Buffer.from(hashValue, 'base64url');
+    const suppliedHash = scryptSync(password, salt, expectedHash.length);
+    return expectedHash.length > 0 && timingSafeEqual(suppliedHash, expectedHash);
+  } catch {
+    return false;
+  }
+}
 
 function makeSignedToken(value: string, expiresAt: number): string {
   const payload = Buffer.from(`${value}:${expiresAt}`).toString('base64url');
@@ -416,24 +435,74 @@ app.post('/api/18plus/verify-link', async (req, res, next) => {
   }
 });
 
-app.post('/api/admin/login', (req, res) => {
+interface AdminUserRow {
+  username: string;
+  password_hash: string;
+  is_active: boolean;
+}
+
+async function seedInitialAdminUser(): Promise<void> {
+  if (!supabaseEnabled || !adminUsername || !adminPassword) return;
+  const existing = await supabaseRequest<Array<{ username: string }>>(
+    `admin_users?select=username&username=eq.${encodeURIComponent(adminUsername)}&limit=1`
+  );
+  if (existing.length) return;
+  await supabaseRequest<AdminUserRow[]>(
+    'admin_users?on_conflict=username',
+    {
+      method: 'POST',
+      headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
+      body: JSON.stringify({
+        username: adminUsername,
+        password_hash: hashAdminPassword(adminPassword),
+        is_active: true
+      })
+    }
+  );
+}
+
+app.post('/api/admin/login', async (req, res) => {
   const username = typeof req.body?.username === 'string'
     ? req.body.username.trim().toLowerCase()
     : typeof req.body?.email === 'string'
       ? req.body.email.trim().toLowerCase()
       : '';
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
-  if (!authSecret || authSecret.length < 32 || !adminUsername || !adminPassword) {
+  if (!authSecret || authSecret.length < 32) {
     res.status(503).json({ error: 'Admin login is not configured on the server.' });
     return;
   }
-  const submittedPassword = Buffer.from(password);
-  const configuredPassword = Buffer.from(adminPassword);
-  const passwordMatches = submittedPassword.length === configuredPassword.length && timingSafeEqual(submittedPassword, configuredPassword);
-  if (username !== adminUsername || !passwordMatches) {
-    res.status(401).json({ error: 'Invalid credentials' });
-    return;
+
+  if (supabaseEnabled) {
+    try {
+      await seedInitialAdminUser();
+      const users = await supabaseRequest<AdminUserRow[]>(
+        `admin_users?select=username,password_hash,is_active&username=eq.${encodeURIComponent(username)}&limit=1`
+      );
+      const adminUser = users[0];
+      if (!adminUser?.is_active || !isAdminPasswordValid(password, adminUser.password_hash)) {
+        res.status(401).json({ error: 'Invalid credentials' });
+        return;
+      }
+    } catch (error) {
+      console.error('Admin database login failed:', error);
+      res.status(503).json({ error: 'Admin user table is unavailable. Run the latest Supabase SQL setup, then try again.' });
+      return;
+    }
+  } else {
+    if (!adminUsername || !adminPassword) {
+      res.status(503).json({ error: 'Admin login is not configured on the server.' });
+      return;
+    }
+    const submittedPassword = Buffer.from(password);
+    const configuredPassword = Buffer.from(adminPassword);
+    const passwordMatches = submittedPassword.length === configuredPassword.length && timingSafeEqual(submittedPassword, configuredPassword);
+    if (username !== adminUsername || !passwordMatches) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
   }
+
   setSignedCookie(req, res, adminCookieName, 'owner', 60 * 60 * 8);
   res.json({ ok: true });
 });

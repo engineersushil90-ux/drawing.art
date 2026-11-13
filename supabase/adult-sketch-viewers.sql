@@ -48,3 +48,14 @@ $revoke_legacy_function$;
 
 revoke all on function public.record_adult_sketch_viewer(text, text, uuid) from public, anon, authenticated;
 grant execute on function public.record_adult_sketch_viewer(text, text, uuid) to service_role;
+
+create table if not exists public.admin_users (
+  username text primary key,
+  password_hash text not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+alter table public.admin_users enable row level security;
+revoke all on table public.admin_users from public, anon, authenticated;
+grant select, insert on table public.admin_users to service_role;
