@@ -31,10 +31,17 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
             <p *ngIf="!pendingViewers.length">No payment requests waiting for approval.</p>
             <div class="table-wrap" *ngIf="pendingViewers.length">
               <table>
-                <thead><tr><th>Name</th><th>Email</th><th>Requested at</th></tr></thead>
+                <thead><tr><th>Name</th><th>Email</th><th>Requested at</th><th>Approve payment</th></tr></thead>
                 <tbody><tr *ngFor="let viewer of pendingViewers">
                   <td>{{ viewer.name }}</td><td>{{ viewer.email }}</td>
                   <td>{{ viewer.paymentRequestedAt | date:'medium' }}</td>
+                <td>
+                  <label class="paid-checkbox">
+                    <input type="checkbox" [checked]="viewer.isPayment" [disabled]="paymentBusyEmail === viewer.email"
+                      [attr.aria-label]="'Confirm payment received for ' + viewer.email" (change)="togglePayment(viewer, $event)">
+                    <span>{{ paymentBusyEmail === viewer.email ? 'Saving…' : 'I received ₹20' }}</span>
+                  </label>
+                </td>
                 </tr></tbody>
               </table>
             </div>
