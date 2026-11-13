@@ -23,7 +23,7 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
         <p class="message" *ngIf="message" role="status">{{ message }}</p>
 
         <div *ngIf="authenticated" class="viewer-list">
-          <p *ngIf="!viewers.length">No confirmed viewers yet.</p>
+          <p *ngIf="!viewers.length">No registered viewers yet.</p>
           <div class="table-wrap" *ngIf="viewers.length">
             <table>
               <thead><tr><th>Name</th><th>Email</th><th>First view</th><th>Last view</th><th>Views</th><th>Payment</th></tr></thead>

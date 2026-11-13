@@ -36,10 +36,6 @@ export interface AdultViewer {
   isPayment: boolean;
 }
 
-export interface AdultAccessOtpResponse {
-  ok: boolean;
-}
-
 export interface AdultAccessResponse {
   ok: boolean;
   imageAccessToken: string;
@@ -64,8 +60,8 @@ export class DrawingsService {
       : artwork)));
   }
 
-  beginAdultEmailVerification(details: { name: string; email: string; isAdult: boolean }): Observable<AdultAccessOtpResponse> {
-    return this.http.post<AdultAccessOtpResponse>(`${this.apiBaseUrl}/api/18plus/confirm`, details, {
+  registerAdultViewer(details: { name: string; email: string; isAdult: boolean }): Observable<AdultAccessResponse> {
+    return this.http.post<AdultAccessResponse>(`${this.apiBaseUrl}/api/18plus/confirm`, details, {
       withCredentials: true
     });
   }

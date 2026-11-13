@@ -261,19 +261,16 @@ app.post('/api/18plus/confirm', async (req, res, next) => {
     res.status(503).json({ error: 'Age access is not configured on the server.' });
     return;
   }
-  if (!supabaseUrl || !supabaseAnonKey) {
-    res.status(503).json({ error: 'Email verification is not configured on the server.' });
-    return;
-  }
   try {
-    await supabaseAuthRequest(
-      `otp?redirect_to=${encodeURIComponent('https://smarttraffic.in/')}`,
-      { email, create_user: true }
-    );
-    res.json({ ok: true });
+    const accessId = randomUUID();
+    const isPayment = await recordAdultViewer(name, email, accessId);
+    const tokenExpiresAt = Date.now() + 60 * 60 * 24 * 30 * 1000;
+    const imageAccessToken = makeSignedToken(`adult-image:${accessId}`, tokenExpiresAt);
+    setSignedCookie(req, res, ageCookieName, `adult-image:${accessId}`, 60 * 60 * 24 * 30);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ ok: true, imageAccessToken, isPayment });
   } catch (error) {
-    console.error('Failed to send adult gallery verification code:', error);
-    res.status(502).json({ error: 'Verification email could not be sent. Please try again later.' });
+    next(error);
   }
 });
 

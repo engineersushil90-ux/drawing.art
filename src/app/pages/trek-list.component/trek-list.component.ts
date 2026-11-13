@@ -57,7 +57,6 @@ export class DrawingArtComponent implements OnInit {
   adultAccessError = '';
   adultName = '';
   adultEmail = '';
-  adultOtpSent = false;
   isAdultConfirmed = false;
   adultImageAccessToken = '';
   isPayment = false;
@@ -510,35 +509,19 @@ loadDrawings(imageAccessToken = ''): void {
   }
 
   confirmAdultAccess(): void {
-    if (!this.isAdultConfirmed || this.adultAccessBusy || this.adultOtpSent) return;
+    if (!this.isAdultConfirmed || this.adultAccessBusy) return;
     this.adultAccessBusy = true;
     this.adultAccessError = '';
-    const pendingDetails = {
+    const viewerDetails = {
       name: this.adultName.trim(),
       email: this.adultEmail.trim().toLowerCase(),
       isAdult: this.isAdultConfirmed
     };
-    try {
-      localStorage.setItem('pendingAdultEmailVerification', JSON.stringify(pendingDetails));
-    } catch {
-      this.adultAccessBusy = false;
-      this.adultAccessError = 'Email verification needs browser storage enabled. Please enable it and try again.';
-      return;
-    }
-    this.drawingsService.beginAdultEmailVerification({
-      name: pendingDetails.name,
-      email: pendingDetails.email,
-      isAdult: this.isAdultConfirmed
-    }).subscribe({
-      next: () => {
-        this.adultOtpSent = true;
-        this.adultAccessBusy = false;
-        this.cdr.detectChanges();
-      },
+    this.drawingsService.registerAdultViewer(viewerDetails).subscribe({
+      next: response => this.finishAdultAccess(response),
       error: error => {
-        localStorage.removeItem('pendingAdultEmailVerification');
         this.adultAccessBusy = false;
-        this.adultAccessError = error?.error?.error || 'Verification code could not be sent. Please try again.';
+        this.adultAccessError = error?.error?.error || 'Your details could not be saved. Please try again.';
         this.cdr.detectChanges();
       }
     });
@@ -592,7 +575,7 @@ loadDrawings(imageAccessToken = ''): void {
   private finishAdultAccess(response: { imageAccessToken: string; isPayment: boolean }): void {
     if (!response.imageAccessToken) {
       this.adultAccessBusy = false;
-      this.adultAccessError = 'Email verification could not be completed. Please request a new email.';
+      this.adultAccessError = 'Gallery access could not be set up. Please try again.';
       this.cdr.detectChanges();
       return;
     }
@@ -601,7 +584,6 @@ loadDrawings(imageAccessToken = ''): void {
     this.rememberAdultAccessForCurrentSession(response.imageAccessToken);
     this.adultAccessOpen = false;
     this.adultAccessBusy = false;
-    this.adultOtpSent = false;
     this.activeCategory = '18+ Sketches';
     this.currentPage = 1;
     this.loadDrawings(this.adultImageAccessToken);
