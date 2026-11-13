@@ -519,7 +519,7 @@ loadDrawings(imageAccessToken = ''): void {
       isAdult: this.isAdultConfirmed
     };
     try {
-      sessionStorage.setItem('pendingAdultEmailVerification', JSON.stringify(pendingDetails));
+      localStorage.setItem('pendingAdultEmailVerification', JSON.stringify(pendingDetails));
     } catch {
       this.adultAccessBusy = false;
       this.adultAccessError = 'Email verification needs browser storage enabled. Please enable it and try again.';
@@ -536,7 +536,7 @@ loadDrawings(imageAccessToken = ''): void {
         this.cdr.detectChanges();
       },
       error: error => {
-        sessionStorage.removeItem('pendingAdultEmailVerification');
+        localStorage.removeItem('pendingAdultEmailVerification');
         this.adultAccessBusy = false;
         this.adultAccessError = error?.error?.error || 'Verification code could not be sent. Please try again.';
         this.cdr.detectChanges();
@@ -556,7 +556,7 @@ loadDrawings(imageAccessToken = ''): void {
 
     let pendingDetails: { name: string; email: string; isAdult: boolean } | null = null;
     try {
-      const saved = sessionStorage.getItem('pendingAdultEmailVerification');
+      const saved = localStorage.getItem('pendingAdultEmailVerification');
       pendingDetails = saved ? JSON.parse(saved) as { name: string; email: string; isAdult: boolean } : null;
     } catch {
       pendingDetails = null;
@@ -581,7 +581,7 @@ loadDrawings(imageAccessToken = ''): void {
     }).subscribe({
       next: response => this.finishAdultAccess(response),
       error: error => {
-        sessionStorage.removeItem('pendingAdultEmailVerification');
+        localStorage.removeItem('pendingAdultEmailVerification');
         this.adultAccessBusy = false;
         this.adultAccessError = error?.error?.error || 'Email link could not be verified. Request a new link.';
         this.cdr.detectChanges();
@@ -596,7 +596,7 @@ loadDrawings(imageAccessToken = ''): void {
       this.cdr.detectChanges();
       return;
     }
-    sessionStorage.removeItem('pendingAdultEmailVerification');
+    localStorage.removeItem('pendingAdultEmailVerification');
     this.isPayment = response.isPayment;
     this.rememberAdultAccessForCurrentSession(response.imageAccessToken);
     this.adultAccessOpen = false;
@@ -615,7 +615,9 @@ loadDrawings(imageAccessToken = ''): void {
   private hasAdultAccessForCurrentSession(): boolean {
     if (this.adultAccessConfirmedThisSession && this.adultImageAccessToken) return true;
     try {
-      this.adultImageAccessToken = sessionStorage.getItem('adultSketchImageAccessToken') || '';
+      this.adultImageAccessToken = localStorage.getItem('adultSketchImageAccessToken')
+        || sessionStorage.getItem('adultSketchImageAccessToken')
+        || '';
       this.adultAccessConfirmedThisSession = Boolean(this.adultImageAccessToken);
     } catch {
       return false;
@@ -627,7 +629,8 @@ loadDrawings(imageAccessToken = ''): void {
     this.adultImageAccessToken = imageAccessToken;
     this.adultAccessConfirmedThisSession = true;
     try {
-      sessionStorage.setItem('adultSketchImageAccessToken', imageAccessToken);
+      localStorage.setItem('adultSketchImageAccessToken', imageAccessToken);
+      sessionStorage.removeItem('adultSketchImageAccessToken');
     } catch {
       // Keep the confirmation in memory if browser storage is unavailable.
     }

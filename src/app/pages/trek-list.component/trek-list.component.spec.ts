@@ -8,8 +8,12 @@ import { DrawingArtComponent } from './trek-list.component';
 describe('DrawingArtComponent', () => {
   let component: DrawingArtComponent;
   let fixture: ComponentFixture<DrawingArtComponent>;
+  const requestedTokens: string[] = [];
   const drawingsService = {
-    getDrawings: () => of([]),
+    getDrawings: (token = '') => {
+      requestedTokens.push(token);
+      return of([]);
+    },
     getLikes: () => of({}),
     getTodayActivity: () => of({ date: '', likes: 0, visits: 0 }),
     recordVisit: () => of({ visits: 0 })
@@ -49,5 +53,18 @@ describe('DrawingArtComponent', () => {
 
     component.isPayment = true;
     expect(component.isLockedArtwork(paidArtwork)).toBe(false);
+  });
+
+  it('reuses verified adult access in another tab without reopening the age gate', () => {
+    requestedTokens.length = 0;
+    localStorage.setItem('adultSketchImageAccessToken', 'verified-access-token');
+
+    component.selectCategory('18+ Sketches');
+
+    expect(component.adultAccessOpen).toBe(false);
+    expect(component.activeCategory).toBe('18+ Sketches');
+    expect(requestedTokens).toContain('verified-access-token');
+
+    localStorage.removeItem('adultSketchImageAccessToken');
   });
 });
