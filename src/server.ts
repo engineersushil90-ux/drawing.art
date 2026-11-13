@@ -34,7 +34,7 @@ app.use('/api', (req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
 
@@ -109,7 +109,9 @@ function getSignedTokenValue(token: string | undefined): string | null {
 function hasValidToken(req: express.Request, cookieName: string, expectedValue: string): boolean {
   const cookieHeader = req.headers.cookie || '';
   const token = cookieHeader.split(';').map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
-  return hasValidSignedToken(token, expectedValue);
+  const authorization = req.headers.authorization || '';
+  const bearerToken = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : undefined;
+  return hasValidSignedToken(token, expectedValue) || hasValidSignedToken(bearerToken, expectedValue);
 }
 
 function setSignedCookie(req: express.Request, res: express.Response, name: string, value: string, maxAgeSeconds: number): void {
@@ -515,8 +517,11 @@ app.post('/api/admin/login', async (req, res) => {
     }
   }
 
+  const expiresAt = Date.now() + 60 * 60 * 8 * 1000;
+  const accessToken = makeSignedToken('owner', expiresAt);
   setSignedCookie(req, res, adminCookieName, 'owner', 60 * 60 * 8);
-  res.json({ ok: true });
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.json({ ok: true, accessToken });
 });
 
 app.get('/api/admin/18plus-viewers', requireOwner, async (_req, res, next) => {

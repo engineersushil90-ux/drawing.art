@@ -49,6 +49,7 @@ export interface AdultAccessResponse {
 export class DrawingsService {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = 'https://drawing-art.onrender.com';
+  private adminAccessToken = '';
 
   getDrawings(imageAccessToken = ''): Observable<Artwork[]> {
     const tokenQuery = imageAccessToken
@@ -73,14 +74,21 @@ export class DrawingsService {
     });
   }
 
-  adminLogin(details: { username: string; password: string }): Observable<{ ok: boolean }> {
-    return this.http.post<{ ok: boolean }>(`${this.apiBaseUrl}/api/admin/login`, details, {
+  adminLogin(details: { username: string; password: string }): Observable<{ ok: boolean; accessToken: string }> {
+    return this.http.post<{ ok: boolean; accessToken: string }>(`${this.apiBaseUrl}/api/admin/login`, details, {
       withCredentials: true
-    }).pipe(timeout(15000));
+    }).pipe(
+      timeout(15000),
+      map(response => {
+        this.adminAccessToken = response.accessToken;
+        return response;
+      })
+    );
   }
 
   getAdultViewers(): Observable<AdultViewer[]> {
     return this.http.get<AdultViewer[]>(`${this.apiBaseUrl}/api/admin/18plus-viewers`, {
+      headers: this.adminHeaders(),
       withCredentials: true
     });
   }
@@ -89,7 +97,7 @@ export class DrawingsService {
     return this.http.patch<{ ok: boolean; isPayment: boolean }>(
       `${this.apiBaseUrl}/api/admin/18plus-viewers/payment`,
       { email, isPayment },
-      { withCredentials: true }
+      { headers: this.adminHeaders(), withCredentials: true }
     );
   }
 
@@ -99,6 +107,10 @@ export class DrawingsService {
       { access_token: imageAccessToken },
       { withCredentials: true }
     );
+  }
+
+  private adminHeaders(): { Authorization?: string } {
+    return this.adminAccessToken ? { Authorization: `Bearer ${this.adminAccessToken}` } : {};
   }
 
   getLikes(): Observable<Record<string, number>> {
