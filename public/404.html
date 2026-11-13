@@ -4,11 +4,9 @@
     <meta charset="utf-8">
     <title>drawing.art</title>
     <script>
-      // Redirect to index.html for SPA routing on custom domain
       var l = window.location;
-      // If not already at root, redirect to index.html
       if (l.pathname !== '/' && !l.pathname.endsWith('.html') && !l.pathname.endsWith('.js') && !l.pathname.endsWith('.css')) {
-        l.replace(l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/?path=' + encodeURIComponent(l.pathname));
+        l.replace('/?path=' + encodeURIComponent(l.pathname + l.search + l.hash));
       }
     </script>
   </head>

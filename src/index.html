@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <title>Drawing Art | Professional Pencil Sketches & Illustrations</title>
   <base href="/">
+  <script>
+    const redirectPath = new URLSearchParams(window.location.search).get('path');
+    if (redirectPath && redirectPath.startsWith('/') && !redirectPath.startsWith('//') && !redirectPath.includes('\\')) {
+      window.history.replaceState(null, '', redirectPath);
+    }
+  </script>
   <meta name="description" content="Explore a unique collection of professional pencil sketches, color studies, and artistic illustrations. High-quality original artwork by drawing.art.">
   <meta name="keywords" content="pencil sketch, drawing art, illustration, artist gallery, color studies, handmade sketches">
   <meta name="author" content="drawing.art">
