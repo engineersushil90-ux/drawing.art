@@ -494,18 +494,23 @@ h1 em {
 
   display: block;
 
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+
   overflow: hidden;
 
-  background: #eee;
+  background: transparent;
 }
 
 
 .image-wrap img {
   display: block;
 
-  width: 100%;
+  width: auto;
 
   height: 355px;
+  max-width: 100%;
 
   object-fit: contain;
 
