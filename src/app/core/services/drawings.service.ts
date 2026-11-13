@@ -34,6 +34,7 @@ export interface AdultViewer {
   lastViewedAt: string;
   views: number;
   isPayment: boolean;
+  paymentRequestedAt?: string | null;
 }
 
 export interface AdultAccessResponse {
@@ -88,6 +89,14 @@ export class DrawingsService {
     return this.http.patch<{ ok: boolean; isPayment: boolean }>(
       `${this.apiBaseUrl}/api/admin/18plus-viewers/payment`,
       { email, isPayment },
+      { withCredentials: true }
+    );
+  }
+
+  requestAdultPaymentApproval(imageAccessToken: string): Observable<{ ok: boolean; paymentRequestedAt: string }> {
+    return this.http.post<{ ok: boolean; paymentRequestedAt: string }>(
+      `${this.apiBaseUrl}/api/18plus/payment-request`,
+      { access_token: imageAccessToken },
       { withCredentials: true }
     );
   }

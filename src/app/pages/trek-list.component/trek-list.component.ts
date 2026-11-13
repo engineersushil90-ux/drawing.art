@@ -62,6 +62,8 @@ export class DrawingArtComponent implements OnInit {
   isPayment = false;
   private adultAccessConfirmedThisSession = false;
   paymentInfoOpen = false;
+  paymentRequestBusy = false;
+  paymentRequestMessage = '';
   readonly adultPaymentUpiId = 'kanchan.sushil90-1@oksbi';
   readonly adultUpiPaymentUrl = `upi://pay?pa=${encodeURIComponent(this.adultPaymentUpiId)}&pn=Kanchan&am=20&cu=INR&tn=${encodeURIComponent('18+ Sketches')}`;
   paymentCopyMessage = '';
@@ -599,6 +601,39 @@ loadDrawings(imageAccessToken = ''): void {
     } catch {
       this.paymentCopyMessage = 'Copy failed. Select and copy the UPI ID above.';
     }
+  }
+
+  closePaymentInfo(): void {
+    if (this.paymentRequestBusy) return;
+    if (this.isPayment) {
+      this.paymentInfoOpen = false;
+      return;
+    }
+    if (!window.confirm('Kya aapne ₹20 payment kar diya? Yes par payment approval ke liye admin ko request jayegi.')) {
+      this.paymentInfoOpen = false;
+      return;
+    }
+    if (!this.adultImageAccessToken) {
+      this.paymentRequestMessage = 'Payment request nahi bheji ja saki. 18+ gallery dobara kholkar try karein.';
+      this.paymentInfoOpen = false;
+      return;
+    }
+
+    this.paymentRequestBusy = true;
+    this.paymentRequestMessage = '';
+    this.drawingsService.requestAdultPaymentApproval(this.adultImageAccessToken).subscribe({
+      next: () => {
+        this.paymentRequestBusy = false;
+        this.paymentInfoOpen = false;
+        this.paymentRequestMessage = 'Payment reported. Access will unlock after admin approval.';
+        this.cdr.detectChanges();
+      },
+      error: error => {
+        this.paymentRequestBusy = false;
+        this.paymentRequestMessage = error?.error?.error || 'Payment request could not be sent. Please try again.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   isLockedArtwork(artwork: Artwork): boolean {

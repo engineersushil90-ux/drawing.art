@@ -111,7 +111,9 @@ function requireOwner(req: express.Request, res: express.Response, next: express
 function getAdultAccessId(req: express.Request): string | null {
   const imageAccessToken = typeof req.query['access_token'] === 'string'
     ? req.query['access_token']
-    : undefined;
+    : typeof req.body?.access_token === 'string'
+      ? req.body.access_token
+      : undefined;
   const cookieHeader = req.headers.cookie || '';
   const cookieToken = cookieHeader.split(';')
     .map(part => part.trim())
@@ -136,6 +138,7 @@ interface AdultViewer {
   views: number;
   accessId?: string;
   isPayment: boolean;
+  paymentRequestedAt?: string | null;
 }
 
 interface AdultViewerRow {
@@ -146,12 +149,13 @@ interface AdultViewerRow {
   views: number;
   access_id: string | null;
   is_payment: boolean;
+  payment_requested_at?: string | null;
 }
 
 async function readAdultViewers(): Promise<AdultViewer[]> {
   if (supabaseEnabled) {
     const rows = await supabaseRequest<AdultViewerRow[]>(
-      'adult_sketch_viewers?select=name,email,first_viewed_at,last_viewed_at,views,access_id,is_payment&order=last_viewed_at.desc'
+      'adult_sketch_viewers?select=name,email,first_viewed_at,last_viewed_at,views,access_id,is_payment,payment_requested_at&order=last_viewed_at.desc'
     );
     return rows.map(row => ({
       name: row.name,
@@ -160,7 +164,8 @@ async function readAdultViewers(): Promise<AdultViewer[]> {
       lastViewedAt: row.last_viewed_at,
       views: Number(row.views) || 0,
       accessId: row.access_id || undefined,
-      isPayment: Boolean(row.is_payment)
+      isPayment: Boolean(row.is_payment),
+      paymentRequestedAt: row.payment_requested_at || null
     }));
   }
 
@@ -168,7 +173,8 @@ async function readAdultViewers(): Promise<AdultViewer[]> {
     const viewers = JSON.parse(await readDataFile('adult-sketch-viewers.json')) as Array<Partial<AdultViewer> & Pick<AdultViewer, 'name' | 'email' | 'firstViewedAt' | 'lastViewedAt' | 'views'>>;
     return viewers.map(viewer => ({
       ...viewer,
-      isPayment: viewer.isPayment === true
+      isPayment: viewer.isPayment === true,
+      paymentRequestedAt: viewer.paymentRequestedAt || null
     }));
   } catch {
     return [];
@@ -178,7 +184,7 @@ async function readAdultViewers(): Promise<AdultViewer[]> {
 async function findAdultViewerByAccessId(accessId: string): Promise<AdultViewer | undefined> {
   if (supabaseEnabled) {
     const rows = await supabaseRequest<AdultViewerRow[]>(
-      `adult_sketch_viewers?select=name,email,first_viewed_at,last_viewed_at,views,access_id,is_payment&access_id=eq.${encodeURIComponent(accessId)}&limit=1`
+      `adult_sketch_viewers?select=name,email,first_viewed_at,last_viewed_at,views,access_id,is_payment,payment_requested_at&access_id=eq.${encodeURIComponent(accessId)}&limit=1`
     );
     const row = rows[0];
     return row && {
@@ -188,7 +194,8 @@ async function findAdultViewerByAccessId(accessId: string): Promise<AdultViewer 
       lastViewedAt: row.last_viewed_at,
       views: Number(row.views) || 0,
       accessId: row.access_id || undefined,
-      isPayment: Boolean(row.is_payment)
+      isPayment: Boolean(row.is_payment),
+      paymentRequestedAt: row.payment_requested_at || null
     };
   }
 
@@ -219,7 +226,7 @@ function recordAdultViewer(name: string, email: string, accessId: string): Promi
       existing.views += 1;
       existing.accessId = accessId;
     } else {
-      viewers.push({ name, email, firstViewedAt: now, lastViewedAt: now, views: 1, accessId, isPayment: false });
+      viewers.push({ name, email, firstViewedAt: now, lastViewedAt: now, views: 1, accessId, isPayment: false, paymentRequestedAt: null });
     }
     await saveDataFile('adult-sketch-viewers.json', JSON.stringify(viewers, null, 2));
     return existing?.isPayment === true;
@@ -235,7 +242,7 @@ async function setAdultViewerPayment(email: string, isPayment: boolean): Promise
       {
         method: 'PATCH',
         headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({ is_payment: isPayment })
+        body: JSON.stringify({ is_payment: isPayment, payment_requested_at: null })
       }
     );
     return rows[0] ? Boolean(rows[0].is_payment) : undefined;
@@ -245,8 +252,31 @@ async function setAdultViewerPayment(email: string, isPayment: boolean): Promise
   const viewer = viewers.find(item => item.email === email);
   if (!viewer) return undefined;
   viewer.isPayment = isPayment;
+  viewer.paymentRequestedAt = null;
   await saveDataFile('adult-sketch-viewers.json', JSON.stringify(viewers, null, 2));
   return viewer.isPayment;
+}
+
+async function requestAdultViewerPayment(accessId: string): Promise<string | undefined> {
+  const requestedAt = new Date().toISOString();
+  if (supabaseEnabled) {
+    const rows = await supabaseRequest<AdultViewerRow[]>(
+      `adult_sketch_viewers?access_id=eq.${encodeURIComponent(accessId)}&is_payment=eq.false`,
+      {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({ payment_requested_at: requestedAt })
+      }
+    );
+    return rows[0]?.payment_requested_at || undefined;
+  }
+
+  const viewers = await readAdultViewers();
+  const viewer = viewers.find(item => item.accessId === accessId);
+  if (!viewer || viewer.isPayment) return undefined;
+  viewer.paymentRequestedAt = requestedAt;
+  await saveDataFile('adult-sketch-viewers.json', JSON.stringify(viewers, null, 2));
+  return requestedAt;
 }
 
 app.post('/api/18plus/confirm', async (req, res, next) => {
@@ -269,6 +299,25 @@ app.post('/api/18plus/confirm', async (req, res, next) => {
     setSignedCookie(req, res, ageCookieName, `adult-image:${accessId}`, 60 * 60 * 24 * 30);
     res.setHeader('Cache-Control', 'private, no-store');
     res.json({ ok: true, imageAccessToken, isPayment });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/18plus/payment-request', async (req, res, next) => {
+  const accessId = getAdultAccessId(req);
+  if (!accessId) {
+    res.status(403).json({ error: 'Open the 18+ gallery before reporting a payment.' });
+    return;
+  }
+  try {
+    const paymentRequestedAt = await requestAdultViewerPayment(accessId);
+    if (!paymentRequestedAt) {
+      res.status(409).json({ error: 'This viewer is already paid or could not be found.' });
+      return;
+    }
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ ok: true, paymentRequestedAt });
   } catch (error) {
     next(error);
   }
@@ -392,8 +441,8 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/api/admin/18plus-viewers', requireOwner, async (_req, res, next) => {
   try {
     res.setHeader('Cache-Control', 'private, no-store');
-    res.json((await readAdultViewers()).map(({ name, email, firstViewedAt, lastViewedAt, views, isPayment }) => ({
-      name, email, firstViewedAt, lastViewedAt, views, isPayment
+    res.json((await readAdultViewers()).map(({ name, email, firstViewedAt, lastViewedAt, views, isPayment, paymentRequestedAt }) => ({
+      name, email, firstViewedAt, lastViewedAt, views, isPayment, paymentRequestedAt
     })));
   } catch (error) {
     next(error);

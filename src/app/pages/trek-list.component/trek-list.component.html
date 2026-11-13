@@ -748,7 +748,7 @@
 
   <div class="age-gate-backdrop" *ngIf="paymentInfoOpen" role="presentation">
     <section class="age-gate" role="dialog" aria-modal="true" aria-labelledby="payment-info-title">
-      <button type="button" class="age-gate-close" aria-label="Close" (click)="paymentInfoOpen = false">×</button>
+      <button type="button" class="age-gate-close" aria-label="Close" [disabled]="paymentRequestBusy" (click)="closePaymentInfo()">×</button>
       <p class="eyebrow">Full collection</p>
       <h2 id="payment-info-title">Unlock all 18+ sketches</h2>
       <p>TopFive previews are free. Pay ₹20 once to unlock the rest of the gallery. Scan this QR code or pay using the UPI ID below.</p>
@@ -762,7 +762,8 @@
       </div>
       <p>After paying, email <a href="mailto:sushil@smarttraffic.in?subject=18%2B%20sketches%20payment&body=I%20paid%20%E2%82%B920%20for%2018%2B%20sketches.%20My%20website%20email%20is%3A%20">sushil@smarttraffic.in</a> with the same email you entered on the site and your payment reference. Access will be enabled after payment is manually confirmed. Email ownership is not verified.</p>
       <div class="age-gate-actions">
-        <button type="button" class="age-cancel" (click)="paymentInfoOpen = false">Close</button>
+        <button type="button" class="age-cancel" [disabled]="paymentRequestBusy" (click)="closePaymentInfo()">{{ paymentRequestBusy ? 'Sending request…' : 'Close' }}</button>
       </div>
     </section>
   </div>
+  <p class="payment-request-toast" *ngIf="paymentRequestMessage" role="status">{{ paymentRequestMessage }}</p>

@@ -10,6 +10,7 @@ describe('DrawingArtComponent', () => {
   let fixture: ComponentFixture<DrawingArtComponent>;
   const requestedTokens: string[] = [];
   let registeredDetails: { name: string; email: string; isAdult: boolean } | undefined;
+  const paymentRequests: string[] = [];
   const drawingsService = {
     getDrawings: (token = '') => {
       requestedTokens.push(token);
@@ -18,6 +19,10 @@ describe('DrawingArtComponent', () => {
     registerAdultViewer: (details: { name: string; email: string; isAdult: boolean }) => {
       registeredDetails = details;
       return of({ ok: true, imageAccessToken: 'new-access-token', isPayment: false });
+    },
+    requestAdultPaymentApproval: (token: string) => {
+      paymentRequests.push(token);
+      return of({ ok: true, paymentRequestedAt: new Date().toISOString() });
     },
     getLikes: () => of({}),
     getTodayActivity: () => of({ date: '', likes: 0, visits: 0 }),
@@ -91,5 +96,33 @@ describe('DrawingArtComponent', () => {
     expect(component.isPayment).toBe(false);
     expect(localStorage.getItem('adultSketchImageAccessToken')).toBe('new-access-token');
     localStorage.removeItem('adultSketchImageAccessToken');
+  });
+
+  it('submits a payment approval request only when the viewer confirms payment', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    paymentRequests.length = 0;
+    component.adultImageAccessToken = 'viewer-access-token';
+    component.paymentInfoOpen = true;
+
+    component.closePaymentInfo();
+
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    expect(paymentRequests).toEqual(['viewer-access-token']);
+    expect(component.paymentInfoOpen).toBe(false);
+    expect(component.paymentRequestMessage).toContain('admin approval');
+    confirmSpy.mockRestore();
+  });
+
+  it('does not submit a payment request when the viewer says payment is not complete', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    paymentRequests.length = 0;
+    component.adultImageAccessToken = 'viewer-access-token';
+    component.paymentInfoOpen = true;
+
+    component.closePaymentInfo();
+
+    expect(paymentRequests).toEqual([]);
+    expect(component.paymentInfoOpen).toBe(false);
+    confirmSpy.mockRestore();
   });
 });

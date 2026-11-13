@@ -2,7 +2,7 @@
 
 1. Create a Supabase project on the Free plan.
 2. Open **SQL Editor**, paste `schema.sql`, and run it. This creates the likes and visit tables, daily activity counters (using India time), atomic increment functions, and seeds the current counts. Run the updated SQL again after pulling changes so existing projects get the daily counters.
-3. Paste `adult-sketch-viewers.sql` into the SQL Editor and run it. It creates or migrates the viewer table with the server-controlled payment flag and access identifier.
+3. Paste `adult-sketch-viewers.sql` into the SQL Editor and run it. Run this migration after deploying changes that add viewer columns; it adds the server-controlled payment flag, access identifier, and payment-request timestamp used by the admin approval queue.
 4. In **Project Settings → API**, copy the Project URL, the publishable/anon key, and the server-side `service_role` key.
 5. Email sign-in and redirect URL configuration are not required for the current adult gallery flow; it does not send verification emails.
 7. In Render, open the `drawing.art` service's **Environment** page and add:
@@ -16,4 +16,4 @@ Keep both Supabase keys in Render's server environment. Never add the `service_r
 
 When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are present, `/api/likes`, `/api/visits`, and viewer/payment records use Supabase. Without the service-role key, local development continues to use JSON files in `data/`. The gallery does not verify email ownership; manually approved payment status applies to anyone who enters the same email.
 
-The site's `/admin` page is used to mark an email as paid after checking a ₹20 UPI transfer. Payment verification is manual until a supported payment gateway is configured.
+The site's `/admin` page shows all viewers, a waiting-for-payment-approval queue, and a Paid checkbox. A viewer can report payment from the gallery; verify the ₹20 UPI transfer yourself before checking Paid. Payment verification is manual until a supported payment gateway is configured.

@@ -10,7 +10,8 @@ create table if not exists public.adult_sketch_viewers (
 
 alter table public.adult_sketch_viewers
   add column if not exists access_id uuid unique,
-  add column if not exists is_payment boolean not null default false;
+  add column if not exists is_payment boolean not null default false,
+  add column if not exists payment_requested_at timestamptz;
 
 alter table public.adult_sketch_viewers enable row level security;
 grant select, update on public.adult_sketch_viewers to service_role;
