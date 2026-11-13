@@ -266,7 +266,10 @@ app.post('/api/18plus/confirm', async (req, res, next) => {
     return;
   }
   try {
-    await supabaseAuthRequest('otp', { email, create_user: true });
+    await supabaseAuthRequest(
+      `otp?redirect_to=${encodeURIComponent('https://smarttraffic.in/')}`,
+      { email, create_user: true }
+    );
     res.json({ ok: true });
   } catch (error) {
     console.error('Failed to send adult gallery verification code:', error);
@@ -317,6 +320,51 @@ app.post('/api/18plus/verify', async (req, res, next) => {
     const accessToken = makeSignedToken(`adult-image:${accessId}`, tokenExpiresAt);
     setSignedCookie(req, res, ageCookieName, `adult-image:${accessId}`, 60 * 60 * 24 * 30);
     res.json({ ok: true, imageAccessToken: accessToken, isPayment });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/18plus/verify-link', async (req, res, next) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const accessToken = typeof req.body?.accessToken === 'string' ? req.body.accessToken.trim() : '';
+  const isAdult = req.body?.isAdult === true;
+  if (!name || name.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !accessToken || accessToken.length > 4096 || !isAdult) {
+    res.status(400).json({ error: 'Email link details are incomplete. Request a new link and try again.' });
+    return;
+  }
+  if (!authSecret || authSecret.length < 32) {
+    res.status(503).json({ error: 'Age access is not configured on the server.' });
+    return;
+  }
+  if (!supabaseUrl || !supabaseAnonKey) {
+    res.status(503).json({ error: 'Email verification is not configured on the server.' });
+    return;
+  }
+
+  let verifiedEmail: string | undefined;
+  try {
+    const user = await supabaseAuthGetUser(accessToken);
+    verifiedEmail = user.email?.trim().toLowerCase();
+  } catch (error) {
+    console.warn('Adult gallery email-link verification failed:', error);
+    res.status(401).json({ error: 'That email link is invalid or expired. Request a new link and try again.' });
+    return;
+  }
+  if (verifiedEmail !== email) {
+    res.status(401).json({ error: 'The email link does not match the entered email. Request a new link.' });
+    return;
+  }
+
+  try {
+    const accessId = randomUUID();
+    const isPayment = await recordAdultViewer(name, email, accessId);
+    const tokenExpiresAt = Date.now() + 60 * 60 * 24 * 30 * 1000;
+    const imageAccessToken = makeSignedToken(`adult-image:${accessId}`, tokenExpiresAt);
+    setSignedCookie(req, res, ageCookieName, `adult-image:${accessId}`, 60 * 60 * 24 * 30);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ ok: true, imageAccessToken, isPayment });
   } catch (error) {
     next(error);
   }
@@ -573,6 +621,22 @@ async function supabaseAuthRequest<T>(endpoint: string, body: Record<string, unk
     throw new Error(`Supabase Auth request failed (${response.status}): ${JSON.stringify(responseBody)}`);
   }
   return responseBody as T;
+}
+
+async function supabaseAuthGetUser(accessToken: string): Promise<{ email?: string }> {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase Auth environment variables are not configured');
+  }
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Supabase Auth user verification failed (${response.status})`);
+  }
+  return response.json() as Promise<{ email?: string }>;
 }
 
 async function readDataFile(fileName: string): Promise<string> {

@@ -70,8 +70,8 @@ export class DrawingsService {
     });
   }
 
-  verifyAdultEmail(details: { name: string; email: string; isAdult: boolean; token: string }): Observable<AdultAccessResponse> {
-    return this.http.post<AdultAccessResponse>(`${this.apiBaseUrl}/api/18plus/verify`, details, {
+  verifyAdultEmailLink(details: { name: string; email: string; isAdult: boolean; accessToken: string }): Observable<AdultAccessResponse> {
+    return this.http.post<AdultAccessResponse>(`${this.apiBaseUrl}/api/18plus/verify-link`, details, {
       withCredentials: true
     });
   }

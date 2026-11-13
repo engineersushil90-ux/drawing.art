@@ -57,7 +57,6 @@ export class DrawingArtComponent implements OnInit {
   adultAccessError = '';
   adultName = '';
   adultEmail = '';
-  adultOtp = '';
   adultOtpSent = false;
   isAdultConfirmed = false;
   adultImageAccessToken = '';
@@ -154,6 +153,7 @@ private readonly cdr =
 
   private readonly visitTracker = afterNextRender(() => {
     this.recordVisit();
+    this.completeAdultEmailLink();
   });
 
 
@@ -513,9 +513,21 @@ loadDrawings(imageAccessToken = ''): void {
     if (!this.isAdultConfirmed || this.adultAccessBusy || this.adultOtpSent) return;
     this.adultAccessBusy = true;
     this.adultAccessError = '';
-    this.drawingsService.beginAdultEmailVerification({
+    const pendingDetails = {
       name: this.adultName.trim(),
-      email: this.adultEmail.trim(),
+      email: this.adultEmail.trim().toLowerCase(),
+      isAdult: this.isAdultConfirmed
+    };
+    try {
+      sessionStorage.setItem('pendingAdultEmailVerification', JSON.stringify(pendingDetails));
+    } catch {
+      this.adultAccessBusy = false;
+      this.adultAccessError = 'Email verification needs browser storage enabled. Please enable it and try again.';
+      return;
+    }
+    this.drawingsService.beginAdultEmailVerification({
+      name: pendingDetails.name,
+      email: pendingDetails.email,
       isAdult: this.isAdultConfirmed
     }).subscribe({
       next: () => {
@@ -524,6 +536,7 @@ loadDrawings(imageAccessToken = ''): void {
         this.cdr.detectChanges();
       },
       error: error => {
+        sessionStorage.removeItem('pendingAdultEmailVerification');
         this.adultAccessBusy = false;
         this.adultAccessError = error?.error?.error || 'Verification code could not be sent. Please try again.';
         this.cdr.detectChanges();
@@ -531,38 +544,68 @@ loadDrawings(imageAccessToken = ''): void {
     });
   }
 
-  verifyAdultEmail(): void {
-    if (!this.isAdultConfirmed || this.adultAccessBusy || !this.adultOtp.trim()) return;
+  private completeAdultEmailLink(): void {
+    if (!window.location.hash) return;
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = params.get('access_token');
+    const linkError = params.get('error_description');
+    if (!accessToken && !linkError) return;
+
+    window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+    this.adultAccessOpen = true;
+
+    let pendingDetails: { name: string; email: string; isAdult: boolean } | null = null;
+    try {
+      const saved = sessionStorage.getItem('pendingAdultEmailVerification');
+      pendingDetails = saved ? JSON.parse(saved) as { name: string; email: string; isAdult: boolean } : null;
+    } catch {
+      pendingDetails = null;
+    }
+
+    if (linkError) {
+      this.adultAccessError = 'That email link expired or was already used. Request a new email and open the latest link.';
+      this.cdr.detectChanges();
+      return;
+    }
+    if (!accessToken || !pendingDetails?.name || !pendingDetails.email || !pendingDetails.isAdult) {
+      this.adultAccessError = 'Email link state was not found. Start again in this browser and open the new email link here.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.adultAccessBusy = true;
     this.adultAccessError = '';
-    this.drawingsService.verifyAdultEmail({
-      name: this.adultName.trim(),
-      email: this.adultEmail.trim(),
-      isAdult: this.isAdultConfirmed,
-      token: this.adultOtp.trim()
+    this.drawingsService.verifyAdultEmailLink({
+      ...pendingDetails,
+      accessToken
     }).subscribe({
-      next: response => {
-        if (!response.imageAccessToken) {
-          this.adultAccessBusy = false;
-          this.adultAccessError = 'Email verification could not be completed. Please try again.';
-          this.cdr.detectChanges();
-          return;
-        }
-        this.isPayment = response.isPayment;
-        this.rememberAdultAccessForCurrentSession(response.imageAccessToken);
-        this.adultAccessOpen = false;
-        this.adultAccessBusy = false;
-        this.activeCategory = '18+ Sketches';
-        this.currentPage = 1;
-        this.loadDrawings(this.adultImageAccessToken);
-        this.cdr.detectChanges();
-      },
+      next: response => this.finishAdultAccess(response),
       error: error => {
+        sessionStorage.removeItem('pendingAdultEmailVerification');
         this.adultAccessBusy = false;
-        this.adultAccessError = error?.error?.error || 'That code could not be verified. Check it and try again.';
+        this.adultAccessError = error?.error?.error || 'Email link could not be verified. Request a new link.';
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private finishAdultAccess(response: { imageAccessToken: string; isPayment: boolean }): void {
+    if (!response.imageAccessToken) {
+      this.adultAccessBusy = false;
+      this.adultAccessError = 'Email verification could not be completed. Please request a new email.';
+      this.cdr.detectChanges();
+      return;
+    }
+    sessionStorage.removeItem('pendingAdultEmailVerification');
+    this.isPayment = response.isPayment;
+    this.rememberAdultAccessForCurrentSession(response.imageAccessToken);
+    this.adultAccessOpen = false;
+    this.adultAccessBusy = false;
+    this.adultOtpSent = false;
+    this.activeCategory = '18+ Sketches';
+    this.currentPage = 1;
+    this.loadDrawings(this.adultImageAccessToken);
+    this.cdr.detectChanges();
   }
 
   isLockedArtwork(artwork: Artwork): boolean {

@@ -732,7 +732,7 @@
       <button type="button" class="age-gate-close" aria-label="Close" (click)="adultAccessOpen = false">×</button>
       <p class="eyebrow">Age restricted</p>
       <h2 id="age-gate-title">18+ Sketches</h2>
-      <p *ngIf="!adultOtpSent">The five TopFive previews are free. To continue, enter your name and email and confirm that you are at least 18. We will email you a verification code. Your details will be stored by the site owner.</p>
+      <p *ngIf="!adultOtpSent">The five TopFive previews are free. To continue, enter your name and email and confirm that you are at least 18. We will email you a sign-in link. Open it in this same browser to verify your email. Your details will be stored by the site owner.</p>
       <form *ngIf="!adultOtpSent" (ngSubmit)="confirmAdultAccess()">
         <label>Name<input name="adultName" type="text" autocomplete="name" [(ngModel)]="adultName" maxlength="100" required></label>
         <label>Email<input name="adultEmail" type="email" autocomplete="email" [(ngModel)]="adultEmail" maxlength="254" required></label>
@@ -740,16 +740,15 @@
         <p class="age-gate-error" *ngIf="adultAccessError" role="alert">{{ adultAccessError }}</p>
         <div class="age-gate-actions">
           <button type="button" class="age-cancel" (click)="adultAccessOpen = false">Cancel</button>
-          <button type="submit" [disabled]="adultAccessBusy || !isAdultConfirmed">{{ adultAccessBusy ? 'Sending code…' : 'Send verification code' }}</button>
+          <button type="submit" [disabled]="adultAccessBusy || !isAdultConfirmed">{{ adultAccessBusy ? 'Sending link…' : 'Send sign-in link' }}</button>
         </div>
       </form>
-      <form *ngIf="adultOtpSent" (ngSubmit)="verifyAdultEmail()">
-        <p>Enter the verification code sent to <strong>{{ adultEmail }}</strong>.</p>
-        <label>Verification code<input name="adultOtp" type="text" inputmode="numeric" autocomplete="one-time-code" [(ngModel)]="adultOtp" maxlength="10" required></label>
+      <form *ngIf="adultOtpSent" (ngSubmit)="confirmAdultAccess()">
+        <p>A sign-in link was sent to <strong>{{ adultEmail }}</strong>. Open the newest email in this same browser to finish verifying.</p>
         <p class="age-gate-error" *ngIf="adultAccessError" role="alert">{{ adultAccessError }}</p>
         <div class="age-gate-actions">
-          <button type="button" class="age-cancel" (click)="adultOtpSent = false; adultOtp = ''; adultAccessError = ''">Change email</button>
-          <button type="submit" [disabled]="adultAccessBusy || !adultOtp.trim()">{{ adultAccessBusy ? 'Verifying…' : 'Verify email' }}</button>
+          <button type="button" class="age-cancel" (click)="adultOtpSent = false; adultAccessError = ''">Change email</button>
+          <button type="submit" [disabled]="adultAccessBusy">{{ adultAccessBusy ? 'Sending…' : 'Send link again' }}</button>
         </div>
       </form>
     </section>
