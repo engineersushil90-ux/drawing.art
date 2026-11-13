@@ -443,18 +443,30 @@ interface AdminUserRow {
 
 async function seedInitialAdminUser(): Promise<void> {
   if (!supabaseEnabled || !adminUsername || !adminPassword) return;
-  const existing = await supabaseRequest<Array<{ username: string }>>(
-    `admin_users?select=username&username=eq.${encodeURIComponent(adminUsername)}&limit=1`
+  const existing = await supabaseRequest<Array<{ username: string; password_hash: string }>>(
+    `admin_users?select=username,password_hash&username=eq.${encodeURIComponent(adminUsername)}&limit=1`
   );
-  if (existing.length) return;
+  const passwordHash = hashAdminPassword(adminPassword);
+  if (existing.length) {
+    if (isAdminPasswordValid(adminPassword, existing[0].password_hash)) return;
+    await supabaseRequest<AdminUserRow[]>(
+      `admin_users?username=eq.${encodeURIComponent(adminUsername)}`,
+      {
+        method: 'PATCH',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({ password_hash: passwordHash })
+      }
+    );
+    return;
+  }
   await supabaseRequest<AdminUserRow[]>(
     'admin_users?on_conflict=username',
     {
       method: 'POST',
-      headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
+      headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
       body: JSON.stringify({
         username: adminUsername,
-        password_hash: hashAdminPassword(adminPassword),
+        password_hash: passwordHash,
         is_active: true
       })
     }
