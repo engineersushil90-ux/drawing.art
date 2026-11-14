@@ -69,6 +69,10 @@ export class DrawingsService {
     });
   }
 
+  getAdultViewerCount(): Observable<{ viewerCount: number }> {
+    return this.http.get<{ viewerCount: number }>(`${this.apiBaseUrl}/api/18plus/viewer-count`);
+  }
+
   verifyAdultEmailLink(details: { name: string; email: string; isAdult: boolean; accessToken: string }): Observable<AdultAccessResponse> {
     return this.http.post<AdultAccessResponse>(`${this.apiBaseUrl}/api/18plus/verify-link`, details, {
       withCredentials: true
@@ -77,9 +81,10 @@ export class DrawingsService {
 
   adminLogin(details: { username: string; password: string }): Observable<{ ok: boolean; accessToken: string }> {
     return this.http.post<{ ok: boolean; accessToken: string }>(`${this.apiBaseUrl}/api/admin/login`, details, {
-      withCredentials: true
+      withCredentials: true,
+      timeout: 30000
     }).pipe(
-      timeout(45000),
+      timeout(30000),
       map(response => {
         this.adminAccessToken = response.accessToken;
         return response;

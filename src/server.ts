@@ -528,6 +528,16 @@ app.post('/api/admin/login', async (req, res) => {
   res.json({ ok: true, accessToken });
 });
 
+app.get('/api/18plus/viewer-count', async (_req, res, next) => {
+  try {
+    const viewerCount = await countAdultViewers();
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ viewerCount });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/api/admin/18plus-viewers', requireOwner, async (_req, res, next) => {
   try {
     res.setHeader('Cache-Control', 'private, no-store');
@@ -733,6 +743,33 @@ async function supabaseRequest<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+async function countAdultViewers(): Promise<number> {
+  if (!supabaseEnabled || !supabaseUrl || !supabaseServiceRoleKey) {
+    return (await readAdultViewers()).length;
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/adult_sketch_viewers?select=email`, {
+    method: 'HEAD',
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: 'Bearer ' + supabaseServiceRoleKey,
+      Prefer: 'count=exact',
+      Range: '0-0'
+    },
+    signal: AbortSignal.timeout(12_000)
+  });
+  if (!response.ok) {
+    throw new Error(`Supabase viewer count failed (${response.status}): ${await response.text()}`);
+  }
+
+  const contentRange = response.headers.get('content-range');
+  const count = contentRange?.match(/\/(\d+)$/)?.[1];
+  if (count === undefined) {
+    throw new Error('Supabase did not return an exact viewer count');
+  }
+  return Number(count);
 }
 
 async function supabaseAuthRequest<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {

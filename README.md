@@ -12,8 +12,6 @@ Configure these environment variables on the API server before enabling the feat
 - `SUPABASE_URL`: the Supabase Project URL.
 - `SUPABASE_ANON_KEY`: optional for legacy email-link verification; it is not used by the current gallery flow.
 - `SUPABASE_SERVICE_ROLE_KEY`: the server-only service role key, used for persistent viewer and payment records.
-- `ADMIN_USERNAME`: the owner's login name (or use `ADMIN_EMAIL` to keep email-based login).
-- `ADMIN_PASSWORD`: a strong owner login password.
 - `DATA_DIR`: needed for the local JSON fallback; with Supabase configured, the persistent disk is not required for viewer records.
 
-Open `/admin` to sign in, review registered viewer emails, and manually approve or revoke payment status. Automatic payment verification is not configured; UPI payments must be checked by the owner. The age check remains a self-attestation and does not independently verify the visitor's age.
+Open `/admin` and sign in with the configured owner credentials to view the 18+ gallery's registered names, emails, last-view times, and total unique email count. Viewer details require admin authentication. Email ownership and the age check are not independently verified.

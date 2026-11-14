@@ -12,8 +12,8 @@
    - `AUTH_SECRET` = a random secret with at least 32 characters
 8. Save changes and redeploy the Render service and the updated application code.
 
-Keep both Supabase keys in Render's server environment. Never add the `service_role` key to Angular code or commit it to this repository. On the first admin login after the migration, the server seeds the configured `ADMIN_USERNAME` (or `ADMIN_EMAIL`) and hashes `ADMIN_PASSWORD` into `admin_users`; future logins validate against that database row. The raw password is never stored in the table.
+Keep both Supabase keys in Render's server environment. Never add the `service_role` key to Angular code or commit it to this repository.
 
 When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are present, `/api/likes`, `/api/visits`, and viewer/payment records use Supabase. Without the service-role key, local development continues to use JSON files in `data/`. The gallery does not verify email ownership; manually approved payment status applies to anyone who enters the same email.
 
-The site's `/admin` page shows all viewers, a waiting-for-payment-approval queue, and a Paid checkbox. Paid access is temporarily disabled; the payment tracking and manual admin approval tools are retained for possible future use.
+The site's `/admin` page requires owner sign-in before it shows registered viewer names, emails, view times, and the total count. The separate count endpoint returns only the aggregate count.
