@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { timeout } from 'rxjs/operators';
@@ -42,6 +42,19 @@ export interface AdultAccessResponse {
   ok: boolean;
   imageAccessToken: string;
   isPayment: boolean;
+}
+
+export interface ArtworkReview {
+  id: string;
+  imagePath: string;
+  name: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface ModerationArtworkReview extends ArtworkReview {
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 const API_BASE_URL = 'https://drawing-art.onrender.com';
@@ -146,6 +159,43 @@ export class DrawingsService {
     return this.http.post<LikeResponse>(`${this.apiBaseUrl}/api/likes`, {
       image: normalizeImagePath(image, category)
     });
+  }
+
+  getArtworkReviews(image: string, category: string, adultAccessToken = ''): Observable<ArtworkReview[]> {
+    let params = new HttpParams().set('image', normalizeImagePath(image, category));
+    if (adultAccessToken) params = params.set('access_token', adultAccessToken);
+    return this.http.get<ArtworkReview[]>(`${this.apiBaseUrl}/api/reviews`, { params });
+  }
+
+  submitArtworkReview(
+    image: string,
+    category: string,
+    review: { name: string; rating: number; comment: string; website: string },
+    adultAccessToken = ''
+  ): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${this.apiBaseUrl}/api/reviews`, {
+      image: normalizeImagePath(image, category),
+      name: review.name,
+      rating: review.rating,
+      comment: review.comment,
+      website: review.website,
+      ...(adultAccessToken ? { access_token: adultAccessToken } : {})
+    });
+  }
+
+  getPendingArtworkReviews(): Observable<ModerationArtworkReview[]> {
+    return this.http.get<ModerationArtworkReview[]>(`${this.apiBaseUrl}/api/admin/reviews`, {
+      headers: this.adminHeaders(),
+      withCredentials: true
+    });
+  }
+
+  moderateArtworkReview(id: string, status: 'approved' | 'rejected'): Observable<{ ok: boolean }> {
+    return this.http.patch<{ ok: boolean }>(
+      `${this.apiBaseUrl}/api/admin/reviews/${encodeURIComponent(id)}`,
+      { status },
+      { headers: this.adminHeaders(), withCredentials: true }
+    );
   }
 
   getVisits(): Observable<number> {

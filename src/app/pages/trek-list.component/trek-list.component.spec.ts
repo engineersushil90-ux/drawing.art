@@ -12,6 +12,15 @@ describe('DrawingArtComponent', () => {
   let registeredDetails: { name: string; email: string; isAdult: boolean } | undefined;
   const paymentRequests: string[] = [];
   const likedImages: string[] = [];
+  const submittedReviews: Array<{
+    image: string;
+    category: string;
+    name: string;
+    rating: number;
+    comment: string;
+    website: string;
+    accessToken: string;
+  }> = [];
   const drawingsService = {
     getDrawings: (token = '') => {
       requestedTokens.push(token);
@@ -29,6 +38,21 @@ describe('DrawingArtComponent', () => {
       const normalizedImage = normalizeImagePath(image, category);
       likedImages.push(normalizedImage);
       return of({ image: normalizedImage, likes: 1 });
+    },
+    getArtworkReviews: () => of([]),
+    submitArtworkReview: (
+      image: string,
+      category: string,
+      review: { name: string; rating: number; comment: string; website: string },
+      accessToken: string
+    ) => {
+      submittedReviews.push({
+        image: normalizeImagePath(image, category),
+        category,
+        ...review,
+        accessToken
+      });
+      return of({ ok: true });
     },
     getLikes: () => of({}),
     getTodayActivity: () => of({ date: '', likes: 0, visits: 0 }),
@@ -90,6 +114,35 @@ describe('DrawingArtComponent', () => {
 
     expect(likedImages).toEqual(['drawings/18+Sketches/2026-09-14/SK28126674.jpeg']);
     expect(component.getLikeCount(artwork)).toBe(1);
+  });
+
+  it('submits artwork feedback for moderation', () => {
+    const artwork = {
+      title: 'Reviewable drawing',
+      category: 'Pencil Sketches',
+      year: '2026',
+      image: '/drawings/PencilSketches/drawing.jpg',
+      alt: 'Reviewable drawing'
+    };
+    const event = { stopPropagation: vi.fn() } as unknown as MouseEvent;
+    submittedReviews.length = 0;
+
+    component.openReviews(event, artwork);
+    component.reviewName = 'Art viewer';
+    component.reviewRating = 4;
+    component.reviewComment = 'Beautiful pencil details.';
+    component.submitArtworkReview();
+
+    expect(submittedReviews).toEqual([{
+      image: 'drawings/PencilSketches/drawing.jpg',
+      category: 'Pencil Sketches',
+      name: 'Art viewer',
+      rating: 4,
+      comment: 'Beautiful pencil details.',
+      website: '',
+      accessToken: ''
+    }]);
+    expect(component.reviewMessage).toContain('sent for approval');
   });
 
   it('changes pages without scrolling away from the pagination controls', () => {

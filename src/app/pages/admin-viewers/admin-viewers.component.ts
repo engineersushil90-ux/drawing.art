@@ -3,7 +3,11 @@ import { ChangeDetectorRef, Component, OnDestroy, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { AdultViewer, DrawingsService } from '../../core/services/drawings.service';
+import {
+  AdultViewer,
+  DrawingsService,
+  ModerationArtworkReview
+} from '../../core/services/drawings.service';
 
 @Component({
   selector: 'app-admin-viewers',
@@ -50,6 +54,45 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
             </table>
           </div>
         </div>
+
+        <section *ngIf="authenticated" class="review-moderation" aria-labelledby="review-moderation-title">
+          <div class="list-heading">
+            <div>
+              <h2 id="review-moderation-title">Review moderation</h2>
+              <p class="description">Pending reviews: <strong>{{ pendingReviews.length | number }}</strong></p>
+            </div>
+            <button type="button" class="refresh-button" [disabled]="loadingReviews" (click)="loadPendingReviews()">
+              {{ loadingReviews ? 'Loading…' : 'Refresh reviews' }}
+            </button>
+          </div>
+
+          <p *ngIf="reviewsMessage" class="message" role="status">{{ reviewsMessage }}</p>
+          <p *ngIf="loadingReviews" role="status">Loading pending reviews…</p>
+          <p *ngIf="!loadingReviews && !pendingReviews.length">No reviews awaiting moderation.</p>
+
+          <article class="moderation-review" *ngFor="let review of pendingReviews">
+            <div class="moderation-review-heading">
+              <strong>{{ review.name }}</strong>
+              <span>{{ review.rating }} / 5</span>
+              <time [attr.datetime]="review.createdAt">{{ review.createdAt | date:'medium' }}</time>
+            </div>
+            <p class="review-image">{{ review.imagePath }}</p>
+            <p class="moderation-comment">{{ review.comment }}</p>
+            <div class="moderation-actions">
+              <button
+                type="button"
+                [disabled]="moderatingReviewId === review.id"
+                (click)="moderateReview(review, 'approved')"
+              >Approve</button>
+              <button
+                type="button"
+                class="reject-button"
+                [disabled]="moderatingReviewId === review.id"
+                (click)="moderateReview(review, 'rejected')"
+              >Reject</button>
+            </div>
+          </article>
+        </section>
       </section>
     </main>
   `,
@@ -69,6 +112,15 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
     .refresh-button{padding:9px 14px}.table-wrap{overflow:auto}
     table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}
     th,td{padding:12px;border-bottom:1px solid #e8e2d9;white-space:nowrap}th{font-weight:600}
+    .review-moderation{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
+    .review-moderation h2{margin:0 0 8px;font:26px Georgia,serif}
+    .moderation-review{padding:18px 0;border-bottom:1px solid #e8e2d9}
+    .moderation-review-heading{display:flex;flex-wrap:wrap;gap:14px;align-items:baseline}
+    .moderation-review-heading time,.review-image{color:#647069;font-size:12px}
+    .review-image{overflow-wrap:anywhere}
+    .moderation-comment{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
+    .moderation-actions{display:flex;gap:10px}
+    .reject-button{background:#8c3d31}
     @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}}
   `]
 })
@@ -84,6 +136,10 @@ export class AdminViewersComponent implements OnDestroy {
   loadingViewers = false;
   message = '';
   viewers: AdultViewer[] = [];
+  pendingReviews: ModerationArtworkReview[] = [];
+  loadingReviews = false;
+  moderatingReviewId: string | null = null;
+  reviewsMessage = '';
 
   ngOnDestroy(): void {
     this.clearLoginDeadline();
@@ -113,6 +169,7 @@ export class AdminViewersComponent implements OnDestroy {
         this.authenticated = true;
         this.password = '';
         this.loadViewers();
+        this.loadPendingReviews();
       },
       error: error => {
         this.clearLoginDeadline();
@@ -150,6 +207,43 @@ export class AdminViewersComponent implements OnDestroy {
         this.loadingViewers = false;
         this.message = error?.error?.error || 'Could not load the viewer list. Please sign in again.';
         this.authenticated = false;
+      }
+    });
+  }
+
+  loadPendingReviews(): void {
+    if (this.loadingReviews) return;
+    this.loadingReviews = true;
+    this.reviewsMessage = '';
+    this.drawingsService.getPendingArtworkReviews().subscribe({
+      next: reviews => {
+        this.pendingReviews = reviews;
+        this.loadingReviews = false;
+      },
+      error: error => {
+        this.loadingReviews = false;
+        this.reviewsMessage = error?.error?.error || 'Could not load pending reviews. Please sign in again.';
+        if (error?.status === 401) this.authenticated = false;
+      }
+    });
+  }
+
+  moderateReview(review: ModerationArtworkReview, status: 'approved' | 'rejected'): void {
+    if (this.moderatingReviewId) return;
+    this.moderatingReviewId = review.id;
+    this.reviewsMessage = '';
+    this.drawingsService.moderateArtworkReview(review.id, status).subscribe({
+      next: () => {
+        this.pendingReviews = this.pendingReviews.filter(item => item.id !== review.id);
+        this.moderatingReviewId = null;
+        this.reviewsMessage = status === 'approved'
+          ? 'Review approved and published.'
+          : 'Review rejected.';
+      },
+      error: error => {
+        this.moderatingReviewId = null;
+        this.reviewsMessage = error?.error?.error || 'Could not update the review. Please try again.';
+        if (error?.status === 401) this.authenticated = false;
       }
     });
   }

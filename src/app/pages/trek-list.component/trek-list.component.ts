@@ -13,6 +13,7 @@ import { RouterModule } from '@angular/router';
 import {
   DrawingsService,
   Artwork,
+  ArtworkReview,
   normalizeImagePath
 } from '../../core/services/drawings.service';
 
@@ -48,6 +49,15 @@ export class DrawingArtComponent implements OnInit {
   // --------------------------------------------------
 
   selectedArtwork: Artwork | null = null;
+  reviewArtwork: Artwork | null = null;
+  artworkReviews: ArtworkReview[] = [];
+  reviewsLoading = false;
+  reviewSubmitting = false;
+  reviewName = '';
+  reviewRating = 5;
+  reviewComment = '';
+  reviewWebsite = '';
+  reviewMessage = '';
 
   isMenuOpen = false;
 
@@ -760,5 +770,89 @@ loadDrawings(imageAccessToken = ''): void {
       null;
 
   }
+
+ openReviews(event: MouseEvent, artwork: Artwork): void {
+   event.stopPropagation();
+   this.reviewArtwork = artwork;
+   this.artworkReviews = [];
+   this.reviewName = '';
+   this.reviewRating = 5;
+   this.reviewComment = '';
+   this.reviewWebsite = '';
+   this.reviewMessage = '';
+   this.loadArtworkReviews();
+ }
+
+ closeReviews(): void {
+   this.reviewArtwork = null;
+ }
+
+ private loadArtworkReviews(): void {
+   const artwork = this.reviewArtwork;
+   if (!artwork) return;
+
+   this.reviewsLoading = true;
+   this.drawingsService
+     .getArtworkReviews(
+       artwork.image,
+       artwork.category,
+       artwork.category === '18+ Sketches' ? this.adultImageAccessToken : ''
+     )
+     .subscribe({
+       next: reviews => {
+         this.artworkReviews = reviews;
+         this.reviewsLoading = false;
+         this.cdr.detectChanges();
+       },
+       error: error => {
+         console.error('Failed to load artwork reviews:', error);
+         this.reviewsLoading = false;
+         this.reviewMessage = 'Reviews could not be loaded. Please try again.';
+         this.cdr.detectChanges();
+       }
+     });
+ }
+
+ submitArtworkReview(): void {
+   const artwork = this.reviewArtwork;
+   const comment = this.reviewComment.trim();
+   if (!artwork || this.reviewSubmitting || comment.length < 5) return;
+
+   this.reviewSubmitting = true;
+   this.reviewMessage = '';
+   this.drawingsService
+     .submitArtworkReview(
+       artwork.image,
+       artwork.category,
+       {
+         name: this.reviewName.trim(),
+         rating: this.reviewRating,
+         comment,
+         website: this.reviewWebsite
+       },
+       artwork.category === '18+ Sketches' ? this.adultImageAccessToken : ''
+     )
+     .subscribe({
+       next: () => {
+         this.reviewSubmitting = false;
+         this.reviewComment = '';
+         this.reviewMessage = 'Thanks! Your review was sent for approval.';
+         this.cdr.detectChanges();
+       },
+       error: error => {
+         console.error('Failed to submit artwork review:', error);
+         this.reviewSubmitting = false;
+         this.reviewMessage = error?.status === 429
+           ? 'Too many submissions. Please try again later.'
+           : error?.error?.error || 'Your review could not be submitted. Please try again.';
+         this.cdr.detectChanges();
+       }
+     });
+ }
+
+ reviewStars(rating: number): string {
+   return `${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}`;
+ }
+
 
 }

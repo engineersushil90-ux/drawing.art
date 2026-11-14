@@ -330,6 +330,14 @@
             {{ artwork.year }}
           </small>
 
+          <button
+            type="button"
+            class="review-trigger"
+            (click)="openReviews($event, artwork)"
+          >
+            Reviews &amp; feedback
+          </button>
+
         </div>
 
       </article>
@@ -722,6 +730,94 @@
 
     </figure>
 
+  </div>
+
+  <div
+    class="reviews-backdrop"
+    *ngIf="reviewArtwork"
+    (click)="closeReviews()"
+  >
+    <section
+      class="reviews-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reviews-title"
+      (click)="$event.stopPropagation()"
+    >
+      <button
+        type="button"
+        class="reviews-close"
+        aria-label="Close reviews"
+        (click)="closeReviews()"
+      >×</button>
+
+      <p class="eyebrow">Artwork feedback</p>
+      <h2 id="reviews-title">Reviews &amp; comments</h2>
+      <p class="reviews-art-title">{{ reviewArtwork.title }}</p>
+
+      <section class="approved-reviews" aria-label="Approved reviews">
+        <p *ngIf="reviewsLoading" role="status">Loading reviews…</p>
+        <p *ngIf="!reviewsLoading && !artworkReviews.length">No approved reviews yet. Be the first to share feedback.</p>
+        <article class="artwork-review" *ngFor="let review of artworkReviews">
+          <div class="review-heading">
+            <strong>{{ review.name }}</strong>
+            <span class="review-stars" [attr.aria-label]="review.rating + ' out of 5 stars'">{{ reviewStars(review.rating) }}</span>
+          </div>
+          <time [attr.datetime]="review.createdAt">{{ review.createdAt | date:'mediumDate' }}</time>
+          <p>{{ review.comment }}</p>
+        </article>
+      </section>
+
+      <form class="review-form" (ngSubmit)="submitArtworkReview()">
+        <h3>Leave a review</h3>
+        <label>
+          Name <span>(optional)</span>
+          <input
+            type="text"
+            name="reviewName"
+            [(ngModel)]="reviewName"
+            maxlength="60"
+            autocomplete="name"
+          />
+        </label>
+        <label>
+          Rating
+          <select name="reviewRating" [(ngModel)]="reviewRating" required>
+            <option [ngValue]="5">5 — Loved it</option>
+            <option [ngValue]="4">4 — Great</option>
+            <option [ngValue]="3">3 — Good</option>
+            <option [ngValue]="2">2 — Could improve</option>
+            <option [ngValue]="1">1 — Not for me</option>
+          </select>
+        </label>
+        <label>
+          Comment
+          <textarea
+            name="reviewComment"
+            [(ngModel)]="reviewComment"
+            minlength="5"
+            maxlength="1000"
+            rows="4"
+            required
+          ></textarea>
+        </label>
+        <label class="review-honeypot" aria-hidden="true">
+          Leave this field blank
+          <input
+            type="text"
+            name="website"
+            [(ngModel)]="reviewWebsite"
+            tabindex="-1"
+            autocomplete="off"
+          />
+        </label>
+        <p class="review-notice">Reviews are shown after moderation. Please keep feedback respectful.</p>
+        <p class="review-message" role="status" *ngIf="reviewMessage">{{ reviewMessage }}</p>
+        <button type="submit" [disabled]="reviewSubmitting || reviewComment.trim().length < 5">
+          {{ reviewSubmitting ? 'Submitting…' : 'Submit for review' }}
+        </button>
+      </form>
+    </section>
   </div>
 
   </main>

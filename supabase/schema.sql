@@ -14,9 +14,23 @@ create table if not exists public.daily_activity (
   visits bigint not null default 0 check (visits >= 0)
 );
 
+create table if not exists public.artwork_reviews (
+  id uuid primary key default gen_random_uuid(),
+  image_path text not null,
+  name text not null,
+  rating smallint not null check (rating between 1 and 5),
+  comment text not null check (char_length(comment) between 5 and 1000),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists artwork_reviews_public_lookup
+  on public.artwork_reviews (image_path, status, created_at desc);
+
 alter table public.likes enable row level security;
 alter table public.site_visits enable row level security;
 alter table public.daily_activity enable row level security;
+alter table public.artwork_reviews enable row level security;
 
 insert into public.likes as existing (image_path, likes)
 values
@@ -80,9 +94,11 @@ $$;
 revoke all on table public.likes from anon, authenticated;
 revoke all on table public.site_visits from anon, authenticated;
 revoke all on table public.daily_activity from anon, authenticated;
+revoke all on table public.artwork_reviews from anon, authenticated;
 grant select, insert, update on table public.likes to service_role;
 grant select, insert, update on table public.site_visits to service_role;
 grant select, insert, update on table public.daily_activity to service_role;
+grant select, insert, update on table public.artwork_reviews to service_role;
 
 revoke all on function public.increment_like(text) from public, anon, authenticated;
 revoke all on function public.increment_visits() from public, anon, authenticated;

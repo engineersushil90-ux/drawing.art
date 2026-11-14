@@ -20,6 +20,7 @@ const browserDistFolder =
 
 
 const app = express();
+app.set('trust proxy', 1);
 
 const allowedApiOrigins = new Set([
   'https://smarttraffic.in',
@@ -1264,6 +1265,287 @@ async function saveLikes(likes: Record<string, number>): Promise<void> {
     JSON.stringify({ likes }, null, 2),
   );
 }
+
+type ArtworkReviewStatus = 'pending' | 'approved' | 'rejected';
+
+interface StoredArtworkReview {
+  id: string;
+  imagePath: string;
+  name: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  status: ArtworkReviewStatus;
+}
+
+interface ArtworkReviewRow {
+  id: string;
+  image_path: string;
+  name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  status: ArtworkReviewStatus;
+}
+
+const reviewRateLimit = new Map<string, number[]>();
+const reviewRateWindowMs = 15 * 60 * 1000;
+const reviewRateMax = 3;
+
+function isWithinReviewRateLimit(ipAddress: string): boolean {
+  const now = Date.now();
+  const recentSubmissions = (reviewRateLimit.get(ipAddress) || [])
+    .filter(timestamp => now - timestamp < reviewRateWindowMs);
+
+  if (recentSubmissions.length >= reviewRateMax) {
+    reviewRateLimit.set(ipAddress, recentSubmissions);
+    return false;
+  }
+
+  recentSubmissions.push(now);
+  reviewRateLimit.set(ipAddress, recentSubmissions);
+
+  if (reviewRateLimit.size > 5000) {
+    for (const [address, timestamps] of reviewRateLimit) {
+      if (!timestamps.some(timestamp => now - timestamp < reviewRateWindowMs)) {
+        reviewRateLimit.delete(address);
+      }
+    }
+  }
+
+  return true;
+}
+
+async function validateReviewImagePath(value: unknown): Promise<string | null> {
+  if (typeof value !== 'string') return null;
+  const imagePath = value.replace(/^\/+/, '');
+  if (!imagePath.startsWith('drawings/')) return null;
+
+  const filePath = imagePath.slice('drawings/'.length);
+  const parts = filePath.split('/');
+  const allowedFolders = new Set(['PencilSketches', '18+Sketches', 'ColorArt', 'FeatureDrawing']);
+  if (
+    parts.length < 2
+    || !allowedFolders.has(parts[0])
+    || parts.some(part => !part || part === '.' || part === '..' || part.includes('\\'))
+    || !imageExtensions.has(extname(filePath).toLowerCase())
+  ) {
+    return null;
+  }
+
+  const absolutePath = resolve(drawingsRoot, filePath);
+  const relativePath = relative(drawingsRoot, absolutePath);
+  if (relativePath === '..' || relativePath.startsWith(`..${sep}`)) return null;
+
+  try {
+    return (await statFile(absolutePath)).isFile() ? imagePath : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readArtworkReviews(
+  imagePath?: string,
+  status?: ArtworkReviewStatus
+): Promise<StoredArtworkReview[]> {
+  if (supabaseEnabled) {
+    const filters = [
+      'select=id,image_path,name,rating,comment,created_at,status',
+      'order=created_at.desc',
+      'limit=250'
+    ];
+    if (imagePath) {
+      filters.push(`image_path=eq.${encodeURIComponent(imagePath).replace(/\+/g, '%2B')}`);
+    }
+    if (status) filters.push(`status=eq.${status}`);
+
+    const rows = await supabaseRequest<ArtworkReviewRow[]>(
+      `artwork_reviews?${filters.join('&')}`
+    );
+    return rows.map(row => ({
+      id: row.id,
+      imagePath: row.image_path,
+      name: row.name,
+      rating: Number(row.rating),
+      comment: row.comment,
+      createdAt: row.created_at,
+      status: row.status
+    }));
+  }
+
+  const reviews = JSON.parse(await readDataFile('artwork-reviews.json')) as StoredArtworkReview[];
+  return reviews
+    .filter(review => (!imagePath || review.imagePath === imagePath) && (!status || review.status === status))
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+}
+
+let artworkReviewWriteQueue: Promise<void> = Promise.resolve();
+
+app.get('/api/reviews', async (req, res, next) => {
+  try {
+    const imagePath = await validateReviewImagePath(req.query['image']);
+    if (!imagePath) {
+      res.status(400).json({ error: 'Select a valid artwork to view its reviews.' });
+      return;
+    }
+
+    if (imagePath.startsWith('drawings/18+Sketches/')) {
+      const accessId = getAdultAccessId(req);
+      if (!accessId || !await findAdultViewerByAccessId(accessId)) {
+        res.status(403).json({ error: 'Confirm adult access to view these reviews.' });
+        return;
+      }
+    }
+
+    const reviews = await readArtworkReviews(imagePath, 'approved');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(reviews.slice(0, 100).map(({ id, imagePath: reviewImagePath, name, rating, comment, createdAt }) => ({
+      id,
+      imagePath: reviewImagePath,
+      name,
+      rating,
+      comment,
+      createdAt
+    })));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/reviews', async (req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || !allowedApiOrigins.has(origin)) {
+    res.status(403).json({ error: 'Reviews can only be submitted from the site.' });
+    return;
+  }
+
+  const imagePath = await validateReviewImagePath(req.body?.image);
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const comment = typeof req.body?.comment === 'string' ? req.body.comment.trim() : '';
+  const rating = req.body?.rating;
+  const website = typeof req.body?.website === 'string' ? req.body.website.trim() : '';
+
+  if (!imagePath || name.length > 60 || comment.length < 5 || comment.length > 1000
+    || !Number.isInteger(rating) || rating < 1 || rating > 5 || website) {
+    res.status(400).json({ error: 'Provide a rating and a comment of 5 to 1000 characters.' });
+    return;
+  }
+
+  try {
+    if (imagePath.startsWith('drawings/18+Sketches/')) {
+      const accessId = getAdultAccessId(req);
+      if (!accessId || !await findAdultViewerByAccessId(accessId)) {
+        res.status(403).json({ error: 'Confirm adult access before reviewing this artwork.' });
+        return;
+      }
+    }
+
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    if (!isWithinReviewRateLimit(ipAddress)) {
+      res.status(429).json({ error: 'Too many reviews. Please try again later.' });
+      return;
+    }
+
+    const review: StoredArtworkReview = {
+      id: randomUUID(),
+      imagePath,
+      name: name || 'Guest',
+      rating,
+      comment,
+      createdAt: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    if (supabaseEnabled) {
+      const rows = await supabaseRequest<ArtworkReviewRow[]>(
+        'artwork_reviews?select=id,image_path,name,rating,comment,created_at,status',
+        {
+          method: 'POST',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({
+            image_path: review.imagePath,
+            name: review.name,
+            rating: review.rating,
+            comment: review.comment,
+            status: review.status
+          })
+        }
+      );
+      if (!rows.length) throw new Error('Review submission was not saved');
+    } else {
+      const update = artworkReviewWriteQueue.then(async () => {
+        const reviews = JSON.parse(await readDataFile('artwork-reviews.json')) as StoredArtworkReview[];
+        reviews.unshift(review);
+        await saveDataFile('artwork-reviews.json', JSON.stringify(reviews, null, 2));
+      });
+      artworkReviewWriteQueue = update.then(() => undefined, () => undefined);
+      await update;
+    }
+
+    res.status(202).json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/admin/reviews', requireOwner, async (_req, res, next) => {
+  try {
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(await readArtworkReviews(undefined, 'pending'));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/api/admin/reviews/:id', requireOwner, async (req, res, next) => {
+  const origin = req.headers.origin;
+  const reviewId = typeof req.params['id'] === 'string' ? req.params['id'] : '';
+  const status = req.body?.status;
+  if (!origin || !allowedApiOrigins.has(origin)) {
+    res.status(403).json({ error: 'Review moderation is only allowed from the site.' });
+    return;
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(reviewId)
+    || (status !== 'approved' && status !== 'rejected')) {
+    res.status(400).json({ error: 'Provide a valid review and moderation status.' });
+    return;
+  }
+
+  try {
+    if (supabaseEnabled) {
+      const rows = await supabaseRequest<ArtworkReviewRow[]>(
+        `artwork_reviews?id=eq.${encodeURIComponent(reviewId)}&select=id,image_path,name,rating,comment,created_at,status`,
+        {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({ status })
+        }
+      );
+      if (!rows.length) {
+        res.status(404).json({ error: 'Review not found.' });
+        return;
+      }
+    } else {
+      const update = artworkReviewWriteQueue.then(async () => {
+        const reviews = JSON.parse(await readDataFile('artwork-reviews.json')) as StoredArtworkReview[];
+        const review = reviews.find(item => item.id === reviewId);
+        if (!review) return false;
+        review.status = status;
+        await saveDataFile('artwork-reviews.json', JSON.stringify(reviews, null, 2));
+        return true;
+      });
+      artworkReviewWriteQueue = update.then(() => undefined, () => undefined);
+      if (!await update) {
+        res.status(404).json({ error: 'Review not found.' });
+        return;
+      }
+    }
+
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/likes', async (req, res, next) => {
   try {

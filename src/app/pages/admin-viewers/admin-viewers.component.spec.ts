@@ -15,12 +15,24 @@ describe('AdminViewersComponent', () => {
       lastViewedAt: '2026-11-14T01:00:00.000Z',
       views: 2,
       isPayment: false
-    }]))
+    }])),
+    getPendingArtworkReviews: vi.fn(() => of([{
+      id: 'review-1',
+      imagePath: 'drawings/PencilSketches/drawing.jpg',
+      name: 'Art viewer',
+      rating: 4,
+      comment: 'Beautiful pencil details.',
+      createdAt: '2026-11-14T01:00:00.000Z',
+      status: 'pending' as const
+    }])),
+    moderateArtworkReview: vi.fn(() => of({ ok: true }))
   };
 
   beforeEach(async () => {
     drawingsService.adminLogin.mockClear();
     drawingsService.getAdultViewers.mockClear();
+    drawingsService.getPendingArtworkReviews.mockClear();
+    drawingsService.moderateArtworkReview.mockClear();
     await TestBed.configureTestingModule({
       imports: [AdminViewersComponent],
       providers: [
@@ -35,6 +47,7 @@ describe('AdminViewersComponent', () => {
   it('keeps names hidden until login, then shows viewer names and emails', () => {
     expect(drawingsService.adminLogin).not.toHaveBeenCalled();
     expect(drawingsService.getAdultViewers).not.toHaveBeenCalled();
+    expect(drawingsService.getPendingArtworkReviews).not.toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).not.toContain('viewer@example.com');
 
     fixture.componentInstance.username = 'owner';
@@ -44,8 +57,31 @@ describe('AdminViewersComponent', () => {
 
     expect(drawingsService.adminLogin).toHaveBeenCalledOnce();
     expect(drawingsService.getAdultViewers).toHaveBeenCalledOnce();
+    expect(drawingsService.getPendingArtworkReviews).toHaveBeenCalledOnce();
     expect(fixture.nativeElement.textContent).toContain('Test Viewer');
     expect(fixture.nativeElement.textContent).toContain('viewer@example.com');
+    expect(fixture.nativeElement.textContent).toContain('Beautiful pencil details.');
+  });
+
+  it('removes a review from the queue after approving it', () => {
+    const component = fixture.componentInstance;
+    component.authenticated = true;
+    component.pendingReviews = [{
+      id: 'review-1',
+      imagePath: 'drawings/PencilSketches/drawing.jpg',
+      name: 'Art viewer',
+      rating: 4,
+      comment: 'Beautiful pencil details.',
+      createdAt: '2026-11-14T01:00:00.000Z',
+      status: 'pending'
+    }];
+
+    component.moderateReview(component.pendingReviews[0], 'approved');
+    fixture.detectChanges();
+
+    expect(drawingsService.moderateArtworkReview).toHaveBeenCalledWith('review-1', 'approved');
+    expect(component.pendingReviews).toEqual([]);
+    expect(component.reviewsMessage).toBe('Review approved and published.');
   });
 
   it('shows a clear credential error and re-enables sign-in', () => {

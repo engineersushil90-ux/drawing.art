@@ -27,3 +27,25 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9
 .locked-art-overlay strong { font: 24px Georgia, serif; }
 .locked-art-overlay span { font-size: 13px; font-weight: 700; }
 .payment-contact { display: inline-flex; align-items: center; padding: 11px 16px; border-radius: 7px; background: #26342d; color: white; font-size: 13px; text-decoration: none; }
+
+.reviews-backdrop { position: fixed; inset: 0; z-index: 2050; display: grid; place-items: center; padding: 20px; background: rgba(22, 29, 25, .78); }
+.reviews-dialog { position: relative; width: min(100%, 680px); max-height: 90vh; overflow: auto; padding: clamp(24px, 5vw, 42px); border-radius: 16px; background: #fffdf9; color: #26342d; }
+.reviews-close { position: absolute; top: 14px; right: 17px; border: 0; background: none; color: #26342d; font-size: 28px; cursor: pointer; }
+.reviews-dialog h2 { margin: 8px 36px 5px 0; font: 32px Georgia, serif; }
+.reviews-art-title, .review-notice { color: #78817b; font-size: 13px; }
+.approved-reviews { display: grid; gap: 16px; max-height: 260px; overflow-y: auto; margin: 22px 0; }
+.artwork-review { padding-bottom: 14px; border-bottom: 1px solid #e8e2d9; }
+.review-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.review-stars { color: #b15d3f; letter-spacing: 2px; }
+.artwork-review time { color: #78817b; font-size: 12px; }
+.artwork-review p { margin: 8px 0 0; line-height: 1.55; overflow-wrap: anywhere; }
+.review-form { display: grid; gap: 12px; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e8e2d9; }
+.review-form h3 { margin: 0; font: 23px Georgia, serif; }
+.review-form label { display: grid; gap: 6px; font-size: 13px; }
+.review-form label span { color: #78817b; font-size: 12px; }
+.review-form input, .review-form select, .review-form textarea { width: 100%; padding: 10px 12px; border: 1px solid #d8d4cc; border-radius: 6px; background: white; color: #26342d; font: inherit; }
+.review-form textarea { resize: vertical; }
+.review-form button { justify-self: start; padding: 11px 16px; border: 0; border-radius: 6px; background: #26342d; color: white; cursor: pointer; }
+.review-form button:disabled { opacity: .6; cursor: wait; }
+.review-notice, .review-message { margin: 0; line-height: 1.5; }
+.review-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
