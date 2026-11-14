@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { NEVER, of } from 'rxjs';
 import { DrawingsService } from '../../core/services/drawings.service';
 import { ContactComponent } from './contact.component';
 
@@ -52,6 +52,28 @@ describe('ContactComponent', () => {
     const submitButton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(submitButton.disabled).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('4/15');
+  });
+
+  it('re-enables submission and warns about possible duplicates after a timeout', () => {
+    vi.useFakeTimers();
+    drawingsService.submitCustomDrawingRequest.mockReturnValueOnce(NEVER);
+    const component = fixture.componentInstance;
+    component.request = {
+      name: 'Art customer',
+      email: 'customer@example.com',
+      description: 'Please draw a landscape with mountains.',
+      website: ''
+    };
+
+    component.submitRequest();
+    expect(component.submitting).toBe(true);
+
+    vi.advanceTimersByTime(60_000);
+    fixture.detectChanges();
+
+    expect(component.submitting).toBe(false);
+    expect(component.requestMessage).toContain('No response after 60 seconds.');
+    vi.useRealTimers();
   });
 
   it('rejects unsupported reference image types before upload', () => {

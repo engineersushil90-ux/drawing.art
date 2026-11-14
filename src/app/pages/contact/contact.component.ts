@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { timeout } from 'rxjs';
 import { DrawingsService } from '../../core/services/drawings.service';
 
 @Component({
@@ -204,7 +205,7 @@ export class ContactComponent implements OnDestroy {
     this.submitting = true;
     this.requestMessage = '';
     this.requestError = false;
-    this.drawingsService.submitCustomDrawingRequest(this.request, this.referenceImage).subscribe({
+    this.drawingsService.submitCustomDrawingRequest(this.request, this.referenceImage).pipe(timeout(60_000)).subscribe({
       next: () => {
         this.request = { name: '', email: '', description: '', website: '' };
         this.clearReferenceImage();
@@ -212,7 +213,9 @@ export class ContactComponent implements OnDestroy {
         this.submitting = false;
       },
       error: error => {
-        this.showError(error?.error?.error || 'Could not send your request. Please try again or email us directly.');
+        this.showError(error?.name === 'TimeoutError'
+          ? 'No response after 60 seconds. The request may still have reached us; please email us before retrying to avoid a duplicate.'
+          : error?.error?.error || 'Could not send your request. Please try again or email us directly.');
         this.submitting = false;
       }
     });
