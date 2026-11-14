@@ -79,7 +79,7 @@ import {
           <p *ngIf="loadingReviews" role="status">Loading pending reviews…</p>
           <p *ngIf="!loadingReviews && !pendingReviews.length">No reviews awaiting moderation.</p>
 
-          <article class="moderation-review" *ngFor="let review of pendingReviews">
+          <article class="moderation-review" *ngFor="let review of reviewsOnPage">
             <div class="moderation-review-heading">
               <strong>{{ review.name }}</strong>
               <span>{{ review.rating }} / 5</span>
@@ -116,6 +116,11 @@ import {
               </div>
             </div>
           </article>
+          <nav *ngIf="!loadingReviews && reviewPageCount > 1" class="viewer-pagination" aria-label="Review list pages">
+            <button type="button" [disabled]="reviewPage === 1" (click)="previousReviewPage()">Previous</button>
+            <span>Page {{ reviewPage }} of {{ reviewPageCount }}</span>
+            <button type="button" [disabled]="reviewPage === reviewPageCount" (click)="nextReviewPage()">Next</button>
+          </nav>
         </section>
 
         <section *ngIf="authenticated" class="drawing-request-list" aria-labelledby="drawing-requests-title">
@@ -133,7 +138,7 @@ import {
           <p *ngIf="loadingDrawingRequests" role="status">Loading drawing requests…</p>
           <p *ngIf="!loadingDrawingRequests && !customDrawingRequests.length">No custom drawing requests yet.</p>
 
-          <article class="drawing-request" *ngFor="let request of customDrawingRequests">
+          <article class="drawing-request" *ngFor="let request of drawingRequestsOnPage">
             <div class="moderation-review-heading">
               <strong>{{ request.name }}</strong>
               <time [attr.datetime]="request.createdAt">{{ request.createdAt | date:'medium' }}</time>
@@ -154,6 +159,11 @@ import {
               Reference image unavailable.
             </p>
           </article>
+          <nav *ngIf="!loadingDrawingRequests && drawingRequestPageCount > 1" class="viewer-pagination" aria-label="Drawing request list pages">
+            <button type="button" [disabled]="drawingRequestPage === 1" (click)="previousDrawingRequestPage()">Previous</button>
+            <span>Page {{ drawingRequestPage }} of {{ drawingRequestPageCount }}</span>
+            <button type="button" [disabled]="drawingRequestPage === drawingRequestPageCount" (click)="nextDrawingRequestPage()">Next</button>
+          </nav>
         </section>
       </section>
     </main>
@@ -209,8 +219,10 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   authenticated = false;
   loadingViewers = false;
   viewersMessage = '';
-  readonly viewerPageSize = 50;
+  readonly pageSize = 20;
   viewerPage = 1;
+  reviewPage = 1;
+  drawingRequestPage = 1;
   message = '';
   viewers: AdultViewer[] = [];
   pendingReviews: ModerationArtworkReview[] = [];
@@ -225,12 +237,30 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   customRequestImageErrors: Record<string, boolean> = {};
 
   get viewerPageCount(): number {
-    return Math.ceil(this.viewers.length / this.viewerPageSize);
+    return Math.ceil(this.viewers.length / this.pageSize);
   }
 
   get viewersOnPage(): AdultViewer[] {
-    const start = (this.viewerPage - 1) * this.viewerPageSize;
-    return this.viewers.slice(start, start + this.viewerPageSize);
+    const start = (this.viewerPage - 1) * this.pageSize;
+    return this.viewers.slice(start, start + this.pageSize);
+  }
+
+  get reviewPageCount(): number {
+    return Math.ceil(this.pendingReviews.length / this.pageSize);
+  }
+
+  get reviewsOnPage(): ModerationArtworkReview[] {
+    const start = (this.reviewPage - 1) * this.pageSize;
+    return this.pendingReviews.slice(start, start + this.pageSize);
+  }
+
+  get drawingRequestPageCount(): number {
+    return Math.ceil(this.customDrawingRequests.length / this.pageSize);
+  }
+
+  get drawingRequestsOnPage(): CustomDrawingRequest[] {
+    const start = (this.drawingRequestPage - 1) * this.pageSize;
+    return this.customDrawingRequests.slice(start, start + this.pageSize);
   }
 
   previousViewerPage(): void {
@@ -239,6 +269,22 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
 
   nextViewerPage(): void {
     this.viewerPage = Math.min(this.viewerPageCount, this.viewerPage + 1);
+  }
+
+  previousReviewPage(): void {
+    this.reviewPage = Math.max(1, this.reviewPage - 1);
+  }
+
+  nextReviewPage(): void {
+    this.reviewPage = Math.min(this.reviewPageCount, this.reviewPage + 1);
+  }
+
+  previousDrawingRequestPage(): void {
+    this.drawingRequestPage = Math.max(1, this.drawingRequestPage - 1);
+  }
+
+  nextDrawingRequestPage(): void {
+    this.drawingRequestPage = Math.min(this.drawingRequestPageCount, this.drawingRequestPage + 1);
   }
 
   ngOnInit(): void {
@@ -352,6 +398,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.drawingsService.getPendingArtworkReviews().pipe(timeout(30_000)).subscribe({
       next: reviews => {
         this.pendingReviews = reviews;
+        this.reviewPage = 1;
         this.reviewImageErrors = {};
         this.loadingReviews = false;
         if (showSuccessMessage) this.reviewsMessage = 'Pending reviews refreshed.';
@@ -374,6 +421,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.drawingsService.moderateArtworkReview(review.id, status).pipe(timeout(30_000)).subscribe({
       next: () => {
         this.pendingReviews = this.pendingReviews.filter(item => item.id !== review.id);
+        this.reviewPage = Math.min(this.reviewPage, Math.max(1, this.reviewPageCount));
         this.moderatingReviewId = null;
         this.moderatingReviewStatus = null;
         this.reviewsMessage = status === 'approved'
@@ -409,6 +457,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.drawingsService.getCustomDrawingRequests().pipe(timeout(30_000)).subscribe({
       next: requests => {
         this.customDrawingRequests = requests;
+        this.drawingRequestPage = 1;
         this.customRequestImageErrors = {};
         this.loadingDrawingRequests = false;
         if (showSuccessMessage) this.drawingRequestsMessage = 'Drawing requests refreshed.';

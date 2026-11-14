@@ -191,7 +191,7 @@ describe('AdminViewersComponent', () => {
     expect(component.drawingRequestsMessage).toBe('Drawing requests refreshed.');
   });
 
-  it('sorts viewers latest first and paginates at 50 rows', () => {
+  it('sorts viewers latest first and paginates at 20 rows', () => {
     const viewers = Array.from({ length: 51 }, (_, index) => ({
       name: `Viewer ${index}`,
       email: `viewer${index}@example.com`,
@@ -205,13 +205,46 @@ describe('AdminViewersComponent', () => {
 
     component.loadViewers();
 
-    expect(component.viewersOnPage).toHaveLength(50);
-    expect(component.viewerPageCount).toBe(2);
+    expect(component.viewersOnPage).toHaveLength(20);
+    expect(component.viewerPageCount).toBe(3);
     expect(component.viewersOnPage[0].name).toBe('Viewer 50');
 
     component.nextViewerPage();
-    expect(component.viewersOnPage).toHaveLength(1);
-    expect(component.viewersOnPage[0].name).toBe('Viewer 0');
+    expect(component.viewersOnPage).toHaveLength(20);
+    expect(component.viewersOnPage[0].name).toBe('Viewer 30');
+
+    component.nextViewerPage();
+    expect(component.viewersOnPage).toHaveLength(11);
+    expect(component.viewersOnPage[0].name).toBe('Viewer 10');
+  });
+
+  it('limits review and drawing request lists to 20 items per page', () => {
+    const component = fixture.componentInstance;
+    component.pendingReviews = Array.from({ length: 21 }, (_, index) => ({
+      id: `review-${index}`,
+      imagePath: 'drawings/PencilSketches/drawing.jpg',
+      name: `Reviewer ${index}`,
+      rating: 5,
+      comment: 'Great drawing.',
+      createdAt: '2026-11-14T01:00:00.000Z',
+      status: 'pending' as const
+    }));
+    component.customDrawingRequests = Array.from({ length: 21 }, (_, index) => ({
+      id: `request-${index}`,
+      name: `Customer ${index}`,
+      email: `customer${index}@example.com`,
+      description: 'Please draw a landscape.',
+      createdAt: '2026-11-14T02:00:00.000Z',
+      hasReferenceImage: false
+    }));
+
+    expect(component.reviewsOnPage).toHaveLength(20);
+    expect(component.drawingRequestsOnPage).toHaveLength(20);
+
+    component.nextReviewPage();
+    component.nextDrawingRequestPage();
+    expect(component.reviewsOnPage).toHaveLength(1);
+    expect(component.drawingRequestsOnPage).toHaveLength(1);
   });
 
   it('shows a clear credential error and re-enables sign-in', () => {
