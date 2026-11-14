@@ -253,6 +253,21 @@ private readonly cdr =
     }
 
     return filtered.sort((a, b) => {
+      const numericId = (artwork: Artwork): string | undefined =>
+        artwork.title.match(/\d+/)?.[0]
+        ?? artwork.image.split(/[\\/]/).pop()?.match(/\d+/)?.[0];
+      const aNumericId = numericId(a);
+      const bNumericId = numericId(b);
+
+      if (aNumericId && bNumericId) {
+        const aId = BigInt(aNumericId);
+        const bId = BigInt(bNumericId);
+
+        if (aId !== bId) {
+          return aId > bId ? -1 : 1;
+        }
+      }
+
       const recency = (artwork: Artwork): number => Math.max(
         Date.parse(`${artwork.date || ''}T00:00:00.000Z`) || 0,
         Date.parse(artwork.modifiedAt || '') || 0,
