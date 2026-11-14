@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, timeout } from 'rxjs';
 import {
   AdultViewer,
   CustomDrawingRequest,
@@ -86,13 +86,13 @@ import {
                 type="button"
                 [disabled]="moderatingReviewId === review.id"
                 (click)="moderateReview(review, 'approved')"
-              >Approve</button>
+              >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'approved' ? 'Approving…' : 'Approve' }}</button>
               <button
                 type="button"
                 class="reject-button"
                 [disabled]="moderatingReviewId === review.id"
                 (click)="moderateReview(review, 'rejected')"
-              >Reject</button>
+              >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'rejected' ? 'Rejecting…' : 'Reject' }}</button>
             </div>
           </article>
         </section>
@@ -186,6 +186,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   pendingReviews: ModerationArtworkReview[] = [];
   loadingReviews = false;
   moderatingReviewId: string | null = null;
+  moderatingReviewStatus: 'approved' | 'rejected' | null = null;
   reviewsMessage = '';
   customDrawingRequests: CustomDrawingRequest[] = [];
   loadingDrawingRequests = false;
@@ -306,18 +307,23 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   moderateReview(review: ModerationArtworkReview, status: 'approved' | 'rejected'): void {
     if (this.moderatingReviewId) return;
     this.moderatingReviewId = review.id;
+    this.moderatingReviewStatus = status;
     this.reviewsMessage = '';
-    this.drawingsService.moderateArtworkReview(review.id, status).subscribe({
+    this.drawingsService.moderateArtworkReview(review.id, status).pipe(timeout(30_000)).subscribe({
       next: () => {
         this.pendingReviews = this.pendingReviews.filter(item => item.id !== review.id);
         this.moderatingReviewId = null;
+        this.moderatingReviewStatus = null;
         this.reviewsMessage = status === 'approved'
-          ? 'Review approved and published.'
+          ? 'Review approved and published. Open this artwork’s Reviews & feedback to see it.'
           : 'Review rejected.';
       },
       error: error => {
         this.moderatingReviewId = null;
-        this.reviewsMessage = error?.error?.error || 'Could not update the review. Please try again.';
+        this.moderatingReviewStatus = null;
+        this.reviewsMessage = error?.name === 'TimeoutError'
+          ? 'No response after 30 seconds. Refresh reviews to confirm whether the change was saved before retrying.'
+          : error?.error?.error || 'Could not update the review. Please try again.';
         if (error?.status === 401) this.authenticated = false;
       }
     });

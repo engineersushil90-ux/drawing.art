@@ -122,7 +122,34 @@ describe('AdminViewersComponent', () => {
 
     expect(drawingsService.moderateArtworkReview).toHaveBeenCalledWith('review-1', 'approved');
     expect(component.pendingReviews).toEqual([]);
-    expect(component.reviewsMessage).toBe('Review approved and published.');
+    expect(component.reviewsMessage).toBe('Review approved and published. Open this artwork’s Reviews & feedback to see it.');
+  });
+
+  it('re-enables review moderation and asks for a refresh when the request stalls', () => {
+    vi.useFakeTimers();
+    drawingsService.moderateArtworkReview.mockReturnValueOnce(NEVER);
+    const component = fixture.componentInstance;
+    component.pendingReviews = [{
+      id: 'review-1',
+      imagePath: 'drawings/PencilSketches/drawing.jpg',
+      name: 'Art viewer',
+      rating: 4,
+      comment: 'Beautiful pencil details.',
+      createdAt: '2026-11-14T01:00:00.000Z',
+      status: 'pending'
+    }];
+
+    component.moderateReview(component.pendingReviews[0], 'approved');
+    expect(component.moderatingReviewId).toBe('review-1');
+    expect(component.moderatingReviewStatus).toBe('approved');
+
+    vi.advanceTimersByTime(30_000);
+    fixture.detectChanges();
+
+    expect(component.moderatingReviewId).toBeNull();
+    expect(component.moderatingReviewStatus).toBeNull();
+    expect(component.reviewsMessage).toContain('No response after 30 seconds.');
+    vi.useRealTimers();
   });
 
   it('shows a clear credential error and re-enables sign-in', () => {
