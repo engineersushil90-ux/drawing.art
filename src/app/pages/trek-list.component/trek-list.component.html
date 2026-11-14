@@ -732,7 +732,7 @@
       <button type="button" class="age-gate-close" aria-label="Close" (click)="adultAccessOpen = false">×</button>
       <p class="eyebrow">Age restricted</p>
       <h2 id="age-gate-title">18+ Sketches</h2>
-      <p>The five TopFive previews are free. Enter your name and email and confirm that you are at least 18. No email verification is required; your details will be saved and the remaining sketches stay blurred until the site owner confirms your one-time payment. Email ownership is not checked, so entering an email already approved as paid may unlock its gallery.</p>
+      <p>All 18+ sketches are currently free. Enter your name and email and confirm that you are at least 18 to continue. No email verification is required; your details will be saved.</p>
       <form (ngSubmit)="confirmAdultAccess()">
         <label>Name<input name="adultName" type="text" autocomplete="name" [(ngModel)]="adultName" maxlength="100" required></label>
         <label>Email<input name="adultEmail" type="email" autocomplete="email" [(ngModel)]="adultEmail" maxlength="254" required></label>
@@ -746,7 +746,7 @@
     </section>
   </div>
 
-  <div class="age-gate-backdrop" *ngIf="paymentInfoOpen" role="presentation">
+  <div class="age-gate-backdrop" *ngIf="adultPaymentRequired && paymentInfoOpen" role="presentation">
     <section class="age-gate" role="dialog" aria-modal="true" aria-labelledby="payment-info-title">
       <button type="button" class="age-gate-close" aria-label="Close" [disabled]="paymentRequestBusy" (click)="closePaymentInfo()">×</button>
       <p class="eyebrow">Full collection</p>

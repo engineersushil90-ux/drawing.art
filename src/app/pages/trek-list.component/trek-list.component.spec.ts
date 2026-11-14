@@ -47,7 +47,7 @@ describe('DrawingArtComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('keeps TopFive previews free while locking other adult artwork until paid', () => {
+  it('allows adult artwork without payment while payment is disabled', () => {
     const preview = {
       title: 'Preview',
       category: '18+ Sketches',
@@ -59,7 +59,12 @@ describe('DrawingArtComponent', () => {
     const paidArtwork = { ...preview, title: 'Locked', isFreePreview: false };
 
     expect(component.isLockedArtwork(preview)).toBe(false);
-    expect(component.isLockedArtwork(paidArtwork)).toBe(true);
+    expect(component.adultPaymentRequired).toBe(false);
+    expect(component.isLockedArtwork(paidArtwork)).toBe(false);
+
+    component.openArtwork(paidArtwork);
+    expect(component.selectedArtwork).toBe(paidArtwork);
+    expect(component.paymentInfoOpen).toBe(false);
 
     component.isPayment = true;
     expect(component.isLockedArtwork(paidArtwork)).toBe(false);

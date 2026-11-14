@@ -561,6 +561,7 @@ app.patch('/api/admin/18plus-viewers/payment', requireOwner, async (req, res, ne
 });
 
 const blurredPreviewCache = new Map<string, Promise<Buffer>>();
+const ADULT_PAYMENT_REQUIRED = false;
 
 async function getBlurredPreview(imagePath: string): Promise<Buffer> {
   const fileInfo = await statFile(imagePath);
@@ -604,7 +605,7 @@ app.get('/api/18plus/image', async (req, res, next) => {
     return;
   }
   const isFreePreview = file.split(/[\\/]/).includes('TopFive');
-  if (!viewer.isPayment && !isFreePreview) {
+  if (ADULT_PAYMENT_REQUIRED && !viewer.isPayment && !isFreePreview) {
     try {
       res.type('image/jpeg').send(await getBlurredPreview(imagePath));
     } catch (error) {

@@ -2,9 +2,9 @@
 
 ## 18+ gallery and owner access
 
-The five images under `public/drawings/18+Sketches/**/TopFive/` are free previews. Other adult images stay blurred until the site owner verifies a ₹20 one-time UPI payment and marks the viewer's `isPayment` status as `true` from `/admin`. The payment flag is stored on the server and is never accepted from the visitor's browser. The payment dialog shows the owner's UPI ID and QR code; closing it prompts the viewer to report a completed payment, which appears in the admin waiting list for manual review.
+All images in the 18+ gallery are currently free after the visitor confirms they are at least 18. Payment-based locking is temporarily disabled in both the gallery and image API; the existing payment/admin tracking code remains available if paid access is re-enabled later.
 
-The gallery collects a name and email without email verification, then displays the free previews and blurred remaining images. When Supabase is configured, viewer details and payment statuses are stored in its `adult_sketch_viewers` table. Run `supabase/adult-sketch-viewers.sql` in the Supabase SQL Editor to create or migrate the table and secure recording function. Without the database service-role key, records fall back to `adult-sketch-viewers.json` under `DATA_DIR` (or the local `data/` directory), which requires persistent storage in production. Since email ownership is not checked, anyone can enter an email that has already been approved for paid access.
+The gallery collects a name and email without email verification, then displays the 18+ drawings after the age confirmation. When Supabase is configured, viewer details and payment statuses are stored in its `adult_sketch_viewers` table. Run `supabase/adult-sketch-viewers.sql` in the Supabase SQL Editor to create or migrate the table and secure recording function. Without the database service-role key, records fall back to `adult-sketch-viewers.json` under `DATA_DIR` (or the local `data/` directory), which requires persistent storage in production. Email ownership is not checked.
 
 Configure these environment variables on the API server before enabling the feature:
 

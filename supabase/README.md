@@ -16,4 +16,4 @@ Keep both Supabase keys in Render's server environment. Never add the `service_r
 
 When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are present, `/api/likes`, `/api/visits`, and viewer/payment records use Supabase. Without the service-role key, local development continues to use JSON files in `data/`. The gallery does not verify email ownership; manually approved payment status applies to anyone who enters the same email.
 
-The site's `/admin` page shows all viewers, a waiting-for-payment-approval queue, and a Paid checkbox. A viewer can report payment from the gallery; verify the ₹20 UPI transfer yourself before checking Paid. Payment verification is manual until a supported payment gateway is configured.
+The site's `/admin` page shows all viewers, a waiting-for-payment-approval queue, and a Paid checkbox. Paid access is temporarily disabled; the payment tracking and manual admin approval tools are retained for possible future use.

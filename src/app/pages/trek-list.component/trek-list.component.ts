@@ -60,6 +60,7 @@ export class DrawingArtComponent implements OnInit {
   isAdultConfirmed = false;
   adultImageAccessToken = '';
   isPayment = false;
+  readonly adultPaymentRequired = false;
   private adultAccessConfirmedThisSession = false;
   paymentInfoOpen = false;
   paymentRequestBusy = false;
@@ -637,7 +638,10 @@ loadDrawings(imageAccessToken = ''): void {
   }
 
   isLockedArtwork(artwork: Artwork): boolean {
-    return artwork.category === '18+ Sketches' && !artwork.isFreePreview && !this.isPayment;
+    return this.adultPaymentRequired
+      && artwork.category === '18+ Sketches'
+      && !artwork.isFreePreview
+      && !this.isPayment;
   }
 
   private hasAdultAccessForCurrentSession(): boolean {
