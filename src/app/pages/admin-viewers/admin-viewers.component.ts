@@ -148,7 +148,7 @@ import {
     form{display:grid;gap:18px;max-width:430px}label{display:grid;gap:8px;font-size:14px}
     input{padding:13px;border:1px solid #d8d4cc;border-radius:8px;font:inherit}
     button{padding:13px 18px;border:0;border-radius:8px;background:#26342d;color:white;font:inherit;cursor:pointer}
-    button:disabled{opacity:.6;cursor:wait}.message{color:#9a3428}
+    button:disabled{opacity:.6;cursor:not-allowed}.message{color:#9a3428}
     .login-hint,.privacy-note{margin:0;color:#647069;font-size:13px;line-height:1.5}
     .list-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:12px 0 20px}
     .description{margin:0 0 4px;color:#647069}.description strong{color:#26342d}

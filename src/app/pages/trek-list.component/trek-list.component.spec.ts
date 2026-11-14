@@ -142,6 +142,8 @@ describe('DrawingArtComponent', () => {
     const badge = fixture.nativeElement.querySelector('.review-count-badge') as HTMLElement;
     expect(badge.textContent.trim()).toBe('3 reviews');
     expect(badge.getAttribute('aria-label')).toBe('3 reviews and comments');
+    expect(badge.style.top).toBe('14px');
+    expect(badge.style.bottom).toBe('auto');
   });
 
   it('allows liking 18+ sketches and updates their count', () => {
