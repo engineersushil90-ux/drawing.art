@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -19,6 +19,8 @@ import {
       <section class="admin-card">
         <p class="eyebrow">Owner access</p>
         <h1>18+ Sketches viewers</h1>
+
+        <p *ngIf="checkingAdminSession" class="login-hint" role="status">Checking your saved admin session…</p>
 
         <form *ngIf="!authenticated" (ngSubmit)="login()">
           <label>Admin username or email<input name="username" type="text" autocomplete="username" [(ngModel)]="username" required></label>
@@ -168,7 +170,7 @@ import {
     @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}}
   `]
 })
-export class AdminViewersComponent implements OnDestroy {
+export class AdminViewersComponent implements OnInit, OnDestroy {
   private readonly drawingsService = inject(DrawingsService);
   private readonly cdr = inject(ChangeDetectorRef);
   private loginDeadline: ReturnType<typeof setTimeout> | undefined;
@@ -176,6 +178,7 @@ export class AdminViewersComponent implements OnDestroy {
   username = '';
   password = '';
   busy = false;
+  checkingAdminSession = true;
   authenticated = false;
   loadingViewers = false;
   message = '';
@@ -190,6 +193,22 @@ export class AdminViewersComponent implements OnDestroy {
   loadingReferenceRequestId: string | null = null;
   referencePreviewRequestId: string | null = null;
   referencePreviewUrl = '';
+
+  ngOnInit(): void {
+    this.drawingsService.getAdminSession().subscribe({
+      next: () => {
+        this.checkingAdminSession = false;
+        this.authenticated = true;
+        this.loadAdminData();
+      },
+      error: error => {
+        this.checkingAdminSession = false;
+        if (!this.authenticated && error?.status !== 401) {
+          this.message = error?.error?.error || 'Could not verify your saved admin session. Please sign in again.';
+        }
+      }
+    });
+  }
 
   ngOnDestroy(): void {
     this.clearLoginDeadline();
@@ -219,9 +238,7 @@ export class AdminViewersComponent implements OnDestroy {
         this.busy = false;
         this.authenticated = true;
         this.password = '';
-        this.loadViewers();
-        this.loadPendingReviews();
-        this.loadCustomDrawingRequests();
+        this.loadAdminData();
       },
       error: error => {
         this.clearLoginDeadline();
@@ -235,6 +252,12 @@ export class AdminViewersComponent implements OnDestroy {
   private clearLoginDeadline(): void {
     if (this.loginDeadline) clearTimeout(this.loginDeadline);
     this.loginDeadline = undefined;
+  }
+
+  private loadAdminData(): void {
+    this.loadViewers();
+    this.loadPendingReviews();
+    this.loadCustomDrawingRequests();
   }
 
   private getLoginErrorMessage(error: { error?: { error?: string }; name?: string; status?: number }): string {

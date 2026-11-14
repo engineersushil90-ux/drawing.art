@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { NEVER, of, throwError } from 'rxjs';
+import { NEVER, Observable, of, throwError } from 'rxjs';
 import { DrawingsService } from '../../core/services/drawings.service';
 import { AdminViewersComponent } from './admin-viewers.component';
 
@@ -8,6 +8,9 @@ describe('AdminViewersComponent', () => {
   let fixture: ComponentFixture<AdminViewersComponent>;
   const drawingsService = {
     adminLogin: vi.fn(() => of({ ok: true, accessToken: 'admin-token' })),
+    getAdminSession: vi.fn(() => new Observable<{ ok: boolean }>(subscriber => {
+      subscriber.error({ status: 401 });
+    })),
     getAdultViewers: vi.fn(() => of([{
       name: 'Test Viewer',
       email: 'viewer@example.com',
@@ -39,6 +42,7 @@ describe('AdminViewersComponent', () => {
 
   beforeEach(async () => {
     drawingsService.adminLogin.mockClear();
+    drawingsService.getAdminSession.mockClear();
     drawingsService.getAdultViewers.mockClear();
     drawingsService.getPendingArtworkReviews.mockClear();
     drawingsService.moderateArtworkReview.mockClear();
@@ -57,6 +61,7 @@ describe('AdminViewersComponent', () => {
 
   it('keeps names hidden until login, then shows viewer names and emails', () => {
     expect(drawingsService.adminLogin).not.toHaveBeenCalled();
+    expect(drawingsService.getAdminSession).toHaveBeenCalledOnce();
     expect(drawingsService.getAdultViewers).not.toHaveBeenCalled();
     expect(drawingsService.getPendingArtworkReviews).not.toHaveBeenCalled();
     expect(drawingsService.getCustomDrawingRequests).not.toHaveBeenCalled();
@@ -75,6 +80,28 @@ describe('AdminViewersComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('viewer@example.com');
     expect(fixture.nativeElement.textContent).toContain('Beautiful pencil details.');
     expect(fixture.nativeElement.textContent).toContain('Please draw a landscape with mountains.');
+  });
+
+  it('restores the admin dashboard when the signed session cookie is valid', () => {
+    drawingsService.getAdminSession.mockReturnValueOnce(of({ ok: true }));
+    const restoredFixture = TestBed.createComponent(AdminViewersComponent);
+    restoredFixture.detectChanges();
+
+    expect(restoredFixture.componentInstance.authenticated).toBe(true);
+    expect(drawingsService.getAdultViewers).toHaveBeenCalled();
+    expect(drawingsService.getPendingArtworkReviews).toHaveBeenCalled();
+    expect(drawingsService.getCustomDrawingRequests).toHaveBeenCalled();
+    restoredFixture.destroy();
+  });
+
+  it('keeps the sign-in form available while checking a saved session', () => {
+    drawingsService.getAdminSession.mockReturnValueOnce(NEVER);
+    const pendingFixture = TestBed.createComponent(AdminViewersComponent);
+    pendingFixture.detectChanges();
+
+    expect(pendingFixture.componentInstance.checkingAdminSession).toBe(true);
+    expect(pendingFixture.nativeElement.querySelector('form')).not.toBeNull();
+    pendingFixture.destroy();
   });
 
   it('removes a review from the queue after approving it', () => {

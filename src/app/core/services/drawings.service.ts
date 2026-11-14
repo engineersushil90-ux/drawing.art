@@ -137,6 +137,13 @@ export class DrawingsService {
     );
   }
 
+  getAdminSession(): Observable<{ ok: boolean }> {
+    return this.http.get<{ ok: boolean }>(`${this.apiBaseUrl}/api/admin/session`, {
+      headers: this.adminHeaders(),
+      withCredentials: true
+    }).pipe(timeout(8000));
+  }
+
   getAdultViewers(): Observable<AdultViewer[]> {
     return this.http.get<AdultViewer[]>(`${this.apiBaseUrl}/api/admin/18plus-viewers`, {
       headers: this.adminHeaders(),

@@ -445,36 +445,40 @@ interface AdminUserRow {
   is_active: boolean;
 }
 
-async function seedInitialAdminUser(): Promise<void> {
-  if (!supabaseEnabled || !adminUsername || !adminPassword) return;
-  const existing = await supabaseRequest<Array<{ username: string; password_hash: string }>>(
-    `admin_users?select=username,password_hash&username=eq.${encodeURIComponent(adminUsername)}&limit=1`
+async function seedInitialAdminUser(): Promise<AdminUserRow> {
+  if (!supabaseEnabled || !adminUsername || !adminPassword) {
+    throw new Error('Configured Supabase admin credentials are missing');
+  }
+  const existing = await supabaseRequest<AdminUserRow[]>(
+    `admin_users?select=username,password_hash,is_active&username=eq.${encodeURIComponent(adminUsername)}&limit=1`
   );
-  const passwordHash = hashAdminPassword(adminPassword);
   if (existing.length) {
-    if (isAdminPasswordValid(adminPassword, existing[0].password_hash)) return;
-    await supabaseRequest<AdminUserRow[]>(
+    if (isAdminPasswordValid(adminPassword, existing[0].password_hash)) return existing[0];
+    const updated = await supabaseRequest<AdminUserRow[]>(
       `admin_users?username=eq.${encodeURIComponent(adminUsername)}`,
       {
         method: 'PATCH',
         headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({ password_hash: passwordHash })
+        body: JSON.stringify({ password_hash: hashAdminPassword(adminPassword) })
       }
     );
-    return;
+    if (!updated.length) throw new Error('Configured admin account could not be updated');
+    return updated[0];
   }
-  await supabaseRequest<AdminUserRow[]>(
+  const inserted = await supabaseRequest<AdminUserRow[]>(
     'admin_users?on_conflict=username',
     {
       method: 'POST',
       headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
       body: JSON.stringify({
         username: adminUsername,
-        password_hash: passwordHash,
+        password_hash: hashAdminPassword(adminPassword),
         is_active: true
       })
     }
   );
+  if (!inserted.length) throw new Error('Configured admin account could not be created');
+  return inserted[0];
 }
 
 app.post('/api/admin/login', async (req, res) => {
@@ -491,11 +495,11 @@ app.post('/api/admin/login', async (req, res) => {
 
   if (supabaseEnabled) {
     try {
-      await seedInitialAdminUser();
-      const users = await supabaseRequest<AdminUserRow[]>(
-        `admin_users?select=username,password_hash,is_active&username=eq.${encodeURIComponent(username)}&limit=1`
-      );
-      const adminUser = users[0];
+      const adminUser = adminUsername && adminPassword && username === adminUsername
+        ? await seedInitialAdminUser()
+        : (await supabaseRequest<AdminUserRow[]>(
+          `admin_users?select=username,password_hash,is_active&username=eq.${encodeURIComponent(username)}&limit=1`
+        ))[0];
       if (!adminUser?.is_active || !isAdminPasswordValid(password, adminUser.password_hash)) {
         res.status(401).json({ error: 'Invalid credentials' });
         return;
@@ -528,6 +532,11 @@ app.post('/api/admin/login', async (req, res) => {
   setSignedCookie(req, res, adminCookieName, 'owner', 60 * 60 * 8);
   res.setHeader('Cache-Control', 'private, no-store');
   res.json({ ok: true, accessToken });
+});
+
+app.get('/api/admin/session', requireOwner, (_req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.json({ ok: true });
 });
 
 app.get('/api/18plus/viewer-count', async (_req, res, next) => {
