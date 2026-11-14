@@ -1794,6 +1794,23 @@ app.get('/api/admin/reviews', requireOwner, async (_req, res, next) => {
   }
 });
 
+app.get('/api/admin/review-image', requireOwner, async (req, res, next) => {
+  try {
+    const imagePath = await validateReviewImagePath(req.query['image']);
+    if (!imagePath) {
+      res.status(404).json({ error: 'Artwork image not found.' });
+      return;
+    }
+
+    const filePath = resolve(drawingsRoot, imagePath.slice('drawings/'.length));
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.sendFile(filePath, error => error && next(error));
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.patch('/api/admin/reviews/:id', requireOwner, async (req, res, next) => {
   const origin = req.headers.origin;
   const reviewId = typeof req.params['id'] === 'string' ? req.params['id'] : '';

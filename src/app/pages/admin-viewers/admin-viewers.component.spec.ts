@@ -28,6 +28,9 @@ describe('AdminViewersComponent', () => {
       createdAt: '2026-11-14T01:00:00.000Z',
       status: 'pending' as const
     }])),
+    getAdminReviewImageUrl: vi.fn((imagePath: string) =>
+      `https://drawing-art.onrender.com/api/admin/review-image?image=${encodeURIComponent(imagePath)}`
+    ),
     moderateArtworkReview: vi.fn(() => of({ ok: true })),
     getCustomDrawingRequests: vi.fn(() => of([{
       id: 'request-1',
@@ -81,6 +84,9 @@ describe('AdminViewersComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('viewer@example.com');
     expect(fixture.nativeElement.textContent).toContain('Beautiful pencil details.');
     expect(fixture.nativeElement.textContent).toContain('Please draw a landscape with mountains.');
+    const reviewImage = fixture.nativeElement.querySelector('.moderation-artwork-preview') as HTMLImageElement;
+    expect(reviewImage.src).toContain('/api/admin/review-image?image=drawings%2FPencilSketches%2Fdrawing.jpg');
+    expect(reviewImage.crossOrigin).toBe('use-credentials');
   });
 
   it('restores the admin dashboard when the signed session cookie is valid', () => {

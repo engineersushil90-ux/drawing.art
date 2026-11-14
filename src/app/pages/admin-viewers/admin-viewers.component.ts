@@ -80,20 +80,37 @@ import {
               <span>{{ review.rating }} / 5</span>
               <time [attr.datetime]="review.createdAt">{{ review.createdAt | date:'medium' }}</time>
             </div>
-            <p class="review-image">{{ review.imagePath }}</p>
-            <p class="moderation-comment">{{ review.comment }}</p>
-            <div class="moderation-actions">
-              <button
-                type="button"
-                [disabled]="moderatingReviewId === review.id"
-                (click)="moderateReview(review, 'approved')"
-              >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'approved' ? 'Approving…' : 'Approve' }}</button>
-              <button
-                type="button"
-                class="reject-button"
-                [disabled]="moderatingReviewId === review.id"
-                (click)="moderateReview(review, 'rejected')"
-              >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'rejected' ? 'Rejecting…' : 'Reject' }}</button>
+            <div class="moderation-review-content">
+              <img
+                *ngIf="!reviewImageErrors[review.id]"
+                class="moderation-artwork-preview"
+                [src]="getReviewArtworkImageUrl(review)"
+                crossorigin="use-credentials"
+                loading="lazy"
+                decoding="async"
+                alt="Artwork being reviewed"
+                (error)="onReviewArtworkImageError(review)"
+              >
+              <div *ngIf="reviewImageErrors[review.id]" class="moderation-artwork-error" role="status">
+                Artwork preview unavailable
+              </div>
+              <div class="moderation-review-details">
+                <p class="review-image">{{ review.imagePath }}</p>
+                <p class="moderation-comment">{{ review.comment }}</p>
+                <div class="moderation-actions">
+                  <button
+                    type="button"
+                    [disabled]="moderatingReviewId === review.id"
+                    (click)="moderateReview(review, 'approved')"
+                  >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'approved' ? 'Approving…' : 'Approve' }}</button>
+                  <button
+                    type="button"
+                    class="reject-button"
+                    [disabled]="moderatingReviewId === review.id"
+                    (click)="moderateReview(review, 'rejected')"
+                  >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'rejected' ? 'Rejecting…' : 'Reject' }}</button>
+                </div>
+              </div>
             </div>
           </article>
         </section>
@@ -161,6 +178,11 @@ import {
     .moderation-review-heading{display:flex;flex-wrap:wrap;gap:14px;align-items:baseline}
     .moderation-review-heading time,.review-image{color:#647069;font-size:12px}
     .review-image{overflow-wrap:anywhere}
+    .moderation-review-content{display:flex;align-items:flex-start;gap:16px;margin-top:12px}
+    .moderation-artwork-preview,.moderation-artwork-error{width:128px;height:160px;flex:0 0 128px;border-radius:8px;background:#f7f1e8}
+    .moderation-artwork-preview{object-fit:contain}
+    .moderation-artwork-error{display:grid;place-items:center;padding:8px;box-sizing:border-box;color:#647069;font-size:12px;text-align:center}
+    .moderation-review-details{flex:1;min-width:0}
     .moderation-comment{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
     .moderation-actions{display:flex;gap:10px}
     .reject-button{background:#8c3d31}
@@ -169,7 +191,7 @@ import {
     .drawing-request{padding:18px 0;border-bottom:1px solid #e8e2d9}
     .drawing-request>a{color:#8c5c4d;overflow-wrap:anywhere}
     .request-reference-preview{display:block;max-width:min(100%,520px);max-height:520px;margin-top:14px;border-radius:10px;object-fit:contain;background:#f7f1e8}
-    @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}}
+    @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}.moderation-review-content{flex-direction:column}.moderation-artwork-preview,.moderation-artwork-error{width:100%;max-width:240px;height:220px;flex-basis:220px}}
   `]
 })
 export class AdminViewersComponent implements OnInit, OnDestroy {
@@ -187,6 +209,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   message = '';
   viewers: AdultViewer[] = [];
   pendingReviews: ModerationArtworkReview[] = [];
+  reviewImageErrors: Record<string, boolean> = {};
   loadingReviews = false;
   moderatingReviewId: string | null = null;
   moderatingReviewStatus: 'approved' | 'rejected' | null = null;
@@ -307,6 +330,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.drawingsService.getPendingArtworkReviews().pipe(timeout(30_000)).subscribe({
       next: reviews => {
         this.pendingReviews = reviews;
+        this.reviewImageErrors = {};
         this.loadingReviews = false;
         if (showSuccessMessage) this.reviewsMessage = 'Pending reviews refreshed.';
         this.cdr.markForCheck();
@@ -345,6 +369,15 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  getReviewArtworkImageUrl(review: ModerationArtworkReview): string {
+    return this.drawingsService.getAdminReviewImageUrl(review.imagePath);
+  }
+
+  onReviewArtworkImageError(review: ModerationArtworkReview): void {
+    this.reviewImageErrors[review.id] = true;
+    this.cdr.markForCheck();
   }
 
   loadCustomDrawingRequests(showSuccessMessage = false): void {

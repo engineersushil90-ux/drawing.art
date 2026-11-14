@@ -219,6 +219,11 @@ export class DrawingsService {
     });
   }
 
+  getAdminReviewImageUrl(imagePath: string): string {
+    const params = new HttpParams().set('image', imagePath);
+    return `${this.apiBaseUrl}/api/admin/review-image?${params.toString()}`;
+  }
+
   moderateArtworkReview(id: string, status: 'approved' | 'rejected'): Observable<{ ok: boolean }> {
     return this.http.patch<{ ok: boolean }>(
       `${this.apiBaseUrl}/api/admin/reviews/${encodeURIComponent(id)}`,
