@@ -1631,7 +1631,52 @@ async function readArtworkReviews(
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
 }
 
+async function readArtworkReviewCounts(): Promise<Record<string, number>> {
+  const counts: Record<string, number> = Object.create(null) as Record<string, number>;
+
+  if (supabaseEnabled) {
+    const pageSize = 1000;
+    let offset = 0;
+    while (true) {
+      const rows = await supabaseRequest<Array<{ image_path: string }>>(
+        `artwork_reviews?select=image_path&status=eq.approved&order=id.asc&limit=${pageSize}&offset=${offset}`
+      );
+      for (const row of rows) {
+        counts[row.image_path] = (counts[row.image_path] || 0) + 1;
+      }
+      if (rows.length < pageSize) break;
+      offset += pageSize;
+    }
+    return counts;
+  }
+
+  const reviews = JSON.parse(await readDataFile('artwork-reviews.json')) as StoredArtworkReview[];
+  for (const review of reviews) {
+    if (review.status === 'approved') {
+      counts[review.imagePath] = (counts[review.imagePath] || 0) + 1;
+    }
+  }
+  return counts;
+}
+
 let artworkReviewWriteQueue: Promise<void> = Promise.resolve();
+
+app.get('/api/review-counts', async (req, res, next) => {
+  try {
+    const counts = await readArtworkReviewCounts();
+    const accessId = getAdultAccessId(req);
+    const viewer = accessId ? await findAdultViewerByAccessId(accessId) : undefined;
+    const visibleCounts = Object.fromEntries(
+      Object.entries(counts).filter(([imagePath]) =>
+        viewer || !imagePath.startsWith('drawings/18+Sketches/')
+      )
+    );
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(visibleCounts);
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/api/reviews', async (req, res, next) => {
   try {

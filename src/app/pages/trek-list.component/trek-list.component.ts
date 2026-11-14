@@ -51,6 +51,9 @@ export class DrawingArtComponent implements OnInit {
   selectedArtwork: Artwork | null = null;
   reviewArtwork: Artwork | null = null;
   artworkReviews: ArtworkReview[] = [];
+  artworkReviewCounts: Record<string, number> = {};
+  reviewCountsLoaded = false;
+  reviewCountsMessage = '';
   reviewsLoading = false;
   reviewSubmitting = false;
   reviewName = '';
@@ -339,6 +342,7 @@ private readonly cdr =
   // --------------------------------------------------
 loadDrawings(imageAccessToken = ''): void {
   this.isLoading = true;
+  this.loadArtworkReviewCounts(imageAccessToken);
 
   console.log('Loading drawings.json...');
 
@@ -374,6 +378,25 @@ loadDrawings(imageAccessToken = ''): void {
       }
     });
 }
+
+  loadArtworkReviewCounts(adultAccessToken = ''): void {
+    this.reviewCountsLoaded = false;
+    this.reviewCountsMessage = '';
+    this.artworkReviewCounts = {};
+
+    this.drawingsService.getArtworkReviewCounts(adultAccessToken).subscribe({
+      next: counts => {
+        this.artworkReviewCounts = counts;
+        this.reviewCountsLoaded = true;
+        this.cdr.detectChanges();
+      },
+      error: error => {
+        console.error('Failed to load artwork review counts:', error);
+        this.reviewCountsMessage = 'Review counts are temporarily unavailable.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   // --------------------------------------------------
   // LOAD LIKES
@@ -476,6 +499,10 @@ loadDrawings(imageAccessToken = ''): void {
 
   getLikeCount(artwork: Artwork): number {
     return this.likes[normalizeImagePath(artwork.image, artwork.category)] || 0;
+  }
+
+  getArtworkReviewCount(artwork: Artwork): number {
+    return this.artworkReviewCounts[normalizeImagePath(artwork.image, artwork.category)] || 0;
   }
 
 

@@ -10,6 +10,7 @@ describe('DrawingArtComponent', () => {
   let fixture: ComponentFixture<DrawingArtComponent>;
   const requestedTokens: string[] = [];
   let drawingsResponse: Artwork[] = [];
+  let reviewCountsResponse: Record<string, number> = {};
   let registeredDetails: { name: string; email: string; isAdult: boolean } | undefined;
   const paymentRequests: string[] = [];
   const likedImages: string[] = [];
@@ -41,6 +42,7 @@ describe('DrawingArtComponent', () => {
       return of({ image: normalizedImage, likes: 1 });
     },
     getArtworkReviews: () => of([]),
+    getArtworkReviewCounts: () => of(reviewCountsResponse),
     submitArtworkReview: (
       image: string,
       category: string,
@@ -62,6 +64,7 @@ describe('DrawingArtComponent', () => {
 
   beforeEach(async () => {
     drawingsResponse = [];
+    reviewCountsResponse = {};
     await TestBed.configureTestingModule({
       imports: [DrawingArtComponent],
       providers: [
@@ -120,6 +123,25 @@ describe('DrawingArtComponent', () => {
 
     expect(likedImages).toEqual(['drawings/PencilSketches/drawing.jpg']);
     expect(component.getLikeCount(artwork)).toBe(1);
+  });
+
+  it('shows the approved review count on each gallery image', () => {
+    const artwork = {
+      title: 'Reviewed drawing',
+      category: 'Pencil Sketches',
+      year: '2026',
+      image: '/drawings/PencilSketches/reviewed.jpg',
+      alt: 'Reviewed drawing'
+    };
+    drawingsResponse = [artwork];
+    reviewCountsResponse = { 'drawings/PencilSketches/reviewed.jpg': 3 };
+
+    component.loadDrawings();
+    fixture.detectChanges();
+
+    const badge = fixture.nativeElement.querySelector('.review-count-badge') as HTMLElement;
+    expect(badge.textContent.trim()).toBe('3 reviews');
+    expect(badge.getAttribute('aria-label')).toBe('3 reviews and comments');
   });
 
   it('allows liking 18+ sketches and updates their count', () => {

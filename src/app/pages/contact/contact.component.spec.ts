@@ -54,16 +54,20 @@ describe('ContactComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('4/15');
   });
 
-  it('allows a short drawing description when a reference image is attached', () => {
+  it('allows a short drawing description when a reference image is attached', async () => {
     const component = fixture.componentInstance;
-    component.request = {
-      name: 'Art customer',
-      email: 'customer@example.com',
-      description: 'Draw',
-      website: ''
-    };
     component.referenceImage = new File(['image'], 'reference.jpg', { type: 'image/jpeg' });
+    const nameInput = fixture.nativeElement.querySelector('input[name="name"]') as HTMLInputElement;
+    const emailInput = fixture.nativeElement.querySelector('input[name="email"]') as HTMLInputElement;
+    const descriptionInput = fixture.nativeElement.querySelector('textarea[name="description"]') as HTMLTextAreaElement;
+    nameInput.value = 'Art customer';
+    nameInput.dispatchEvent(new Event('input'));
+    emailInput.value = 'customer@example.com';
+    emailInput.dispatchEvent(new Event('input'));
+    descriptionInput.value = 'Draw';
+    descriptionInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
+    await fixture.whenStable();
 
     const submitButton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(submitButton.disabled).toBe(false);

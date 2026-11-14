@@ -187,6 +187,15 @@ export class DrawingsService {
     return this.http.get<ArtworkReview[]>(`${this.apiBaseUrl}/api/reviews`, { params });
   }
 
+  getArtworkReviewCounts(adultAccessToken = ''): Observable<Record<string, number>> {
+    let params = new HttpParams();
+    if (adultAccessToken) params = params.set('access_token', adultAccessToken);
+    return this.http.get<Record<string, number>>(`${this.apiBaseUrl}/api/review-counts`, {
+      params,
+      withCredentials: true
+    });
+  }
+
   submitArtworkReview(
     image: string,
     category: string,

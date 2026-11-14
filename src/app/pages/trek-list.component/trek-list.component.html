@@ -241,6 +241,12 @@
 
     </div>
 
+    <p
+      *ngIf="reviewCountsMessage"
+      role="status"
+    >
+      {{ reviewCountsMessage }}
+    </p>
 
     <!-- =================================================
          LOADING
@@ -299,6 +305,16 @@
               decoding="async"
             />
           </picture>
+
+          <span
+            *ngIf="reviewCountsLoaded"
+            class="like-button review-count-badge"
+            role="img"
+            [attr.aria-label]="getArtworkReviewCount(artwork) + ' reviews and comments'"
+            [title]="getArtworkReviewCount(artwork) + ' reviews and comments'"
+          >
+            {{ getArtworkReviewCount(artwork) }} {{ getArtworkReviewCount(artwork) === 1 ? 'review' : 'reviews' }}
+          </span>
 
           <div class="locked-art-overlay" *ngIf="isLockedArtwork(artwork)" aria-hidden="true">
             <strong>Locked</strong>
