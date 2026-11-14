@@ -31,8 +31,16 @@ const imageExtensions = new Set([
   '.jpeg',
   '.png',
   '.webp',
-  '.gif'
+  '.gif',
+  '.avif'
 ]);
+
+function getTimestampFromTitle(title) {
+  const match = /^SK_(\d{14})$/.exec(title);
+  if (!match) return '';
+  const timestamp = match[1];
+  return `${timestamp.slice(0, 4)}-${timestamp.slice(4, 6)}-${timestamp.slice(6, 8)}T${timestamp.slice(8, 10)}:${timestamp.slice(10, 12)}:${timestamp.slice(12, 14)}Z`;
+}
 
 async function scanDirectory(
   directory,
@@ -105,13 +113,15 @@ async function scanDirectory(
         ? dateFolder.replace(/^(\d{2})-(\d{2})-(\d{4})$/, '$3-$2-$1')
         : '';
 
-    const modifiedAt = (await stat(fullPath)).mtime.toISOString();
+    const fileInfo = await stat(fullPath);
+    const modifiedAt = fileInfo.mtime.toISOString();
 
     const title =
       basename(
         entry.name,
         extension
       );
+    const addedAt = getTimestampFromTitle(title) || modifiedAt;
 
     const effectiveDate = date || modifiedAt.substring(0, 10);
 
@@ -128,6 +138,7 @@ async function scanDirectory(
       year,
       date: effectiveDate,
       modifiedAt,
+      addedAt,
       image: relativePath,
       alt: title
     });
@@ -184,7 +195,8 @@ async function generateDrawings() {
     (a, b) => {
       const recency = drawing => Math.max(
         Date.parse(`${drawing.date}T00:00:00.000Z`) || 0,
-        Date.parse(drawing.modifiedAt) || 0
+        Date.parse(drawing.modifiedAt) || 0,
+        Date.parse(drawing.addedAt) || 0
       );
 
       const recencyOrder = recency(b) - recency(a);

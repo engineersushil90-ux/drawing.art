@@ -943,6 +943,13 @@ const imageExtensions = new Set([
 
 ]);
 
+function getTimestampFromDrawingTitle(title: string): string | undefined {
+  const match = /^SK_(\d{14})$/.exec(title);
+  if (!match) return undefined;
+  const timestamp = match[1];
+  return `${timestamp.slice(0, 4)}-${timestamp.slice(4, 6)}-${timestamp.slice(6, 8)}T${timestamp.slice(8, 10)}:${timestamp.slice(10, 12)}:${timestamp.slice(12, 14)}Z`;
+}
+
 
 interface Artwork {
 
@@ -953,6 +960,8 @@ interface Artwork {
   year: string;
 
   date?: string;
+
+  addedAt?: string;
 
   image: string;
 
@@ -1088,6 +1097,8 @@ async function scanDrawings(
           entry.name,
           extension
         );
+      const fileInfo = await statFile(fullPath);
+      const addedAt = getTimestampFromDrawingTitle(title) ?? fileInfo.mtime.toISOString();
 
 
       /*
@@ -1113,6 +1124,8 @@ async function scanDrawings(
         ...(date
           ? { date }
           : {}),
+
+        addedAt,
 
         image: imagePath,
 

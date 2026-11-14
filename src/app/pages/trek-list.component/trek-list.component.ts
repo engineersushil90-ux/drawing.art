@@ -221,13 +221,10 @@ private readonly cdr =
     }
 
     return filtered.sort((a, b) => {
-      if (this.activeCategory === '18+ Sketches' && a.isFreePreview !== b.isFreePreview) {
-        return a.isFreePreview ? -1 : 1;
-      }
-
       const recency = (artwork: Artwork): number => Math.max(
         Date.parse(`${artwork.date || ''}T00:00:00.000Z`) || 0,
-        Date.parse(artwork.modifiedAt || '') || 0
+        Date.parse(artwork.modifiedAt || '') || 0,
+        Date.parse(artwork.addedAt || '') || 0
       );
 
       const recencyOrder = recency(b) - recency(a);

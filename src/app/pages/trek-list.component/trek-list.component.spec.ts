@@ -47,6 +47,32 @@ describe('DrawingArtComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('sorts timestamp-renamed drawings newest first', () => {
+    component.activeCategory = 'Pencil Sketches';
+    component.artworks = [
+      {
+        title: 'Older',
+        category: 'Pencil Sketches',
+        year: '2026',
+        date: '2026-09-14',
+        image: 'older.jpg',
+        alt: 'Older',
+        addedAt: '2026-11-14T07:00:00.000Z'
+      },
+      {
+        title: 'Newest',
+        category: 'Pencil Sketches',
+        year: '2026',
+        date: '2026-09-14',
+        image: 'newest.jpg',
+        alt: 'Newest',
+        addedAt: '2026-11-14T07:30:00.000Z'
+      }
+    ];
+
+    expect(component.filteredArtworks.map(artwork => artwork.title)).toEqual(['Newest', 'Older']);
+  });
+
   it('allows adult artwork without payment while payment is disabled', () => {
     const preview = {
       title: 'Preview',

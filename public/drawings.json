@@ -1,10 +1,61 @@
 [
   {
+    "title": "SK_20261114080808",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "2026-09-17",
+    "modifiedAt": "2026-10-17T12:20:02.572Z",
+    "addedAt": "2026-11-14T08:08:08Z",
+    "image": "drawings/PencilSketches/17-09-2026/SK_20261114080808.jpeg",
+    "alt": "SK_20261114080808"
+  },
+  {
+    "title": "SK_20261114080806",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "2026-09-17",
+    "modifiedAt": "2026-11-13T03:06:24.862Z",
+    "addedAt": "2026-11-14T08:08:06Z",
+    "image": "drawings/PencilSketches/17-09-2026/SK_20261114080806.jpeg",
+    "alt": "SK_20261114080806"
+  },
+  {
+    "title": "SK_20261114080805",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "2026-09-17",
+    "modifiedAt": "2026-11-13T03:06:24.891Z",
+    "addedAt": "2026-11-14T08:08:05Z",
+    "image": "drawings/PencilSketches/17-09-2026/SK_20261114080805.jpeg",
+    "alt": "SK_20261114080805"
+  },
+  {
+    "title": "SK_20261114080804",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "2026-09-17",
+    "modifiedAt": "2026-10-17T12:20:02.603Z",
+    "addedAt": "2026-11-14T08:08:04Z",
+    "image": "drawings/PencilSketches/17-09-2026/SK_20261114080804.jpeg",
+    "alt": "SK_20261114080804"
+  },
+  {
+    "title": "SK_20261114080801",
+    "category": "Pencil Sketches",
+    "year": "2026",
+    "date": "2026-09-17",
+    "modifiedAt": "2026-11-13T08:27:56.034Z",
+    "addedAt": "2026-11-14T08:08:01Z",
+    "image": "drawings/PencilSketches/17-09-2026/SK_20261114080801.jpeg",
+    "alt": "SK_20261114080801"
+  },
+  {
     "title": "SK11091278",
     "category": "Pencil Sketches",
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-11-13T08:27:56.008Z",
+    "addedAt": "2026-11-13T08:27:56.008Z",
     "image": "drawings/PencilSketches/17-09-2026/SK11091278.jpeg",
     "alt": "SK11091278"
   },
@@ -14,6 +65,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-11-13T03:06:24.891Z",
+    "addedAt": "2026-11-13T03:06:24.891Z",
     "image": "drawings/PencilSketches/17-09-2026/SK32300593.jpeg",
     "alt": "SK32300593"
   },
@@ -23,6 +75,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-11-13T03:06:24.875Z",
+    "addedAt": "2026-11-13T03:06:24.875Z",
     "image": "drawings/ColorArt/2026-09-14/SK11205544.jpeg",
     "alt": "SK11205544"
   },
@@ -32,6 +85,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-11-13T03:06:24.875Z",
+    "addedAt": "2026-11-13T03:06:24.875Z",
     "image": "drawings/ColorArt/2026-09-14/SK402903.jpeg",
     "alt": "SK402903"
   },
@@ -41,6 +95,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-11-13T03:06:24.862Z",
+    "addedAt": "2026-11-13T03:06:24.862Z",
     "image": "drawings/PencilSketches/17-09-2026/SK13829425.jpeg",
     "alt": "SK13829425"
   },
@@ -50,6 +105,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-11-13T03:06:24.862Z",
+    "addedAt": "2026-11-13T03:06:24.862Z",
     "image": "drawings/PencilSketches/17-09-2026/SK5445828.jpeg",
     "alt": "SK5445828"
   },
@@ -59,6 +115,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.911Z",
+    "addedAt": "2026-10-17T12:20:02.911Z",
     "image": "drawings/PencilSketches/17-09-2026/SK38580.jpeg",
     "alt": "SK38580"
   },
@@ -68,6 +125,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.778Z",
+    "addedAt": "2026-10-17T12:20:02.778Z",
     "image": "drawings/PencilSketches/17-09-2026/SK5286033.jpeg",
     "alt": "SK5286033"
   },
@@ -77,6 +135,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.700Z",
+    "addedAt": "2026-10-17T12:20:02.700Z",
     "image": "drawings/PencilSketches/17-09-2026/SK8169285.jpeg",
     "alt": "SK8169285"
   },
@@ -86,6 +145,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.667Z",
+    "addedAt": "2026-10-17T12:20:02.667Z",
     "image": "drawings/PencilSketches/17-09-2026/SK7870016.jpeg",
     "alt": "SK7870016"
   },
@@ -95,6 +155,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.603Z",
+    "addedAt": "2026-10-17T12:20:02.603Z",
     "image": "drawings/PencilSketches/17-09-2026/SK28597974.jpeg",
     "alt": "SK28597974"
   },
@@ -104,6 +165,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.572Z",
+    "addedAt": "2026-10-17T12:20:02.572Z",
     "image": "drawings/PencilSketches/17-09-2026/SK6227220.jpeg",
     "alt": "SK6227220"
   },
@@ -113,6 +175,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.540Z",
+    "addedAt": "2026-10-17T12:20:02.540Z",
     "image": "drawings/PencilSketches/17-09-2026/SK5917066.jpeg",
     "alt": "SK5917066"
   },
@@ -122,6 +185,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.500Z",
+    "addedAt": "2026-10-17T12:20:02.500Z",
     "image": "drawings/PencilSketches/17-09-2026/SK7728720.jpeg",
     "alt": "SK7728720"
   },
@@ -131,6 +195,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.400Z",
+    "addedAt": "2026-10-17T12:20:02.400Z",
     "image": "drawings/PencilSketches/17-09-2026/SK8104022.jpeg",
     "alt": "SK8104022"
   },
@@ -140,6 +205,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-10-17T12:20:02.384Z",
+    "addedAt": "2026-10-17T12:20:02.384Z",
     "image": "drawings/PencilSketches/17-09-2026/SK10749623.jpeg",
     "alt": "SK10749623"
   },
@@ -149,6 +215,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.816Z",
+    "addedAt": "2026-09-30T16:35:34.816Z",
     "image": "drawings/PencilSketches/17-09-2026/SK31289477.jpeg",
     "alt": "SK31289477"
   },
@@ -158,6 +225,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.810Z",
+    "addedAt": "2026-09-30T16:35:34.810Z",
     "image": "drawings/PencilSketches/17-09-2026/SK10293611.jpeg",
     "alt": "SK10293611"
   },
@@ -167,6 +235,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.805Z",
+    "addedAt": "2026-09-30T16:35:34.805Z",
     "image": "drawings/PencilSketches/17-09-2026/SK30908042.jpeg",
     "alt": "SK30908042"
   },
@@ -176,6 +245,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.803Z",
+    "addedAt": "2026-09-30T16:35:34.803Z",
     "image": "drawings/PencilSketches/17-09-2026/SK7301622.jpeg",
     "alt": "SK7301622"
   },
@@ -185,6 +255,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.797Z",
+    "addedAt": "2026-09-30T16:35:34.797Z",
     "image": "drawings/PencilSketches/17-09-2026/SK31980578.jpeg",
     "alt": "SK31980578"
   },
@@ -194,6 +265,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.795Z",
+    "addedAt": "2026-09-30T16:35:34.795Z",
     "image": "drawings/PencilSketches/17-09-2026/SK24868600.jpeg",
     "alt": "SK24868600"
   },
@@ -203,6 +275,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.792Z",
+    "addedAt": "2026-09-30T16:35:34.792Z",
     "image": "drawings/PencilSketches/17-09-2026/SK15043875.jpeg",
     "alt": "SK15043875"
   },
@@ -212,6 +285,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.789Z",
+    "addedAt": "2026-09-30T16:35:34.789Z",
     "image": "drawings/PencilSketches/17-09-2026/SK18921512.jpeg",
     "alt": "SK18921512"
   },
@@ -221,6 +295,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.776Z",
+    "addedAt": "2026-09-30T16:35:34.776Z",
     "image": "drawings/PencilSketches/17-09-2026/SK6893988.jpeg",
     "alt": "SK6893988"
   },
@@ -230,6 +305,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-30T16:35:34.762Z",
+    "addedAt": "2026-09-30T16:35:34.762Z",
     "image": "drawings/PencilSketches/17-09-2026/SK13204537.jpeg",
     "alt": "SK13204537"
   },
@@ -239,6 +315,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-16T19:19:38.414Z",
+    "addedAt": "2026-09-16T19:19:38.414Z",
     "image": "drawings/PencilSketches/17-09-2026/SK23147404.jpeg",
     "alt": "SK23147404"
   },
@@ -248,6 +325,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-16T19:19:38.382Z",
+    "addedAt": "2026-09-16T19:19:38.382Z",
     "image": "drawings/PencilSketches/17-09-2026/SK27278666.jpeg",
     "alt": "SK27278666"
   },
@@ -257,6 +335,7 @@
     "year": "2026",
     "date": "2026-09-17",
     "modifiedAt": "2026-09-16T19:19:38.402Z",
+    "addedAt": "2026-09-16T19:19:38.402Z",
     "image": "drawings/PencilSketches/17-09-2026/SK27610557.jpeg",
     "alt": "SK27610557"
   },
@@ -266,6 +345,7 @@
     "year": "2026",
     "date": "2026-09-16",
     "modifiedAt": "2026-09-16T19:19:38.382Z",
+    "addedAt": "2026-09-16T19:19:38.382Z",
     "image": "drawings/FeatureDrawing/SK27278666.jpeg",
     "alt": "SK27278666"
   },
@@ -275,6 +355,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:11:37.076Z",
+    "addedAt": "2026-09-14T15:11:37.076Z",
     "image": "drawings/PencilSketches/2026-09-14/apple.jpeg",
     "alt": "apple"
   },
@@ -284,6 +365,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.830Z",
+    "addedAt": "2026-09-14T15:01:34.830Z",
     "image": "drawings/PencilSketches/2026-09-14/SK16240129.jpeg",
     "alt": "SK16240129"
   },
@@ -293,6 +375,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.816Z",
+    "addedAt": "2026-09-14T15:01:34.816Z",
     "image": "drawings/PencilSketches/2026-09-14/SK30940842.jpeg",
     "alt": "SK30940842"
   },
@@ -302,6 +385,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.809Z",
+    "addedAt": "2026-09-14T15:01:34.809Z",
     "image": "drawings/PencilSketches/2026-09-14/SK30755536.jpeg",
     "alt": "SK30755536"
   },
@@ -311,6 +395,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.804Z",
+    "addedAt": "2026-09-14T15:01:34.804Z",
     "image": "drawings/ColorArt/2026-09-14/SK2622872.jpeg",
     "alt": "SK2622872"
   },
@@ -320,6 +405,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.800Z",
+    "addedAt": "2026-09-14T15:01:34.800Z",
     "image": "drawings/ColorArt/2026-09-14/SK2813644.jpeg",
     "alt": "SK2813644"
   },
@@ -329,6 +415,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.794Z",
+    "addedAt": "2026-09-14T15:01:34.794Z",
     "image": "drawings/PencilSketches/2026-09-14/SK20833276.jpeg",
     "alt": "SK20833276"
   },
@@ -338,6 +425,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.791Z",
+    "addedAt": "2026-09-14T15:01:34.791Z",
     "image": "drawings/PencilSketches/2026-09-14/SK2759377.jpeg",
     "alt": "SK2759377"
   },
@@ -347,6 +435,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.788Z",
+    "addedAt": "2026-09-14T15:01:34.788Z",
     "image": "drawings/ColorArt/2026-09-14/SK9129866.jpeg",
     "alt": "SK9129866"
   },
@@ -356,6 +445,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.776Z",
+    "addedAt": "2026-09-14T15:01:34.776Z",
     "image": "drawings/PencilSketches/2026-09-14/SK17263541.jpeg",
     "alt": "SK17263541"
   },
@@ -365,6 +455,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.773Z",
+    "addedAt": "2026-09-14T15:01:34.773Z",
     "image": "drawings/ColorArt/2026-09-14/SK28202843.jpeg",
     "alt": "SK28202843"
   },
@@ -374,6 +465,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.769Z",
+    "addedAt": "2026-09-14T15:01:34.769Z",
     "image": "drawings/ColorArt/2026-09-14/SK5856512.jpeg",
     "alt": "SK5856512"
   },
@@ -383,6 +475,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.763Z",
+    "addedAt": "2026-09-14T15:01:34.763Z",
     "image": "drawings/PencilSketches/2026-09-14/SK29874034.jpeg",
     "alt": "SK29874034"
   },
@@ -392,6 +485,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.727Z",
+    "addedAt": "2026-09-14T15:01:34.727Z",
     "image": "drawings/PencilSketches/2026-09-14/SK15140478.jpeg",
     "alt": "SK15140478"
   },
@@ -401,6 +495,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.727Z",
+    "addedAt": "2026-09-14T15:01:34.727Z",
     "image": "drawings/PencilSketches/2026-09-14/SK4802454.jpeg",
     "alt": "SK4802454"
   },
@@ -410,6 +505,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.711Z",
+    "addedAt": "2026-09-14T15:01:34.711Z",
     "image": "drawings/PencilSketches/2026-09-14/SK25165721.jpeg",
     "alt": "SK25165721"
   },
@@ -419,6 +515,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.711Z",
+    "addedAt": "2026-09-14T15:01:34.711Z",
     "image": "drawings/PencilSketches/2026-09-14/SK32588130.jpeg",
     "alt": "SK32588130"
   },
@@ -428,6 +525,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.690Z",
+    "addedAt": "2026-09-14T15:01:34.690Z",
     "image": "drawings/PencilSketches/2026-09-14/SK24183567.jpeg",
     "alt": "SK24183567"
   },
@@ -437,6 +535,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.664Z",
+    "addedAt": "2026-09-14T15:01:34.664Z",
     "image": "drawings/PencilSketches/2026-09-14/SK10383413.jpeg",
     "alt": "SK10383413"
   },
@@ -446,6 +545,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.664Z",
+    "addedAt": "2026-09-14T15:01:34.664Z",
     "image": "drawings/PencilSketches/2026-09-14/SK26621788.jpeg",
     "alt": "SK26621788"
   },
@@ -455,6 +555,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.648Z",
+    "addedAt": "2026-09-14T15:01:34.648Z",
     "image": "drawings/PencilSketches/2026-09-14/SK27110427.jpeg",
     "alt": "SK27110427"
   },
@@ -464,6 +565,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.632Z",
+    "addedAt": "2026-09-14T15:01:34.632Z",
     "image": "drawings/PencilSketches/2026-09-14/SK7455370.jpeg",
     "alt": "SK7455370"
   },
@@ -473,6 +575,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.620Z",
+    "addedAt": "2026-09-14T15:01:34.620Z",
     "image": "drawings/PencilSketches/2026-09-14/SK29963574.jpeg",
     "alt": "SK29963574"
   },
@@ -482,6 +585,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.617Z",
+    "addedAt": "2026-09-14T15:01:34.617Z",
     "image": "drawings/PencilSketches/2026-09-14/SK18088546.jpeg",
     "alt": "SK18088546"
   },
@@ -491,6 +595,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.600Z",
+    "addedAt": "2026-09-14T15:01:34.600Z",
     "image": "drawings/PencilSketches/2026-09-14/SK28114556.jpeg",
     "alt": "SK28114556"
   },
@@ -500,6 +605,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.600Z",
+    "addedAt": "2026-09-14T15:01:34.600Z",
     "image": "drawings/PencilSketches/2026-09-14/SK30889818.jpeg",
     "alt": "SK30889818"
   },
@@ -509,6 +615,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.584Z",
+    "addedAt": "2026-09-14T15:01:34.584Z",
     "image": "drawings/PencilSketches/2026-09-14/SK29032182.jpeg",
     "alt": "SK29032182"
   },
@@ -518,6 +625,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.584Z",
+    "addedAt": "2026-09-14T15:01:34.584Z",
     "image": "drawings/PencilSketches/2026-09-14/SK3774174.jpeg",
     "alt": "SK3774174"
   },
@@ -527,6 +635,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.569Z",
+    "addedAt": "2026-09-14T15:01:34.569Z",
     "image": "drawings/PencilSketches/2026-09-14/SK22492690.jpeg",
     "alt": "SK22492690"
   },
@@ -536,6 +645,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.569Z",
+    "addedAt": "2026-09-14T15:01:34.569Z",
     "image": "drawings/PencilSketches/2026-09-14/SK28082451.jpeg",
     "alt": "SK28082451"
   },
@@ -545,6 +655,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.569Z",
+    "addedAt": "2026-09-14T15:01:34.569Z",
     "image": "drawings/PencilSketches/2026-09-14/SK31162365.jpeg",
     "alt": "SK31162365"
   },
@@ -554,6 +665,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.557Z",
+    "addedAt": "2026-09-14T15:01:34.557Z",
     "image": "drawings/PencilSketches/2026-09-14/SK1370118.jpeg",
     "alt": "SK1370118"
   },
@@ -563,6 +675,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.557Z",
+    "addedAt": "2026-09-14T15:01:34.557Z",
     "image": "drawings/PencilSketches/2026-09-14/SK21065650.jpeg",
     "alt": "SK21065650"
   },
@@ -572,6 +685,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.557Z",
+    "addedAt": "2026-09-14T15:01:34.557Z",
     "image": "drawings/PencilSketches/2026-09-14/SK876366.jpeg",
     "alt": "SK876366"
   },
@@ -581,6 +695,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.555Z",
+    "addedAt": "2026-09-14T15:01:34.555Z",
     "image": "drawings/PencilSketches/2026-09-14/SK12001438.jpeg",
     "alt": "SK12001438"
   },
@@ -590,6 +705,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.552Z",
+    "addedAt": "2026-09-14T15:01:34.552Z",
     "image": "drawings/PencilSketches/2026-09-14/SK10934226.jpeg",
     "alt": "SK10934226"
   },
@@ -599,6 +715,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.536Z",
+    "addedAt": "2026-09-14T15:01:34.536Z",
     "image": "drawings/PencilSketches/2026-09-14/SK25239496.jpeg",
     "alt": "SK25239496"
   },
@@ -608,6 +725,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.536Z",
+    "addedAt": "2026-09-14T15:01:34.536Z",
     "image": "drawings/PencilSketches/2026-09-14/SK28413650.jpeg",
     "alt": "SK28413650"
   },
@@ -617,6 +735,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.520Z",
+    "addedAt": "2026-09-14T15:01:34.520Z",
     "image": "drawings/PencilSketches/2026-09-14/SK21669665.jpeg",
     "alt": "SK21669665"
   },
@@ -626,6 +745,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.520Z",
+    "addedAt": "2026-09-14T15:01:34.520Z",
     "image": "drawings/PencilSketches/2026-09-14/SK6928221.jpeg",
     "alt": "SK6928221"
   },
@@ -635,6 +755,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.518Z",
+    "addedAt": "2026-09-14T15:01:34.518Z",
     "image": "drawings/PencilSketches/2026-09-14/SK28093632.jpeg",
     "alt": "SK28093632"
   },
@@ -644,6 +765,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.514Z",
+    "addedAt": "2026-09-14T15:01:34.514Z",
     "image": "drawings/PencilSketches/2026-09-14/SK31008868.jpeg",
     "alt": "SK31008868"
   },
@@ -653,6 +775,7 @@
     "year": "2026",
     "date": "2026-09-14",
     "modifiedAt": "2026-09-14T15:01:34.512Z",
+    "addedAt": "2026-09-14T15:01:34.512Z",
     "image": "drawings/PencilSketches/2026-09-14/SK2862230.jpeg",
     "alt": "SK2862230"
   }

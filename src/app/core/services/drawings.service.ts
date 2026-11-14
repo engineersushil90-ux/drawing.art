@@ -10,6 +10,7 @@ export interface Artwork {
   year: string;
   date?: string;
   modifiedAt?: string;
+  addedAt?: string;
   image: string;
   alt: string;
   isFreePreview?: boolean;
