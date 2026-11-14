@@ -17,7 +17,8 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
         <form *ngIf="!authenticated" (ngSubmit)="login()">
           <label>Admin username or email<input name="username" type="text" autocomplete="username" [(ngModel)]="username" required></label>
           <label>Password<input name="password" type="password" autocomplete="current-password" [(ngModel)]="password" required></label>
-          <button type="submit" [disabled]="busy">{{ busy ? 'Signing in…' : 'Sign in' }}</button>
+          <button type="submit" [disabled]="busy">{{ busy ? 'Connecting…' : 'Sign in' }}</button>
+          <p class="login-hint" *ngIf="busy" role="status">The server may be waking up. Please wait; this can take up to 45 seconds.</p>
         </form>
 
         <p class="message" *ngIf="message" role="status">{{ message }}</p>
@@ -77,7 +78,7 @@ import { AdultViewer, DrawingsService } from '../../core/services/drawings.servi
     .eyebrow{text-transform:uppercase;letter-spacing:2px;font-size:12px;color:#9c6355}h1{font:42px Georgia,serif;margin:10px 0 28px}
     form{display:grid;gap:18px;max-width:430px}label{display:grid;gap:8px;font-size:14px}input{padding:13px;border:1px solid #d8d4cc;border-radius:8px;font:inherit}
     button{padding:13px 18px;border:0;border-radius:8px;background:#26342d;color:white;font:inherit;cursor:pointer}button:disabled{opacity:.6}
-    .message{color:#9a3428}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}th,td{padding:12px;border-bottom:1px solid #e8e2d9;white-space:nowrap}th{font-weight:600}
+    .message{color:#9a3428}.login-hint{margin:0;color:#647069;font-size:13px;line-height:1.5}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}th,td{padding:12px;border-bottom:1px solid #e8e2d9;white-space:nowrap}th{font-weight:600}
     .viewer-list>h2,.section-heading h2{font:24px Georgia,serif}.waiting-list{margin-bottom:32px}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-heading h2{display:flex;align-items:center;gap:10px}
     .request-count{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:50%;background:#9c3428;color:white;font:14px Arial,sans-serif}.refresh-button{padding:8px 12px;font-size:13px}
     .paid-checkbox{display:inline-flex;align-items:center;gap:8px;cursor:pointer}.paid-checkbox input{width:18px;height:18px;accent-color:#26342d}.paid-checkbox input:disabled{cursor:wait}
@@ -122,7 +123,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
         this.busy = false;
         this.message = error?.error?.error
           || (error?.name === 'TimeoutError'
-            ? 'Login timed out. Check that the Render service is Live and try again.'
+            ? 'Login timed out after 45 seconds. Check that Render and Supabase are available, then try again.'
             : 'Login failed. Check your credentials and server configuration.');
       }
     });

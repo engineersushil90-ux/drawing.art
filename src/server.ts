@@ -500,6 +500,10 @@ app.post('/api/admin/login', async (req, res) => {
       }
     } catch (error) {
       console.error('Admin database login failed:', error);
+      if (error instanceof Error && error.name === 'TimeoutError') {
+        res.status(503).json({ error: 'Admin database request timed out. Check the Supabase connection and try again.' });
+        return;
+      }
       res.status(503).json({ error: 'Admin user table is unavailable. Run the latest Supabase SQL setup, then try again.' });
       return;
     }
@@ -715,6 +719,7 @@ async function supabaseRequest<T>(
 
   const response = await fetch(`${supabaseUrl}/rest/v1/${endpoint}`, {
     ...init,
+    signal: AbortSignal.timeout(12_000),
     headers: {
       apikey: supabaseServiceRoleKey,
       Authorization: `Bearer ${supabaseServiceRoleKey}`,

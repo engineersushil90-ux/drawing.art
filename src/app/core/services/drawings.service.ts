@@ -79,7 +79,7 @@ export class DrawingsService {
     return this.http.post<{ ok: boolean; accessToken: string }>(`${this.apiBaseUrl}/api/admin/login`, details, {
       withCredentials: true
     }).pipe(
-      timeout(15000),
+      timeout(45000),
       map(response => {
         this.adminAccessToken = response.accessToken;
         return response;
