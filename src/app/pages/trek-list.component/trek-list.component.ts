@@ -12,7 +12,8 @@ import { RouterModule } from '@angular/router';
 
 import {
   DrawingsService,
-  Artwork
+  Artwork,
+  normalizeImagePath
 } from '../../core/services/drawings.service';
 
 
@@ -446,7 +447,7 @@ loadDrawings(imageAccessToken = ''): void {
   }
 
   getLikeCount(artwork: Artwork): number {
-    return this.likes[artwork.image.replace(/^\/+/, '')] || 0;
+    return this.likes[normalizeImagePath(artwork.image)] || 0;
   }
 
 

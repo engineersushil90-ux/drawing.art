@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { DrawingsService } from '../../core/services/drawings.service';
+import { DrawingsService, normalizeImagePath } from '../../core/services/drawings.service';
 
 import { DrawingArtComponent } from './trek-list.component';
 
@@ -26,7 +26,7 @@ describe('DrawingArtComponent', () => {
       return of({ ok: true, paymentRequestedAt: new Date().toISOString() });
     },
     likeDrawing: (image: string) => {
-      const normalizedImage = image.replace(/^\/+/, '');
+      const normalizedImage = normalizeImagePath(image);
       likedImages.push(normalizedImage);
       return of({ image: normalizedImage, likes: 1 });
     },
@@ -77,11 +77,14 @@ describe('DrawingArtComponent', () => {
       title: 'Likeable adult drawing',
       category: '18+ Sketches',
       year: '2026',
-      image: '/drawings/18+Sketches/drawing.jpg',
+      image: 'https://drawing-art.onrender.com/drawings/18+Sketches/drawing.jpg',
       alt: 'Likeable adult drawing'
     };
     const event = { stopPropagation: vi.fn() } as unknown as MouseEvent;
     likedImages.length = 0;
+    component.likes['drawings/18+Sketches/drawing.jpg'] = 7;
+
+    expect(component.getLikeCount(artwork)).toBe(7);
 
     component.likeDrawing(event, artwork);
 

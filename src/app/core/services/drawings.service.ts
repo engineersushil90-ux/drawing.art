@@ -44,12 +44,21 @@ export interface AdultAccessResponse {
   isPayment: boolean;
 }
 
+const API_BASE_URL = 'https://drawing-art.onrender.com';
+
+export function normalizeImagePath(image: string): string {
+  const imagePath = image.startsWith(API_BASE_URL)
+    ? image.slice(API_BASE_URL.length)
+    : image;
+  return imagePath.replace(/^\/+/, '');
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class DrawingsService {
   private readonly http = inject(HttpClient);
-  private readonly apiBaseUrl = 'https://drawing-art.onrender.com';
+  private readonly apiBaseUrl = API_BASE_URL;
   private adminAccessToken = '';
 
   getDrawings(imageAccessToken = ''): Observable<Artwork[]> {
@@ -125,7 +134,7 @@ export class DrawingsService {
 
   likeDrawing(image: string): Observable<LikeResponse> {
     return this.http.post<LikeResponse>(`${this.apiBaseUrl}/api/likes`, {
-      image: image.replace(/^\/+/, '')
+      image: normalizeImagePath(image)
     });
   }
 
