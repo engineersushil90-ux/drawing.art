@@ -29,7 +29,18 @@ import { DrawingsService } from '../../core/services/drawings.service';
           </label>
           <label>
             What would you like drawn?
-            <textarea name="description" [(ngModel)]="request.description" minlength="15" maxlength="2000" rows="5" required></textarea>
+            <textarea
+              name="description"
+              [(ngModel)]="request.description"
+              minlength="15"
+              maxlength="2000"
+              rows="5"
+              aria-describedby="description-help"
+              required
+            ></textarea>
+            <small id="description-help" class="field-help">
+              Describe the drawing in at least 15 characters ({{ request.description.trim().length }}/15).
+            </small>
           </label>
           <label>
             Reference image (optional)
@@ -117,6 +128,7 @@ import { DrawingsService } from '../../core/services/drawings.service';
     .request-card input, .request-card textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #d8d4cc; border-radius: 8px; color: inherit; font: inherit; }
     .request-card input[type=file] { padding: 9px; background: #fff; }
     .request-card textarea { resize: vertical; }
+    .field-help { color: #647069; font-size: .8rem; font-weight: 400; }
     .request-card button { justify-self: start; padding: 13px 20px; border: 0; border-radius: 8px; background: #26342d; color: #fff; font: inherit; cursor: pointer; }
     .request-card button:disabled { opacity: .6; cursor: wait; }
     .reference-preview { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 10px; background: #f7f1e8; }

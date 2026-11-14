@@ -40,6 +40,20 @@ describe('ContactComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Your drawing request was sent.');
   });
 
+  it('explains why a short drawing description keeps submission disabled', () => {
+    fixture.componentInstance.request = {
+      name: 'Art customer',
+      email: 'customer@example.com',
+      description: 'Draw',
+      website: ''
+    };
+    fixture.detectChanges();
+
+    const submitButton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(submitButton.disabled).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('4/15');
+  });
+
   it('rejects unsupported reference image types before upload', () => {
     const input = {
       files: [new File(['not an image'], 'reference.gif', { type: 'image/gif' })],
