@@ -81,6 +81,16 @@
   },
   {
     "title": "SK_20261114080804",
+    "category": "Feature Drawing",
+    "year": "2026",
+    "date": "2026-10-17",
+    "modifiedAt": "2026-10-17T12:20:02.603Z",
+    "addedAt": "2026-11-14T08:08:04Z",
+    "image": "drawings/FeatureDrawing/SK_20261114080804.jpeg",
+    "alt": "SK_20261114080804"
+  },
+  {
+    "title": "SK_20261114080804",
     "category": "Pencil Sketches",
     "year": "2026",
     "date": "2026-09-17",
@@ -388,16 +398,6 @@
     "addedAt": "2026-09-16T19:19:38.402Z",
     "image": "drawings/PencilSketches/17-09-2026/SK27610557.jpeg",
     "alt": "SK27610557"
-  },
-  {
-    "title": "SK27278666",
-    "category": "Feature Drawing",
-    "year": "2026",
-    "date": "2026-09-16",
-    "modifiedAt": "2026-09-16T19:19:38.382Z",
-    "addedAt": "2026-09-16T19:19:38.382Z",
-    "image": "drawings/FeatureDrawing/SK27278666.jpeg",
-    "alt": "SK27278666"
   },
   {
     "title": "apple",
