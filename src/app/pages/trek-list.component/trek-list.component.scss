@@ -681,16 +681,16 @@ h1 em {
 
 .art-info {
   display: flex;
-
-  justify-content: space-between;
-
+  justify-content: center;
+  flex-wrap: wrap;
   padding-top: 13px;
-
-  gap: 15px;
+  gap: 4px 15px;
 }
 
 
 .art-info strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: Georgia, serif;
 
   font-size: 18px;
@@ -704,9 +704,7 @@ h1 em {
 
   font-size: 11px;
 
-  padding-top: 5px;
-
-  text-align: right;
+  text-align: left;
 }
 
 .review-trigger {
