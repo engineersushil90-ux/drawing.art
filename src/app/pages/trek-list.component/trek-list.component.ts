@@ -410,7 +410,7 @@ loadDrawings(imageAccessToken = ''): void {
 
 
     this.drawingsService
-      .likeDrawing(artwork.image)
+      .likeDrawing(artwork.image, artwork.category)
       .subscribe({
 
         next: response => {
@@ -447,7 +447,7 @@ loadDrawings(imageAccessToken = ''): void {
   }
 
   getLikeCount(artwork: Artwork): number {
-    return this.likes[normalizeImagePath(artwork.image)] || 0;
+    return this.likes[normalizeImagePath(artwork.image, artwork.category)] || 0;
   }
 
 

@@ -25,8 +25,8 @@ describe('DrawingArtComponent', () => {
       paymentRequests.push(token);
       return of({ ok: true, paymentRequestedAt: new Date().toISOString() });
     },
-    likeDrawing: (image: string) => {
-      const normalizedImage = normalizeImagePath(image);
+    likeDrawing: (image: string, category: string) => {
+      const normalizedImage = normalizeImagePath(image, category);
       likedImages.push(normalizedImage);
       return of({ image: normalizedImage, likes: 1 });
     },
@@ -77,18 +77,18 @@ describe('DrawingArtComponent', () => {
       title: 'Likeable adult drawing',
       category: '18+ Sketches',
       year: '2026',
-      image: 'https://drawing-art.onrender.com/drawings/18+Sketches/drawing.jpg',
+      image: 'https://drawing-art.onrender.com/api/18plus/image?file=2026-09-14%2FSK28126674.jpeg',
       alt: 'Likeable adult drawing'
     };
     const event = { stopPropagation: vi.fn() } as unknown as MouseEvent;
     likedImages.length = 0;
-    component.likes['drawings/18+Sketches/drawing.jpg'] = 7;
+    component.likes['drawings/18+Sketches/2026-09-14/SK28126674.jpeg'] = 7;
 
     expect(component.getLikeCount(artwork)).toBe(7);
 
     component.likeDrawing(event, artwork);
 
-    expect(likedImages).toEqual(['drawings/18+Sketches/drawing.jpg']);
+    expect(likedImages).toEqual(['drawings/18+Sketches/2026-09-14/SK28126674.jpeg']);
     expect(component.getLikeCount(artwork)).toBe(1);
   });
 

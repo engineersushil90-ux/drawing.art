@@ -46,11 +46,21 @@ export interface AdultAccessResponse {
 
 const API_BASE_URL = 'https://drawing-art.onrender.com';
 
-export function normalizeImagePath(image: string): string {
+export function normalizeImagePath(image: string, category?: string): string {
   const imagePath = image.startsWith(API_BASE_URL)
     ? image.slice(API_BASE_URL.length)
     : image;
-  return imagePath.replace(/^\/+/, '');
+  const normalizedPath = imagePath.replace(/^\/+/, '');
+
+  if (category === '18+ Sketches' && normalizedPath.startsWith('api/18plus/image?')) {
+    const query = normalizedPath.slice(normalizedPath.indexOf('?') + 1);
+    const file = new URLSearchParams(query).get('file');
+    if (file) {
+      return `drawings/18+Sketches/${file.replace(/^\/+/, '')}`;
+    }
+  }
+
+  return normalizedPath;
 }
 
 @Injectable({
@@ -132,9 +142,9 @@ export class DrawingsService {
     return this.http.get<Record<string, number>>(`${this.apiBaseUrl}/api/likes`);
   }
 
-  likeDrawing(image: string): Observable<LikeResponse> {
+  likeDrawing(image: string, category?: string): Observable<LikeResponse> {
     return this.http.post<LikeResponse>(`${this.apiBaseUrl}/api/likes`, {
-      image: normalizeImagePath(image)
+      image: normalizeImagePath(image, category)
     });
   }
 
