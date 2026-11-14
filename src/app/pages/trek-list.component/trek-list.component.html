@@ -300,7 +300,6 @@
             type="button"
             class="like-button"
             (click)="likeDrawing($event, artwork)"
-            [disabled]="artwork.category === '18+ Sketches'"
             [attr.aria-label]="'Like ' + artwork.title"
           >
 

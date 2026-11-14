@@ -72,6 +72,23 @@ describe('DrawingArtComponent', () => {
     expect(component.getLikeCount(artwork)).toBe(1);
   });
 
+  it('allows liking 18+ sketches and updates their count', () => {
+    const artwork = {
+      title: 'Likeable adult drawing',
+      category: '18+ Sketches',
+      year: '2026',
+      image: '/drawings/18+Sketches/drawing.jpg',
+      alt: 'Likeable adult drawing'
+    };
+    const event = { stopPropagation: vi.fn() } as unknown as MouseEvent;
+    likedImages.length = 0;
+
+    component.likeDrawing(event, artwork);
+
+    expect(likedImages).toEqual(['drawings/18+Sketches/drawing.jpg']);
+    expect(component.getLikeCount(artwork)).toBe(1);
+  });
+
   it('changes pages without scrolling away from the pagination controls', () => {
     component.activeCategory = 'Pencil Sketches';
     component.artworks = Array.from({ length: component.pageSize + 1 }, (_, index) => ({
