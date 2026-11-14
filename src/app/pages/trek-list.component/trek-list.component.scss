@@ -57,7 +57,7 @@ main {
 }
 
 
-nav {
+.site-header nav {
   display: flex;
 
   gap: 22px;
@@ -1224,7 +1224,7 @@ footer a {
   }
 
 
-  nav {
+  .site-header nav {
     display: none;
 
     position: absolute;
@@ -1249,7 +1249,7 @@ footer a {
   }
 
 
-  nav.open {
+  .site-header nav.open {
     display: flex;
   }
 
