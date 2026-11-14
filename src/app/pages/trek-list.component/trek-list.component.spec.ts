@@ -47,6 +47,24 @@ describe('DrawingArtComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('changes pages without scrolling away from the pagination controls', () => {
+    component.activeCategory = 'Pencil Sketches';
+    component.artworks = Array.from({ length: component.pageSize + 1 }, (_, index) => ({
+      title: `Drawing ${index}`,
+      category: 'Pencil Sketches',
+      year: '2026',
+      image: `drawing-${index}.jpg`,
+      alt: `Drawing ${index}`
+    }));
+    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    component.nextPage();
+
+    expect(component.currentPage).toBe(2);
+    expect(scrollToSpy).not.toHaveBeenCalled();
+    scrollToSpy.mockRestore();
+  });
+
   it('sorts timestamp-renamed drawings newest first', () => {
     component.activeCategory = 'Pencil Sketches';
     component.artworks = [

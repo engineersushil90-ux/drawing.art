@@ -683,23 +683,7 @@ loadDrawings(imageAccessToken = ''): void {
 
     }
 
-
     this.currentPage = page;
-
-
-    // Scroll back to gallery.
-
-    window.scrollTo({
-
-      top:
-        document
-          .getElementById('work')
-          ?.offsetTop ?? 0,
-
-      behavior: 'smooth'
-
-    });
-
   }
 
 
