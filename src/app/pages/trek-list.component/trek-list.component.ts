@@ -445,6 +445,10 @@ loadDrawings(imageAccessToken = ''): void {
 
   }
 
+  getLikeCount(artwork: Artwork): number {
+    return this.likes[artwork.image.replace(/^\/+/, '')] || 0;
+  }
+
 
   // --------------------------------------------------
   // RECORD SITE VISIT

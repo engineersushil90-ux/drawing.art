@@ -120,7 +120,7 @@ export class DrawingsService {
 
   likeDrawing(image: string): Observable<LikeResponse> {
     return this.http.post<LikeResponse>(`${this.apiBaseUrl}/api/likes`, {
-      image
+      image: image.replace(/^\/+/, '')
     });
   }
 

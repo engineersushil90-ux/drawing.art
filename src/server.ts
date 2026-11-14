@@ -1236,10 +1236,12 @@ app.get('/api/likes', async (req, res, next) => {
 
 app.post('/api/likes', async (req, res, next) => {
   try {
-    const image = req.body?.image;
+    const requestedImage = req.body?.image;
+    const image = typeof requestedImage === 'string'
+      ? requestedImage.replace(/^\/+/, '')
+      : '';
 
     if (
-      typeof image !== 'string' ||
       !image.startsWith('drawings/')
     ) {
       res.status(400).json({

@@ -11,6 +11,7 @@ describe('DrawingArtComponent', () => {
   const requestedTokens: string[] = [];
   let registeredDetails: { name: string; email: string; isAdult: boolean } | undefined;
   const paymentRequests: string[] = [];
+  const likedImages: string[] = [];
   const drawingsService = {
     getDrawings: (token = '') => {
       requestedTokens.push(token);
@@ -23,6 +24,11 @@ describe('DrawingArtComponent', () => {
     requestAdultPaymentApproval: (token: string) => {
       paymentRequests.push(token);
       return of({ ok: true, paymentRequestedAt: new Date().toISOString() });
+    },
+    likeDrawing: (image: string) => {
+      const normalizedImage = image.replace(/^\/+/, '');
+      likedImages.push(normalizedImage);
+      return of({ image: normalizedImage, likes: 1 });
     },
     getLikes: () => of({}),
     getTodayActivity: () => of({ date: '', likes: 0, visits: 0 }),
@@ -45,6 +51,25 @@ describe('DrawingArtComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('shows and updates like counts for drawings with root-relative image URLs', () => {
+    const artwork = {
+      title: 'Likeable drawing',
+      category: 'Pencil Sketches',
+      year: '2026',
+      image: '/drawings/PencilSketches/drawing.jpg',
+      alt: 'Likeable drawing'
+    };
+    const event = { stopPropagation: vi.fn() } as unknown as MouseEvent;
+    likedImages.length = 0;
+    component.likes['drawings/PencilSketches/drawing.jpg'] = 4;
+
+    expect(component.getLikeCount(artwork)).toBe(4);
+    component.likeDrawing(event, artwork);
+
+    expect(likedImages).toEqual(['drawings/PencilSketches/drawing.jpg']);
+    expect(component.getLikeCount(artwork)).toBe(1);
   });
 
   it('changes pages without scrolling away from the pagination controls', () => {
