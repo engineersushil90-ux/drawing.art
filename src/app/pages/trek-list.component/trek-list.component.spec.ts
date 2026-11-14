@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { DrawingsService, normalizeImagePath } from '../../core/services/drawings.service';
+import { Artwork, DrawingsService, normalizeImagePath } from '../../core/services/drawings.service';
 
 import { DrawingArtComponent } from './trek-list.component';
 
@@ -9,6 +9,7 @@ describe('DrawingArtComponent', () => {
   let component: DrawingArtComponent;
   let fixture: ComponentFixture<DrawingArtComponent>;
   const requestedTokens: string[] = [];
+  let drawingsResponse: Artwork[] = [];
   let registeredDetails: { name: string; email: string; isAdult: boolean } | undefined;
   const paymentRequests: string[] = [];
   const likedImages: string[] = [];
@@ -24,7 +25,7 @@ describe('DrawingArtComponent', () => {
   const drawingsService = {
     getDrawings: (token = '') => {
       requestedTokens.push(token);
-      return of([]);
+      return of(drawingsResponse);
     },
     registerAdultViewer: (details: { name: string; email: string; isAdult: boolean }) => {
       registeredDetails = details;
@@ -60,6 +61,7 @@ describe('DrawingArtComponent', () => {
   };
 
   beforeEach(async () => {
+    drawingsResponse = [];
     await TestBed.configureTestingModule({
       imports: [DrawingArtComponent],
       providers: [
@@ -75,6 +77,30 @@ describe('DrawingArtComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('uses responsive WebP candidates and prioritizes the hero image', () => {
+    const artwork = {
+      title: 'Featured artwork',
+      category: 'Feature Drawing',
+      year: '2026',
+      image: '/drawings/FeatureDrawing/featured.jpeg',
+      imageSmall: '/drawings-optimized/FeatureDrawing/featured-480.webp',
+      imageLarge: '/drawings-optimized/FeatureDrawing/featured-960.webp',
+      imageSmallWidth: 480,
+      imageLargeWidth: 960,
+      alt: 'Featured artwork'
+    };
+    drawingsResponse = [artwork];
+    component.loadDrawings();
+    fixture.detectChanges();
+
+    const heroImage = fixture.nativeElement.querySelector('.hero-art img') as HTMLImageElement;
+    const heroSource = fixture.nativeElement.querySelector('.hero-art source') as HTMLSourceElement;
+    expect(heroImage.getAttribute('fetchpriority')).toBe('high');
+    expect(heroImage.getAttribute('loading')).toBe('eager');
+    expect(heroSource.srcset).toContain('featured-480.webp 480w');
+    expect(heroSource.srcset).toContain('featured-960.webp 960w');
   });
 
   it('shows and updates like counts for drawings with root-relative image URLs', () => {

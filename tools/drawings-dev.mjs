@@ -6,18 +6,32 @@ const root = join(process.cwd(), 'public', 'drawings');
 const nodeCommand = process.execPath;
 const npmCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
-function generate() {
-  spawn(nodeCommand, ['tools/generate-drawings-index.mjs'], { stdio: 'inherit' });
+function runNodeScript(script) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(nodeCommand, [script], { stdio: 'inherit' });
+    child.once('error', reject);
+    child.once('exit', code => {
+      if (code === 0) resolve();
+      else reject(new Error(`${script} exited with code ${code}`));
+    });
+  });
 }
 
-generate();
+async function generate() {
+  await runNodeScript('tools/generate-drawings-index.mjs');
+  await runNodeScript('tools/generate-drawing-image-variants.mjs');
+}
+
+await generate();
 const server = spawn(npmCommand, ['ng', 'serve'], { stdio: 'inherit', shell: process.platform === 'win32' });
 
 if (existsSync(root)) {
   let timer;
   watch(root, { recursive: true }, () => {
     clearTimeout(timer);
-    timer = setTimeout(generate, 250);
+    timer = setTimeout(() => {
+      generate().catch(error => console.error('Failed to regenerate drawing assets:', error));
+    }, 250);
   });
 }
 

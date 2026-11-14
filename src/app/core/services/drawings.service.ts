@@ -12,6 +12,10 @@ export interface Artwork {
   modifiedAt?: string;
   addedAt?: string;
   image: string;
+  imageSmall?: string;
+  imageLarge?: string;
+  imageSmallWidth?: number;
+  imageLargeWidth?: number;
   alt: string;
   isFreePreview?: boolean;
   isPayment?: boolean;

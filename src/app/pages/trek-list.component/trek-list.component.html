@@ -107,10 +107,21 @@
       *ngIf="featuredArtwork"
     >
 
-      <img
-        [src]="featuredArtwork.image"
-        [alt]="featuredArtwork.alt"
-      />
+      <picture>
+        <source
+          *ngIf="getArtworkSrcset(featuredArtwork)"
+          type="image/webp"
+          [srcset]="getArtworkSrcset(featuredArtwork)"
+          sizes="(max-width: 600px) 86vw, 420px"
+        />
+        <img
+          [src]="getArtworkImage(featuredArtwork)"
+          [alt]="featuredArtwork.alt"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </picture>
 
       <p class="art-caption">
         {{ featuredArtwork.title }}
@@ -273,12 +284,21 @@
 
         <div class="image-wrap">
 
-          <img
-            [src]="getArtworkImage(artwork)"
-            [alt]="artwork.alt"
-            [attr.crossorigin]="artwork.category === '18+ Sketches' ? 'use-credentials' : null"
-            loading="lazy"
-          />
+          <picture>
+            <source
+              *ngIf="getArtworkSrcset(artwork)"
+              type="image/webp"
+              [srcset]="getArtworkSrcset(artwork)"
+              sizes="(max-width: 600px) 50vw, 33vw"
+            />
+            <img
+              [src]="getArtworkImage(artwork)"
+              [alt]="artwork.alt"
+              [attr.crossorigin]="artwork.category === '18+ Sketches' ? 'use-credentials' : null"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
 
           <div class="locked-art-overlay" *ngIf="isLockedArtwork(artwork)" aria-hidden="true">
             <strong>Locked</strong>
@@ -465,11 +485,20 @@
       *ngIf="featuredArtwork"
     >
 
-      <img
-        [src]="featuredArtwork.image"
-        [alt]="featuredArtwork.alt"
-        loading="lazy"
-      />
+      <picture>
+        <source
+          *ngIf="getArtworkSrcset(featuredArtwork)"
+          type="image/webp"
+          [srcset]="getArtworkSrcset(featuredArtwork)"
+          sizes="(max-width: 700px) 100vw, 48vw"
+        />
+        <img
+          [src]="getArtworkImage(featuredArtwork)"
+          [alt]="featuredArtwork.alt"
+          loading="lazy"
+          decoding="async"
+        />
+      </picture>
 
     </div>
 

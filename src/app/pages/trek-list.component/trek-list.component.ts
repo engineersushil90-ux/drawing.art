@@ -198,6 +198,24 @@ private readonly cdr =
     return `${artwork.image}${separator}access_token=${encodeURIComponent(this.adultImageAccessToken)}`;
   }
 
+  getArtworkSrcset(artwork: Artwork): string {
+    if (
+      artwork.category === '18+ Sketches'
+      || !artwork.imageSmall
+      || !artwork.imageLarge
+      || !artwork.imageSmallWidth
+      || !artwork.imageLargeWidth
+    ) {
+      return '';
+    }
+
+    if (artwork.imageSmallWidth === artwork.imageLargeWidth) {
+      return `${artwork.imageLarge} ${artwork.imageLargeWidth}w`;
+    }
+
+    return `${artwork.imageSmall} ${artwork.imageSmallWidth}w, ${artwork.imageLarge} ${artwork.imageLargeWidth}w`;
+  }
+
 
   // --------------------------------------------------
   // FILTERED DRAWINGS

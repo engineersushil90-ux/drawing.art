@@ -1009,12 +1009,43 @@ interface Artwork {
 
   image: string;
 
+  imageSmall?: string;
+
+  imageLarge?: string;
+
+  imageSmallWidth?: number;
+
+  imageLargeWidth?: number;
+
   alt: string;
 
   isFreePreview?: boolean;
 
   isPayment?: boolean;
 
+}
+
+interface ResponsiveImageVariants {
+  small: string;
+  large: string;
+  smallWidth: number;
+  largeWidth: number;
+}
+
+let drawingImageVariantsPromise: Promise<Record<string, ResponsiveImageVariants>> | undefined;
+
+function readDrawingImageVariants(): Promise<Record<string, ResponsiveImageVariants>> {
+  if (!drawingImageVariantsPromise) {
+    drawingImageVariantsPromise = readFile(
+      join(process.cwd(), 'public', 'drawing-image-variants.json'),
+      'utf8'
+    ).then(content => JSON.parse(content) as Record<string, ResponsiveImageVariants>)
+      .catch(error => {
+        if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return {};
+        throw error;
+      });
+  }
+  return drawingImageVariantsPromise;
 }
 
 
@@ -1026,6 +1057,7 @@ async function scanDrawings(
 ): Promise<Artwork[]> {
 
   const drawings: Artwork[] = [];
+  const imageVariants = await readDrawingImageVariants();
 
 
   async function scan(
@@ -1155,7 +1187,9 @@ async function scanDrawings(
             pathParts
               .map(part => encodeURIComponent(part))
               .join('/');
-
+      const responsiveVariants = category === '18+ Sketches'
+        ? undefined
+        : imageVariants[`drawings/${pathParts.join('/')}`];
 
       drawings.push({
 
@@ -1172,6 +1206,15 @@ async function scanDrawings(
         addedAt,
 
         image: imagePath,
+
+        ...(responsiveVariants
+          ? {
+            imageSmall: responsiveVariants.small,
+            imageLarge: responsiveVariants.large,
+            imageSmallWidth: responsiveVariants.smallWidth,
+            imageLargeWidth: responsiveVariants.largeWidth
+          }
+          : {}),
 
         alt: title,
 
