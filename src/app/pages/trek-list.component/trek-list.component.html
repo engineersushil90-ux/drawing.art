@@ -306,16 +306,17 @@
             />
           </picture>
 
-          <span
+          <button
+            type="button"
             *ngIf="reviewCountsLoaded"
             class="like-button review-count-badge"
             style="top:14px;left:14px;right:auto;bottom:auto"
-            role="img"
-            [attr.aria-label]="getArtworkReviewCount(artwork) + ' reviews and comments'"
-            [title]="getArtworkReviewCount(artwork) + ' reviews and comments'"
+            (click)="openReviews($event, artwork)"
+            [attr.aria-label]="'Open reviews and feedback for ' + artwork.title + '. ' + getArtworkReviewCount(artwork) + ' reviews and comments'"
+            [title]="'Open reviews and feedback (' + getArtworkReviewCount(artwork) + ' reviews)'"
           >
             {{ getArtworkReviewCount(artwork) }} {{ getArtworkReviewCount(artwork) === 1 ? 'review' : 'reviews' }}
-          </span>
+          </button>
 
           <div class="locked-art-overlay" *ngIf="isLockedArtwork(artwork)" aria-hidden="true">
             <strong>Locked</strong>
