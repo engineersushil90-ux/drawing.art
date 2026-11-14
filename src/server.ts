@@ -1,6 +1,7 @@
 import express from 'express';
 import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import sharp from 'sharp';
+import multer from 'multer';
 
 import {
   join,
@@ -10,7 +11,7 @@ import {
   basename,
   resolve,
 } from 'node:path';
-import { readFile, writeFile, mkdir, rename, stat as statFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, stat as statFile, unlink } from 'node:fs/promises';
 
 import { readdir } from 'node:fs/promises';
 
@@ -1265,6 +1266,204 @@ async function saveLikes(likes: Record<string, number>): Promise<void> {
     JSON.stringify({ likes }, null, 2),
   );
 }
+
+interface StoredCustomDrawingRequest {
+  id: string;
+  name: string;
+  email: string;
+  description: string;
+  createdAt: string;
+  referenceFile: string | null;
+}
+
+const customDrawingRequestImagesDirectory = join(dataDirectory, 'custom-drawing-request-images');
+const customDrawingRequestRateLimit = new Map<string, number[]>();
+const customDrawingRequestRateWindowMs = 60 * 60 * 1000;
+const customDrawingRequestRateMax = 3;
+let customDrawingRequestWriteQueue: Promise<void> = Promise.resolve();
+
+const customDrawingRequestUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 4, fieldSize: 8 * 1024, parts: 5 },
+  fileFilter: (_req, file, callback) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      callback(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
+      return;
+    }
+    callback(null, true);
+  }
+});
+
+function isWithinCustomDrawingRequestRateLimit(ipAddress: string): boolean {
+  const now = Date.now();
+  const recentSubmissions = (customDrawingRequestRateLimit.get(ipAddress) || [])
+    .filter(timestamp => now - timestamp < customDrawingRequestRateWindowMs);
+  if (recentSubmissions.length >= customDrawingRequestRateMax) {
+    customDrawingRequestRateLimit.set(ipAddress, recentSubmissions);
+    return false;
+  }
+
+  recentSubmissions.push(now);
+  customDrawingRequestRateLimit.set(ipAddress, recentSubmissions);
+  if (customDrawingRequestRateLimit.size > 5000) {
+    for (const [address, timestamps] of customDrawingRequestRateLimit) {
+      if (!timestamps.some(timestamp => now - timestamp < customDrawingRequestRateWindowMs)) {
+        customDrawingRequestRateLimit.delete(address);
+      }
+    }
+  }
+  return true;
+}
+
+function parseCustomDrawingRequestUpload(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+): void {
+  customDrawingRequestUpload.single('referenceImage')(req, res, error => {
+    if (!error) {
+      next();
+      return;
+    }
+    if (error instanceof multer.MulterError) {
+      const tooLarge = error.code === 'LIMIT_FILE_SIZE';
+      res.status(tooLarge ? 413 : 400).json({
+        error: tooLarge
+          ? 'The reference image must be 5 MB or smaller.'
+          : 'Upload one JPG, PNG, or WebP reference image.'
+      });
+      return;
+    }
+    next(error);
+  });
+}
+
+app.post('/api/custom-drawing-requests', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || !allowedApiOrigins.has(origin)) {
+    res.status(403).json({ error: 'Drawing requests can only be submitted from the site.' });
+    return;
+  }
+  const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+  if (!isWithinCustomDrawingRequestRateLimit(ipAddress)) {
+    res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    return;
+  }
+  next();
+}, parseCustomDrawingRequestUpload, async (req, res, next) => {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const description = typeof req.body?.description === 'string' ? req.body.description.trim() : '';
+  const website = typeof req.body?.website === 'string' ? req.body.website.trim() : '';
+  if (
+    !name || name.length > 80
+    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254
+    || description.length < 15 || description.length > 2000
+    || website
+  ) {
+    res.status(400).json({ error: 'Provide your name, a valid email address, and a 15 to 2000 character drawing description.' });
+    return;
+  }
+
+  const id = randomUUID();
+  let optimizedReference: Buffer | null = null;
+  if (req.file) {
+    try {
+      const image = sharp(req.file.buffer, { limitInputPixels: 40_000_000 });
+      const metadata = await image.metadata();
+      if (
+        !['jpeg', 'png', 'webp'].includes(metadata.format || '')
+        || !metadata.width
+        || !metadata.height
+        || metadata.width * metadata.height > 40_000_000
+        || (metadata.pages || 1) > 1
+      ) {
+        res.status(400).json({ error: 'The reference image must be a valid JPG, PNG, or WebP image.' });
+        return;
+      }
+      optimizedReference = await sharp(req.file.buffer, { limitInputPixels: 40_000_000 })
+        .rotate()
+        .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toBuffer();
+    } catch {
+      res.status(400).json({ error: 'The reference image could not be read. Please upload a valid image.' });
+      return;
+    }
+  }
+
+  const request: StoredCustomDrawingRequest = {
+    id,
+    name,
+    email,
+    description,
+    createdAt: new Date().toISOString(),
+    referenceFile: optimizedReference ? `${id}.webp` : null
+  };
+
+  try {
+    if (optimizedReference && request.referenceFile) {
+      await mkdir(customDrawingRequestImagesDirectory, { recursive: true });
+      await writeFile(join(customDrawingRequestImagesDirectory, request.referenceFile), optimizedReference);
+    }
+    const update = customDrawingRequestWriteQueue.then(async () => {
+      const requests = JSON.parse(await readDataFile('custom-drawing-requests.json')) as StoredCustomDrawingRequest[];
+      requests.unshift(request);
+      await saveDataFile('custom-drawing-requests.json', JSON.stringify(requests, null, 2));
+    });
+    customDrawingRequestWriteQueue = update.then(() => undefined, () => undefined);
+    await update;
+    res.status(201).json({ ok: true, id });
+  } catch (error) {
+    if (request.referenceFile) {
+      try {
+        await unlink(join(customDrawingRequestImagesDirectory, request.referenceFile));
+      } catch (cleanupError) {
+        console.error('Failed to clean up an unsaved drawing request reference image:', cleanupError);
+      }
+    }
+    next(error);
+  }
+});
+
+app.get('/api/admin/custom-drawing-requests', requireOwner, async (_req, res, next) => {
+  try {
+    const requests = JSON.parse(await readDataFile('custom-drawing-requests.json')) as StoredCustomDrawingRequest[];
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(requests.slice(0, 100).map(({ referenceFile, ...request }) => ({
+      ...request,
+      hasReferenceImage: Boolean(referenceFile)
+    })));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/admin/custom-drawing-requests/:id/reference', requireOwner, async (req, res, next) => {
+  const requestId = typeof req.params['id'] === 'string' ? req.params['id'] : '';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
+    res.status(400).json({ error: 'Provide a valid drawing request.' });
+    return;
+  }
+  try {
+    const requests = JSON.parse(await readDataFile('custom-drawing-requests.json')) as StoredCustomDrawingRequest[];
+    const request = requests.find(item => item.id === requestId);
+    if (!request?.referenceFile) {
+      res.status(404).json({ error: 'Reference image not found.' });
+      return;
+    }
+    const image = await readFile(join(customDrawingRequestImagesDirectory, request.referenceFile));
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.type('image/webp').send(image);
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      res.status(404).json({ error: 'Reference image not found.' });
+      return;
+    }
+    next(error);
+  }
+});
 
 type ArtworkReviewStatus = 'pending' | 'approved' | 'rejected';
 

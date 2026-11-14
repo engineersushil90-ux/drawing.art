@@ -25,7 +25,16 @@ describe('AdminViewersComponent', () => {
       createdAt: '2026-11-14T01:00:00.000Z',
       status: 'pending' as const
     }])),
-    moderateArtworkReview: vi.fn(() => of({ ok: true }))
+    moderateArtworkReview: vi.fn(() => of({ ok: true })),
+    getCustomDrawingRequests: vi.fn(() => of([{
+      id: 'request-1',
+      name: 'Drawing customer',
+      email: 'customer@example.com',
+      description: 'Please draw a landscape with mountains.',
+      createdAt: '2026-11-14T02:00:00.000Z',
+      hasReferenceImage: true
+    }])),
+    getCustomDrawingRequestReference: vi.fn(() => of(new Blob(['image'])))
   };
 
   beforeEach(async () => {
@@ -33,6 +42,8 @@ describe('AdminViewersComponent', () => {
     drawingsService.getAdultViewers.mockClear();
     drawingsService.getPendingArtworkReviews.mockClear();
     drawingsService.moderateArtworkReview.mockClear();
+    drawingsService.getCustomDrawingRequests.mockClear();
+    drawingsService.getCustomDrawingRequestReference.mockClear();
     await TestBed.configureTestingModule({
       imports: [AdminViewersComponent],
       providers: [
@@ -48,6 +59,7 @@ describe('AdminViewersComponent', () => {
     expect(drawingsService.adminLogin).not.toHaveBeenCalled();
     expect(drawingsService.getAdultViewers).not.toHaveBeenCalled();
     expect(drawingsService.getPendingArtworkReviews).not.toHaveBeenCalled();
+    expect(drawingsService.getCustomDrawingRequests).not.toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).not.toContain('viewer@example.com');
 
     fixture.componentInstance.username = 'owner';
@@ -58,9 +70,11 @@ describe('AdminViewersComponent', () => {
     expect(drawingsService.adminLogin).toHaveBeenCalledOnce();
     expect(drawingsService.getAdultViewers).toHaveBeenCalledOnce();
     expect(drawingsService.getPendingArtworkReviews).toHaveBeenCalledOnce();
+    expect(drawingsService.getCustomDrawingRequests).toHaveBeenCalledOnce();
     expect(fixture.nativeElement.textContent).toContain('Test Viewer');
     expect(fixture.nativeElement.textContent).toContain('viewer@example.com');
     expect(fixture.nativeElement.textContent).toContain('Beautiful pencil details.');
+    expect(fixture.nativeElement.textContent).toContain('Please draw a landscape with mountains.');
   });
 
   it('removes a review from the queue after approving it', () => {

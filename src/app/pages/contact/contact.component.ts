@@ -1,16 +1,64 @@
-import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { DrawingsService } from '../../core/services/drawings.service';
 
 @Component({
   selector: 'app-contact',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
     <div class="page-container">
       <h1>Contact Us</h1>
       <p>Have questions about our artwork, commissions, or collaborations? We'd love to hear from you.</p>
-      
+
+      <section class="request-card" aria-labelledby="request-title">
+        <p class="eyebrow">Commission request</p>
+        <h2 id="request-title">Request a custom drawing</h2>
+        <p>Tell us what you have in mind. You can attach one JPG, PNG, or WebP reference image (up to 5 MB).</p>
+
+        <form (ngSubmit)="submitRequest()" #requestForm="ngForm" novalidate>
+          <label>
+            Your name
+            <input name="name" type="text" [(ngModel)]="request.name" maxlength="80" autocomplete="name" required>
+          </label>
+          <label>
+            Email address
+            <input name="email" type="email" [(ngModel)]="request.email" maxlength="254" autocomplete="email" required>
+          </label>
+          <label>
+            What would you like drawn?
+            <textarea name="description" [(ngModel)]="request.description" minlength="15" maxlength="2000" rows="5" required></textarea>
+          </label>
+          <label>
+            Reference image (optional)
+            <input
+              #referenceInput
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="onReferenceSelected($event)"
+            >
+          </label>
+          <div class="reference-preview" *ngIf="referencePreviewUrl">
+            <img [src]="referencePreviewUrl" alt="Selected reference image preview">
+            <div>
+              <span>{{ referenceImage?.name }}</span>
+              <button type="button" class="remove-image" (click)="clearReferenceImage(referenceInput)">Remove image</button>
+            </div>
+          </div>
+
+          <div class="honeypot" aria-hidden="true">
+            <label>Leave this field empty<input name="website" type="text" [(ngModel)]="request.website" tabindex="-1" autocomplete="off"></label>
+          </div>
+
+          <button type="submit" [disabled]="requestForm.invalid || submitting">
+            {{ submitting ? 'Sending request…' : 'Send drawing request' }}
+          </button>
+          <p class="form-message" [class.error]="requestError" *ngIf="requestMessage" role="status">{{ requestMessage }}</p>
+        </form>
+      </section>
+
       <div class="contact-details">
         <div class="detail-item">
           <strong>Email:</strong>
@@ -24,7 +72,7 @@ import { RouterModule } from '@angular/router';
             </a>
           </p>
         </div>
-        
+
         <div class="detail-item">
           <strong>Social Media:</strong>
           <p>Follow us on Instagram and YouTube for behind-the-scenes content and process videos.</p>
@@ -61,6 +109,23 @@ import { RouterModule } from '@angular/router';
   styles: [`
     .page-container { max-width: 800px; margin: 60px auto; padding: 0 20px; line-height: 1.8; color: #26342d; }
     h1 { font-family: Georgia, serif; font-size: 3rem; margin-bottom: 20px; }
+    .request-card { margin: 36px 0 48px; padding: clamp(22px, 5vw, 40px); border: 1px solid #e8e2d9; border-radius: 18px; background: #fffdf9; box-shadow: 0 16px 42px #26342d0d; }
+    .request-card h2 { margin: 0; font: 2rem Georgia, serif; }
+    .eyebrow { margin: 0 0 8px; color: #9c6355; font-size: .75rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+    .request-card form { display: grid; gap: 16px; margin-top: 24px; }
+    .request-card label { display: grid; gap: 6px; font-size: .95rem; font-weight: 600; }
+    .request-card input, .request-card textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #d8d4cc; border-radius: 8px; color: inherit; font: inherit; }
+    .request-card input[type=file] { padding: 9px; background: #fff; }
+    .request-card textarea { resize: vertical; }
+    .request-card button { justify-self: start; padding: 13px 20px; border: 0; border-radius: 8px; background: #26342d; color: #fff; font: inherit; cursor: pointer; }
+    .request-card button:disabled { opacity: .6; cursor: wait; }
+    .reference-preview { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 10px; background: #f7f1e8; }
+    .reference-preview img { width: 84px; height: 84px; border-radius: 6px; object-fit: cover; }
+    .reference-preview div { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+    .request-card .remove-image { padding: 0; background: transparent; color: #8c3d31; text-align: left; }
+    .form-message { margin: 0; color: #286343; }
+    .form-message.error { color: #9a3428; }
+    .honeypot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
     .contact-details { margin: 40px 0; }
     .detail-item { margin-bottom: 20px; }
     .detail-item a { color: #f08c76; text-decoration: none; font-size: 1.2rem; font-weight: bold; }
@@ -75,6 +140,79 @@ import { RouterModule } from '@angular/router';
     .youtube-mark { fill: #f00; }
     .play-mark { fill: #fff; }
     .back-link { display: inline-block; margin-top: 40px; color: #f08c76; text-decoration: none; font-weight: bold; }
+    @media (max-width: 600px) { .page-container { margin-top: 36px; } h1 { font-size: 2.4rem; } .reference-preview { align-items: flex-start; } }
   `]
 })
-export class ContactComponent {}
+export class ContactComponent implements OnDestroy {
+  private readonly drawingsService = inject(DrawingsService);
+  referencePreviewUrl?: string;
+  request = { name: '', email: '', description: '', website: '' };
+  referenceImage?: File;
+  submitting = false;
+  requestError = false;
+  requestMessage = '';
+
+  ngOnDestroy(): void {
+    this.revokeReferencePreview();
+  }
+
+  onReferenceSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    this.requestMessage = '';
+    this.requestError = false;
+
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      input.value = '';
+      this.clearReferenceImage();
+      this.showError('Choose a JPG, PNG, or WebP image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      input.value = '';
+      this.clearReferenceImage();
+      this.showError('The reference image must be 5 MB or smaller.');
+      return;
+    }
+
+    this.clearReferenceImage();
+    this.referenceImage = file;
+    this.referencePreviewUrl = URL.createObjectURL(file);
+  }
+
+  clearReferenceImage(input?: HTMLInputElement): void {
+    if (input) input.value = '';
+    this.revokeReferencePreview();
+    this.referenceImage = undefined;
+  }
+
+  submitRequest(): void {
+    if (this.submitting) return;
+    this.submitting = true;
+    this.requestMessage = '';
+    this.requestError = false;
+    this.drawingsService.submitCustomDrawingRequest(this.request, this.referenceImage).subscribe({
+      next: () => {
+        this.request = { name: '', email: '', description: '', website: '' };
+        this.clearReferenceImage();
+        this.requestMessage = 'Your drawing request was sent. We will contact you by email.';
+        this.submitting = false;
+      },
+      error: error => {
+        this.showError(error?.error?.error || 'Could not send your request. Please try again or email us directly.');
+        this.submitting = false;
+      }
+    });
+  }
+
+  private showError(message: string): void {
+    this.requestError = true;
+    this.requestMessage = message;
+  }
+
+  private revokeReferencePreview(): void {
+    if (this.referencePreviewUrl) URL.revokeObjectURL(this.referencePreviewUrl);
+    this.referencePreviewUrl = undefined;
+  }
+}

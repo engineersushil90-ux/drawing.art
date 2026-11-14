@@ -57,6 +57,15 @@ export interface ModerationArtworkReview extends ArtworkReview {
   status: 'pending' | 'approved' | 'rejected';
 }
 
+export interface CustomDrawingRequest {
+  id: string;
+  name: string;
+  email: string;
+  description: string;
+  createdAt: string;
+  hasReferenceImage: boolean;
+}
+
 const API_BASE_URL = 'https://drawing-art.onrender.com';
 
 export function normalizeImagePath(image: string, category?: string): string {
@@ -196,6 +205,34 @@ export class DrawingsService {
       { status },
       { headers: this.adminHeaders(), withCredentials: true }
     );
+  }
+
+  submitCustomDrawingRequest(
+    request: { name: string; email: string; description: string; website: string },
+    referenceImage?: File
+  ): Observable<{ ok: boolean }> {
+    const formData = new FormData();
+    formData.append('name', request.name);
+    formData.append('email', request.email);
+    formData.append('description', request.description);
+    formData.append('website', request.website);
+    if (referenceImage) formData.append('referenceImage', referenceImage);
+    return this.http.post<{ ok: boolean }>(`${this.apiBaseUrl}/api/custom-drawing-requests`, formData);
+  }
+
+  getCustomDrawingRequests(): Observable<CustomDrawingRequest[]> {
+    return this.http.get<CustomDrawingRequest[]>(`${this.apiBaseUrl}/api/admin/custom-drawing-requests`, {
+      headers: this.adminHeaders(),
+      withCredentials: true
+    });
+  }
+
+  getCustomDrawingRequestReference(id: string): Observable<Blob> {
+    return this.http.get(`${this.apiBaseUrl}/api/admin/custom-drawing-requests/${encodeURIComponent(id)}/reference`, {
+      headers: this.adminHeaders(),
+      withCredentials: true,
+      responseType: 'blob'
+    });
   }
 
   getVisits(): Observable<number> {

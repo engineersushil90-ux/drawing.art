@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import {
   AdultViewer,
+  CustomDrawingRequest,
   DrawingsService,
   ModerationArtworkReview
 } from '../../core/services/drawings.service';
@@ -93,6 +94,44 @@ import {
             </div>
           </article>
         </section>
+
+        <section *ngIf="authenticated" class="drawing-request-list" aria-labelledby="drawing-requests-title">
+          <div class="list-heading">
+            <div>
+              <h2 id="drawing-requests-title">Custom drawing requests</h2>
+              <p class="description">Requests received: <strong>{{ customDrawingRequests.length | number }}</strong></p>
+            </div>
+            <button type="button" class="refresh-button" [disabled]="loadingDrawingRequests" (click)="loadCustomDrawingRequests()">
+              {{ loadingDrawingRequests ? 'Loading…' : 'Refresh requests' }}
+            </button>
+          </div>
+
+          <p *ngIf="drawingRequestsMessage" class="message" role="status">{{ drawingRequestsMessage }}</p>
+          <p *ngIf="loadingDrawingRequests" role="status">Loading drawing requests…</p>
+          <p *ngIf="!loadingDrawingRequests && !customDrawingRequests.length">No custom drawing requests yet.</p>
+
+          <article class="drawing-request" *ngFor="let request of customDrawingRequests">
+            <div class="moderation-review-heading">
+              <strong>{{ request.name }}</strong>
+              <time [attr.datetime]="request.createdAt">{{ request.createdAt | date:'medium' }}</time>
+            </div>
+            <a [href]="'mailto:' + request.email">{{ request.email }}</a>
+            <p class="moderation-comment">{{ request.description }}</p>
+            <button
+              *ngIf="request.hasReferenceImage"
+              type="button"
+              class="refresh-button"
+              [disabled]="loadingReferenceRequestId === request.id"
+              (click)="loadDrawingRequestReference(request)"
+            >{{ loadingReferenceRequestId === request.id ? 'Loading image…' : 'View reference image' }}</button>
+            <img
+              *ngIf="referencePreviewRequestId === request.id && referencePreviewUrl"
+              class="request-reference-preview"
+              [src]="referencePreviewUrl"
+              alt="Uploaded drawing request reference"
+            >
+          </article>
+        </section>
       </section>
     </main>
   `,
@@ -121,6 +160,11 @@ import {
     .moderation-comment{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
     .moderation-actions{display:flex;gap:10px}
     .reject-button{background:#8c3d31}
+    .drawing-request-list{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
+    .drawing-request-list h2{margin:0 0 8px;font:26px Georgia,serif}
+    .drawing-request{padding:18px 0;border-bottom:1px solid #e8e2d9}
+    .drawing-request>a{color:#8c5c4d;overflow-wrap:anywhere}
+    .request-reference-preview{display:block;max-width:min(100%,520px);max-height:520px;margin-top:14px;border-radius:10px;object-fit:contain;background:#f7f1e8}
     @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}}
   `]
 })
@@ -140,10 +184,17 @@ export class AdminViewersComponent implements OnDestroy {
   loadingReviews = false;
   moderatingReviewId: string | null = null;
   reviewsMessage = '';
+  customDrawingRequests: CustomDrawingRequest[] = [];
+  loadingDrawingRequests = false;
+  drawingRequestsMessage = '';
+  loadingReferenceRequestId: string | null = null;
+  referencePreviewRequestId: string | null = null;
+  referencePreviewUrl = '';
 
   ngOnDestroy(): void {
     this.clearLoginDeadline();
     this.loginSubscription?.unsubscribe();
+    this.revokeReferencePreview();
   }
 
   login(): void {
@@ -170,6 +221,7 @@ export class AdminViewersComponent implements OnDestroy {
         this.password = '';
         this.loadViewers();
         this.loadPendingReviews();
+        this.loadCustomDrawingRequests();
       },
       error: error => {
         this.clearLoginDeadline();
@@ -246,5 +298,47 @@ export class AdminViewersComponent implements OnDestroy {
         if (error?.status === 401) this.authenticated = false;
       }
     });
+  }
+
+  loadCustomDrawingRequests(): void {
+    if (this.loadingDrawingRequests) return;
+    this.loadingDrawingRequests = true;
+    this.drawingRequestsMessage = '';
+    this.drawingsService.getCustomDrawingRequests().subscribe({
+      next: requests => {
+        this.customDrawingRequests = requests;
+        this.loadingDrawingRequests = false;
+      },
+      error: error => {
+        this.loadingDrawingRequests = false;
+        this.drawingRequestsMessage = error?.error?.error || 'Could not load custom drawing requests. Please sign in again.';
+        if (error?.status === 401) this.authenticated = false;
+      }
+    });
+  }
+
+  loadDrawingRequestReference(request: CustomDrawingRequest): void {
+    if (this.loadingReferenceRequestId) return;
+    this.loadingReferenceRequestId = request.id;
+    this.drawingRequestsMessage = '';
+    this.revokeReferencePreview();
+    this.drawingsService.getCustomDrawingRequestReference(request.id).subscribe({
+      next: image => {
+        this.referencePreviewUrl = URL.createObjectURL(image);
+        this.referencePreviewRequestId = request.id;
+        this.loadingReferenceRequestId = null;
+      },
+      error: error => {
+        this.loadingReferenceRequestId = null;
+        this.drawingRequestsMessage = error?.error?.error || 'Could not load the reference image.';
+        if (error?.status === 401) this.authenticated = false;
+      }
+    });
+  }
+
+  private revokeReferencePreview(): void {
+    if (this.referencePreviewUrl) URL.revokeObjectURL(this.referencePreviewUrl);
+    this.referencePreviewUrl = '';
+    this.referencePreviewRequestId = null;
   }
 }

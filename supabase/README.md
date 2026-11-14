@@ -16,4 +16,6 @@ Keep both Supabase keys in Render's server environment. Never add the `service_r
 
 When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are present, `/api/likes`, `/api/visits`, artwork reviews, and viewer/payment records use Supabase. Without the service-role key, local development continues to use JSON files in `data/`. New reviews stay pending until approved or rejected from `/admin`; public pages show approved reviews only. Review submissions include server-side validation, a hidden honeypot, and an in-memory per-IP limit of three submissions per 15 minutes. 18+ artwork reviews require valid adult-gallery access.
 
+Custom drawing requests are stored in `custom-drawing-requests.json`, and uploaded reference images are re-encoded as WebP files in `custom-drawing-request-images/` under `DATA_DIR`. The `/admin` page lists the requests and serves reference previews only to the signed-in owner. Configure `DATA_DIR` on a persistent disk in production so requests and their images survive server restarts and redeploys. Uploads are limited to one JPG, PNG, or WebP image up to 5 MB; submissions are limited to three per IP per hour.
+
 The site's `/admin` page requires owner sign-in before it shows registered viewer names, emails, view times, and the total count. The separate count endpoint returns only the aggregate count.

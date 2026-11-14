@@ -15,6 +15,7 @@ import { RouterModule } from '@angular/router';
         <h2>1. Information We Collect</h2>
         <p>When a visitor requests access to 18+ Sketches, we collect the name and email address they enter, their confirmation that they are at least 18, and the date and time of access. We use these details to record access to the age-restricted gallery. The site owner can view this record through a password-protected admin page. Details are stored in the site's Supabase database when configured, or in its server data directory otherwise, until the site owner deletes them. The age confirmation is self-reported and does not verify identity or age.</p>
         <p>Visitors may submit an optional display name, a rating, and a comment for artwork. Submissions are stored for moderation; approved reviews are displayed publicly. The server temporarily uses the visitor's IP address in memory to limit spam submissions and does not save it with a review.</p>
+        <p>Visitors may also send a custom drawing request with their name, email address, description, and an optional reference image. These requests and uploaded images are stored on the site's server and are visible only to the site owner through the password-protected admin page. The server temporarily uses the visitor's IP address in memory to limit spam requests and does not save it with a request.</p>
         <p>We also collect non-personal technical information needed to operate the site, such as browser and connection details.</p>
       </section>
 
