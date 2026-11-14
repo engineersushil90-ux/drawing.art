@@ -37,11 +37,12 @@ import {
               <p class="description">Unique registered emails: <strong>{{ viewers.length | number }}</strong></p>
               <p class="privacy-note">Email ownership is not verified.</p>
             </div>
-            <button type="button" class="refresh-button" [disabled]="loadingViewers" (click)="loadViewers()">
+            <button type="button" class="refresh-button" [disabled]="loadingViewers" (click)="loadViewers(true)">
               {{ loadingViewers ? 'Loading…' : 'Refresh' }}
             </button>
           </div>
 
+          <p *ngIf="viewersMessage" class="message" role="status">{{ viewersMessage }}</p>
           <p *ngIf="loadingViewers" role="status">Loading viewer list…</p>
           <p *ngIf="!loadingViewers && !viewers.length">No registered viewers yet.</p>
 
@@ -64,7 +65,7 @@ import {
               <h2 id="review-moderation-title">Review moderation</h2>
               <p class="description">Pending reviews: <strong>{{ pendingReviews.length | number }}</strong></p>
             </div>
-            <button type="button" class="refresh-button" [disabled]="loadingReviews" (click)="loadPendingReviews()">
+            <button type="button" class="refresh-button" [disabled]="loadingReviews" (click)="loadPendingReviews(true)">
               {{ loadingReviews ? 'Loading…' : 'Refresh reviews' }}
             </button>
           </div>
@@ -103,7 +104,7 @@ import {
               <h2 id="drawing-requests-title">Custom drawing requests</h2>
               <p class="description">Requests received: <strong>{{ customDrawingRequests.length | number }}</strong></p>
             </div>
-            <button type="button" class="refresh-button" [disabled]="loadingDrawingRequests" (click)="loadCustomDrawingRequests()">
+            <button type="button" class="refresh-button" [disabled]="loadingDrawingRequests" (click)="loadCustomDrawingRequests(true)">
               {{ loadingDrawingRequests ? 'Loading…' : 'Refresh requests' }}
             </button>
           </div>
@@ -131,6 +132,7 @@ import {
               class="request-reference-preview"
               [src]="referencePreviewUrl"
               alt="Uploaded drawing request reference"
+              (error)="onReferencePreviewError()"
             >
           </article>
         </section>
@@ -181,6 +183,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   checkingAdminSession = true;
   authenticated = false;
   loadingViewers = false;
+  viewersMessage = '';
   message = '';
   viewers: AdultViewer[] = [];
   pendingReviews: ModerationArtworkReview[] = [];
@@ -196,17 +199,21 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   referencePreviewUrl = '';
 
   ngOnInit(): void {
-    this.drawingsService.getAdminSession().subscribe({
+    this.drawingsService.getAdminSession().pipe(timeout(30_000)).subscribe({
       next: () => {
         this.checkingAdminSession = false;
         this.authenticated = true;
         this.loadAdminData();
+        this.cdr.markForCheck();
       },
       error: error => {
         this.checkingAdminSession = false;
         if (!this.authenticated && error?.status !== 401) {
-          this.message = error?.error?.error || 'Could not verify your saved admin session. Please sign in again.';
+          this.message = error?.name === 'TimeoutError'
+            ? 'No response while checking the saved admin session. You can still sign in below.'
+            : error?.error?.error || 'Could not verify your saved admin session. Please sign in again.';
         }
+        this.cdr.markForCheck();
       }
     });
   }
@@ -239,13 +246,16 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
         this.busy = false;
         this.authenticated = true;
         this.password = '';
+        this.message = 'Signed in successfully.';
         this.loadAdminData();
+        this.cdr.markForCheck();
       },
       error: error => {
         this.clearLoginDeadline();
         this.loginSubscription = undefined;
         this.busy = false;
         this.message = this.getLoginErrorMessage(error);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -270,36 +280,42 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     return 'Login failed' + (error?.status ? ` (HTTP ${error.status})` : '') + '. Please retry or check the Render server logs.';
   }
 
-  loadViewers(): void {
+  loadViewers(showSuccessMessage = false): void {
     if (this.loadingViewers) return;
     this.loadingViewers = true;
-    this.message = '';
-    this.drawingsService.getAdultViewers().subscribe({
+    this.viewersMessage = '';
+    this.drawingsService.getAdultViewers().pipe(timeout(30_000)).subscribe({
       next: viewers => {
         this.viewers = viewers;
         this.loadingViewers = false;
+        if (showSuccessMessage) this.viewersMessage = 'Viewer list refreshed.';
+        this.cdr.markForCheck();
       },
       error: error => {
         this.loadingViewers = false;
-        this.message = error?.error?.error || 'Could not load the viewer list. Please sign in again.';
-        this.authenticated = false;
+        this.viewersMessage = this.getLoadErrorMessage(error, 'the viewer list');
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
       }
     });
   }
 
-  loadPendingReviews(): void {
+  loadPendingReviews(showSuccessMessage = false): void {
     if (this.loadingReviews) return;
     this.loadingReviews = true;
     this.reviewsMessage = '';
-    this.drawingsService.getPendingArtworkReviews().subscribe({
+    this.drawingsService.getPendingArtworkReviews().pipe(timeout(30_000)).subscribe({
       next: reviews => {
         this.pendingReviews = reviews;
         this.loadingReviews = false;
+        if (showSuccessMessage) this.reviewsMessage = 'Pending reviews refreshed.';
+        this.cdr.markForCheck();
       },
       error: error => {
         this.loadingReviews = false;
-        this.reviewsMessage = error?.error?.error || 'Could not load pending reviews. Please sign in again.';
-        if (error?.status === 401) this.authenticated = false;
+        this.reviewsMessage = this.getLoadErrorMessage(error, 'pending reviews');
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -317,6 +333,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
         this.reviewsMessage = status === 'approved'
           ? 'Review approved and published. Open this artwork’s Reviews & feedback to see it.'
           : 'Review rejected.';
+        this.cdr.markForCheck();
       },
       error: error => {
         this.moderatingReviewId = null;
@@ -324,24 +341,28 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
         this.reviewsMessage = error?.name === 'TimeoutError'
           ? 'No response after 30 seconds. Refresh reviews to confirm whether the change was saved before retrying.'
           : error?.error?.error || 'Could not update the review. Please try again.';
-        if (error?.status === 401) this.authenticated = false;
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
       }
     });
   }
 
-  loadCustomDrawingRequests(): void {
+  loadCustomDrawingRequests(showSuccessMessage = false): void {
     if (this.loadingDrawingRequests) return;
     this.loadingDrawingRequests = true;
     this.drawingRequestsMessage = '';
-    this.drawingsService.getCustomDrawingRequests().subscribe({
+    this.drawingsService.getCustomDrawingRequests().pipe(timeout(30_000)).subscribe({
       next: requests => {
         this.customDrawingRequests = requests;
         this.loadingDrawingRequests = false;
+        if (showSuccessMessage) this.drawingRequestsMessage = 'Drawing requests refreshed.';
+        this.cdr.markForCheck();
       },
       error: error => {
         this.loadingDrawingRequests = false;
-        this.drawingRequestsMessage = error?.error?.error || 'Could not load custom drawing requests. Please sign in again.';
-        if (error?.status === 401) this.authenticated = false;
+        this.drawingRequestsMessage = this.getLoadErrorMessage(error, 'drawing requests');
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -351,18 +372,52 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.loadingReferenceRequestId = request.id;
     this.drawingRequestsMessage = '';
     this.revokeReferencePreview();
-    this.drawingsService.getCustomDrawingRequestReference(request.id).subscribe({
+    this.drawingsService.getCustomDrawingRequestReference(request.id).pipe(timeout(30_000)).subscribe({
       next: image => {
+        if (!image.size) {
+          this.loadingReferenceRequestId = null;
+          this.drawingRequestsMessage = 'The reference image is empty. Please try loading it again.';
+          this.cdr.markForCheck();
+          return;
+        }
         this.referencePreviewUrl = URL.createObjectURL(image);
         this.referencePreviewRequestId = request.id;
         this.loadingReferenceRequestId = null;
+        this.drawingRequestsMessage = 'Reference image loaded.';
+        this.cdr.markForCheck();
       },
       error: error => {
         this.loadingReferenceRequestId = null;
-        this.drawingRequestsMessage = error?.error?.error || 'Could not load the reference image.';
-        if (error?.status === 401) this.authenticated = false;
+        this.drawingRequestsMessage = this.getLoadErrorMessage(error, 'the reference image');
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
       }
     });
+  }
+
+  onReferencePreviewError(): void {
+    this.revokeReferencePreview();
+    this.drawingRequestsMessage = 'The reference image could not be displayed. Please try loading it again.';
+    this.cdr.markForCheck();
+  }
+
+  private getLoadErrorMessage(
+    error: { name?: string; status?: number; error?: { error?: string } },
+    resource: string
+  ): string {
+    if (error?.name === 'TimeoutError') {
+      return `No response within 30 seconds while loading ${resource}. Please retry.`;
+    }
+    if (error?.error?.error) return error.error.error;
+    if (error?.status === 0) return `Could not reach the server while loading ${resource}. Please retry.`;
+    return `Could not load ${resource}. Please retry.`;
+  }
+
+  private handleAdminAuthorizationError(error: { status?: number }): void {
+    if (error?.status === 401) {
+      this.authenticated = false;
+      this.message = 'Your admin session expired. Please sign in again.';
+    }
   }
 
   private revokeReferencePreview(): void {

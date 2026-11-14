@@ -76,6 +76,7 @@ describe('AdminViewersComponent', () => {
     expect(drawingsService.getAdultViewers).toHaveBeenCalledOnce();
     expect(drawingsService.getPendingArtworkReviews).toHaveBeenCalledOnce();
     expect(drawingsService.getCustomDrawingRequests).toHaveBeenCalledOnce();
+    expect(fixture.componentInstance.message).toBe('Signed in successfully.');
     expect(fixture.nativeElement.textContent).toContain('Test Viewer');
     expect(fixture.nativeElement.textContent).toContain('viewer@example.com');
     expect(fixture.nativeElement.textContent).toContain('Beautiful pencil details.');
@@ -150,6 +151,36 @@ describe('AdminViewersComponent', () => {
     expect(component.moderatingReviewStatus).toBeNull();
     expect(component.reviewsMessage).toContain('No response after 30 seconds.');
     vi.useRealTimers();
+  });
+
+  it('ends a stalled reference-image request with an actionable message', () => {
+    vi.useFakeTimers();
+    drawingsService.getCustomDrawingRequestReference.mockReturnValueOnce(NEVER);
+    const component = fixture.componentInstance;
+    component.loadDrawingRequestReference({
+      id: 'request-1',
+      name: 'Drawing customer',
+      email: 'customer@example.com',
+      description: 'Please draw a landscape with mountains.',
+      createdAt: '2026-11-14T02:00:00.000Z',
+      hasReferenceImage: true
+    });
+
+    expect(component.loadingReferenceRequestId).toBe('request-1');
+    vi.advanceTimersByTime(30_000);
+    fixture.detectChanges();
+
+    expect(component.loadingReferenceRequestId).toBeNull();
+    expect(component.drawingRequestsMessage).toContain('No response within 30 seconds');
+    vi.useRealTimers();
+  });
+
+  it('shows success after refreshing drawing requests', () => {
+    const component = fixture.componentInstance;
+    component.loadCustomDrawingRequests(true);
+
+    expect(component.loadingDrawingRequests).toBe(false);
+    expect(component.drawingRequestsMessage).toBe('Drawing requests refreshed.');
   });
 
   it('shows a clear credential error and re-enables sign-in', () => {
