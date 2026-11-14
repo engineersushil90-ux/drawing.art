@@ -224,6 +224,10 @@ export class DrawingsService {
     return `${this.apiBaseUrl}/api/admin/review-image?${params.toString()}`;
   }
 
+  getAdminCustomDrawingRequestImageUrl(id: string): string {
+    return `${this.apiBaseUrl}/api/admin/custom-drawing-requests/${encodeURIComponent(id)}/reference`;
+  }
+
   moderateArtworkReview(id: string, status: 'approved' | 'rejected'): Observable<{ ok: boolean }> {
     return this.http.patch<{ ok: boolean }>(
       `${this.apiBaseUrl}/api/admin/reviews/${encodeURIComponent(id)}`,
@@ -249,14 +253,6 @@ export class DrawingsService {
     return this.http.get<CustomDrawingRequest[]>(`${this.apiBaseUrl}/api/admin/custom-drawing-requests`, {
       headers: this.adminHeaders(),
       withCredentials: true
-    });
-  }
-
-  getCustomDrawingRequestReference(id: string): Observable<Blob> {
-    return this.http.get(`${this.apiBaseUrl}/api/admin/custom-drawing-requests/${encodeURIComponent(id)}/reference`, {
-      headers: this.adminHeaders(),
-      withCredentials: true,
-      responseType: 'blob'
     });
   }
 

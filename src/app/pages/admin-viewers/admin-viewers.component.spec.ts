@@ -40,7 +40,9 @@ describe('AdminViewersComponent', () => {
       createdAt: '2026-11-14T02:00:00.000Z',
       hasReferenceImage: true
     }])),
-    getCustomDrawingRequestReference: vi.fn(() => of(new Blob(['image'])))
+    getAdminCustomDrawingRequestImageUrl: vi.fn((id: string) =>
+      `https://drawing-art.onrender.com/api/admin/custom-drawing-requests/${encodeURIComponent(id)}/reference`
+    )
   };
 
   beforeEach(async () => {
@@ -50,7 +52,7 @@ describe('AdminViewersComponent', () => {
     drawingsService.getPendingArtworkReviews.mockClear();
     drawingsService.moderateArtworkReview.mockClear();
     drawingsService.getCustomDrawingRequests.mockClear();
-    drawingsService.getCustomDrawingRequestReference.mockClear();
+    drawingsService.getAdminCustomDrawingRequestImageUrl.mockClear();
     await TestBed.configureTestingModule({
       imports: [AdminViewersComponent],
       providers: [
@@ -87,6 +89,9 @@ describe('AdminViewersComponent', () => {
     const reviewImage = fixture.nativeElement.querySelector('.moderation-artwork-preview') as HTMLImageElement;
     expect(reviewImage.src).toContain('/api/admin/review-image?image=drawings%2FPencilSketches%2Fdrawing.jpg');
     expect(reviewImage.crossOrigin).toBe('use-credentials');
+    const requestImage = fixture.nativeElement.querySelector('.request-reference-preview') as HTMLImageElement;
+    expect(requestImage.src).toContain('/api/admin/custom-drawing-requests/request-1/reference');
+    expect(requestImage.crossOrigin).toBe('use-credentials');
   });
 
   it('restores the admin dashboard when the signed session cookie is valid', () => {
@@ -159,26 +164,23 @@ describe('AdminViewersComponent', () => {
     vi.useRealTimers();
   });
 
-  it('ends a stalled reference-image request with an actionable message', () => {
-    vi.useFakeTimers();
-    drawingsService.getCustomDrawingRequestReference.mockReturnValueOnce(NEVER);
+  it('shows an unavailable state if a custom request reference image fails', () => {
     const component = fixture.componentInstance;
-    component.loadDrawingRequestReference({
+    const request = {
       id: 'request-1',
       name: 'Drawing customer',
       email: 'customer@example.com',
       description: 'Please draw a landscape with mountains.',
       createdAt: '2026-11-14T02:00:00.000Z',
       hasReferenceImage: true
-    });
-
-    expect(component.loadingReferenceRequestId).toBe('request-1');
-    vi.advanceTimersByTime(30_000);
+    };
+    component.authenticated = true;
+    component.customDrawingRequests = [request];
+    component.onCustomRequestImageError(request);
     fixture.detectChanges();
 
-    expect(component.loadingReferenceRequestId).toBeNull();
-    expect(component.drawingRequestsMessage).toContain('No response within 30 seconds');
-    vi.useRealTimers();
+    expect(component.customRequestImageErrors['request-1']).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Reference image unavailable.');
   });
 
   it('shows success after refreshing drawing requests', () => {
@@ -187,6 +189,29 @@ describe('AdminViewersComponent', () => {
 
     expect(component.loadingDrawingRequests).toBe(false);
     expect(component.drawingRequestsMessage).toBe('Drawing requests refreshed.');
+  });
+
+  it('sorts viewers latest first and paginates at 50 rows', () => {
+    const viewers = Array.from({ length: 51 }, (_, index) => ({
+      name: `Viewer ${index}`,
+      email: `viewer${index}@example.com`,
+      firstViewedAt: new Date(1_763_000_000_000 + index * 60_000).toISOString(),
+      lastViewedAt: new Date(1_763_000_000_000 + index * 60_000).toISOString(),
+      views: 1,
+      isPayment: false
+    }));
+    drawingsService.getAdultViewers.mockReturnValueOnce(of(viewers));
+    const component = fixture.componentInstance;
+
+    component.loadViewers();
+
+    expect(component.viewersOnPage).toHaveLength(50);
+    expect(component.viewerPageCount).toBe(2);
+    expect(component.viewersOnPage[0].name).toBe('Viewer 50');
+
+    component.nextViewerPage();
+    expect(component.viewersOnPage).toHaveLength(1);
+    expect(component.viewersOnPage[0].name).toBe('Viewer 0');
   });
 
   it('shows a clear credential error and re-enables sign-in', () => {

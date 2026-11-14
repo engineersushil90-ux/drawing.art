@@ -49,7 +49,7 @@ import {
           <div class="table-wrap" *ngIf="!loadingViewers && viewers.length">
             <table>
               <thead><tr><th>Name</th><th>Email</th><th>Last viewed</th><th>Views</th></tr></thead>
-              <tbody><tr *ngFor="let viewer of viewers">
+              <tbody><tr *ngFor="let viewer of viewersOnPage">
                 <td>{{ viewer.name }}</td>
                 <td>{{ viewer.email }}</td>
                 <td>{{ viewer.lastViewedAt | date:'medium' }}</td>
@@ -57,6 +57,11 @@ import {
               </tr></tbody>
             </table>
           </div>
+          <nav *ngIf="!loadingViewers && viewerPageCount > 1" class="viewer-pagination" aria-label="Viewer list pages">
+            <button type="button" [disabled]="viewerPage === 1" (click)="previousViewerPage()">Previous</button>
+            <span>Page {{ viewerPage }} of {{ viewerPageCount }}</span>
+            <button type="button" [disabled]="viewerPage === viewerPageCount" (click)="nextViewerPage()">Next</button>
+          </nav>
         </div>
 
         <section *ngIf="authenticated" class="review-moderation" aria-labelledby="review-moderation-title">
@@ -94,22 +99,20 @@ import {
               <div *ngIf="reviewImageErrors[review.id]" class="moderation-artwork-error" role="status">
                 Artwork preview unavailable
               </div>
-              <div class="moderation-review-details">
-                <p class="review-image">{{ review.imagePath }}</p>
-                <p class="moderation-comment">{{ review.comment }}</p>
-                <div class="moderation-actions">
-                  <button
-                    type="button"
-                    [disabled]="moderatingReviewId === review.id"
-                    (click)="moderateReview(review, 'approved')"
-                  >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'approved' ? 'Approving…' : 'Approve' }}</button>
-                  <button
-                    type="button"
-                    class="reject-button"
-                    [disabled]="moderatingReviewId === review.id"
-                    (click)="moderateReview(review, 'rejected')"
-                  >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'rejected' ? 'Rejecting…' : 'Reject' }}</button>
-                </div>
+              <p class="review-image">{{ review.imagePath }}</p>
+              <p class="moderation-comment">{{ review.comment }}</p>
+              <div class="moderation-actions">
+                <button
+                  type="button"
+                  [disabled]="moderatingReviewId === review.id"
+                  (click)="moderateReview(review, 'approved')"
+                >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'approved' ? 'Approving…' : 'Approve' }}</button>
+                <button
+                  type="button"
+                  class="reject-button"
+                  [disabled]="moderatingReviewId === review.id"
+                  (click)="moderateReview(review, 'rejected')"
+                >{{ moderatingReviewId === review.id && moderatingReviewStatus === 'rejected' ? 'Rejecting…' : 'Reject' }}</button>
               </div>
             </div>
           </article>
@@ -137,20 +140,19 @@ import {
             </div>
             <a [href]="'mailto:' + request.email">{{ request.email }}</a>
             <p class="moderation-comment">{{ request.description }}</p>
-            <button
-              *ngIf="request.hasReferenceImage"
-              type="button"
-              class="refresh-button"
-              [disabled]="loadingReferenceRequestId === request.id"
-              (click)="loadDrawingRequestReference(request)"
-            >{{ loadingReferenceRequestId === request.id ? 'Loading image…' : 'View reference image' }}</button>
             <img
-              *ngIf="referencePreviewRequestId === request.id && referencePreviewUrl"
+              *ngIf="request.hasReferenceImage && !customRequestImageErrors[request.id]"
               class="request-reference-preview"
-              [src]="referencePreviewUrl"
-              alt="Uploaded drawing request reference"
-              (error)="onReferencePreviewError()"
+              [src]="getCustomDrawingRequestImageUrl(request)"
+              crossorigin="use-credentials"
+              loading="lazy"
+              decoding="async"
+              alt="Reference image submitted with drawing request"
+              (error)="onCustomRequestImageError(request)"
             >
+            <p *ngIf="request.hasReferenceImage && customRequestImageErrors[request.id]" class="image-error" role="status">
+              Reference image unavailable.
+            </p>
           </article>
         </section>
       </section>
@@ -172,17 +174,18 @@ import {
     .refresh-button{padding:9px 14px}.table-wrap{overflow:auto}
     table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}
     th,td{padding:12px;border-bottom:1px solid #e8e2d9;white-space:nowrap}th{font-weight:600}
+    .viewer-pagination{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:16px}
+    .viewer-pagination button{padding:8px 12px}.viewer-pagination button:disabled{opacity:.5;cursor:not-allowed}
     .review-moderation{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
     .review-moderation h2{margin:0 0 8px;font:26px Georgia,serif}
     .moderation-review{padding:18px 0;border-bottom:1px solid #e8e2d9}
     .moderation-review-heading{display:flex;flex-wrap:wrap;gap:14px;align-items:baseline}
     .moderation-review-heading time,.review-image{color:#647069;font-size:12px}
     .review-image{overflow-wrap:anywhere}
-    .moderation-review-content{display:flex;align-items:flex-start;gap:16px;margin-top:12px}
-    .moderation-artwork-preview,.moderation-artwork-error{width:128px;height:160px;flex:0 0 128px;border-radius:8px;background:#f7f1e8}
-    .moderation-artwork-preview{object-fit:contain}
-    .moderation-artwork-error{display:grid;place-items:center;padding:8px;box-sizing:border-box;color:#647069;font-size:12px;text-align:center}
-    .moderation-review-details{flex:1;min-width:0}
+    .moderation-review-content{margin-top:12px}
+    .moderation-artwork-preview{display:block;max-width:min(100%,520px);max-height:520px;margin:12px 0;border-radius:8px;background:#f7f1e8;object-fit:contain}
+    .moderation-artwork-error{display:grid;place-items:center;width:min(100%,520px);min-height:180px;border-radius:8px;background:#f7f1e8;color:#647069;font-size:13px}
+    .image-error{color:#8c3d31;font-size:13px}
     .moderation-comment{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
     .moderation-actions{display:flex;gap:10px}
     .reject-button{background:#8c3d31}
@@ -191,7 +194,7 @@ import {
     .drawing-request{padding:18px 0;border-bottom:1px solid #e8e2d9}
     .drawing-request>a{color:#8c5c4d;overflow-wrap:anywhere}
     .request-reference-preview{display:block;max-width:min(100%,520px);max-height:520px;margin-top:14px;border-radius:10px;object-fit:contain;background:#f7f1e8}
-    @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}.moderation-review-content{flex-direction:column}.moderation-artwork-preview,.moderation-artwork-error{width:100%;max-width:240px;height:220px;flex-basis:220px}}
+    @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}}
   `]
 })
 export class AdminViewersComponent implements OnInit, OnDestroy {
@@ -206,6 +209,8 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   authenticated = false;
   loadingViewers = false;
   viewersMessage = '';
+  readonly viewerPageSize = 50;
+  viewerPage = 1;
   message = '';
   viewers: AdultViewer[] = [];
   pendingReviews: ModerationArtworkReview[] = [];
@@ -217,9 +222,24 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   customDrawingRequests: CustomDrawingRequest[] = [];
   loadingDrawingRequests = false;
   drawingRequestsMessage = '';
-  loadingReferenceRequestId: string | null = null;
-  referencePreviewRequestId: string | null = null;
-  referencePreviewUrl = '';
+  customRequestImageErrors: Record<string, boolean> = {};
+
+  get viewerPageCount(): number {
+    return Math.ceil(this.viewers.length / this.viewerPageSize);
+  }
+
+  get viewersOnPage(): AdultViewer[] {
+    const start = (this.viewerPage - 1) * this.viewerPageSize;
+    return this.viewers.slice(start, start + this.viewerPageSize);
+  }
+
+  previousViewerPage(): void {
+    this.viewerPage = Math.max(1, this.viewerPage - 1);
+  }
+
+  nextViewerPage(): void {
+    this.viewerPage = Math.min(this.viewerPageCount, this.viewerPage + 1);
+  }
 
   ngOnInit(): void {
     this.drawingsService.getAdminSession().pipe(timeout(30_000)).subscribe({
@@ -244,7 +264,6 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.clearLoginDeadline();
     this.loginSubscription?.unsubscribe();
-    this.revokeReferencePreview();
   }
 
   login(): void {
@@ -309,7 +328,10 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.viewersMessage = '';
     this.drawingsService.getAdultViewers().pipe(timeout(30_000)).subscribe({
       next: viewers => {
-        this.viewers = viewers;
+        this.viewers = [...viewers].sort(
+          (left, right) => Date.parse(right.lastViewedAt) - Date.parse(left.lastViewedAt)
+        );
+        this.viewerPage = 1;
         this.loadingViewers = false;
         if (showSuccessMessage) this.viewersMessage = 'Viewer list refreshed.';
         this.cdr.markForCheck();
@@ -387,6 +409,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.drawingsService.getCustomDrawingRequests().pipe(timeout(30_000)).subscribe({
       next: requests => {
         this.customDrawingRequests = requests;
+        this.customRequestImageErrors = {};
         this.loadingDrawingRequests = false;
         if (showSuccessMessage) this.drawingRequestsMessage = 'Drawing requests refreshed.';
         this.cdr.markForCheck();
@@ -400,37 +423,12 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadDrawingRequestReference(request: CustomDrawingRequest): void {
-    if (this.loadingReferenceRequestId) return;
-    this.loadingReferenceRequestId = request.id;
-    this.drawingRequestsMessage = '';
-    this.revokeReferencePreview();
-    this.drawingsService.getCustomDrawingRequestReference(request.id).pipe(timeout(30_000)).subscribe({
-      next: image => {
-        if (!image.size) {
-          this.loadingReferenceRequestId = null;
-          this.drawingRequestsMessage = 'The reference image is empty. Please try loading it again.';
-          this.cdr.markForCheck();
-          return;
-        }
-        this.referencePreviewUrl = URL.createObjectURL(image);
-        this.referencePreviewRequestId = request.id;
-        this.loadingReferenceRequestId = null;
-        this.drawingRequestsMessage = 'Reference image loaded.';
-        this.cdr.markForCheck();
-      },
-      error: error => {
-        this.loadingReferenceRequestId = null;
-        this.drawingRequestsMessage = this.getLoadErrorMessage(error, 'the reference image');
-        this.handleAdminAuthorizationError(error);
-        this.cdr.markForCheck();
-      }
-    });
+  getCustomDrawingRequestImageUrl(request: CustomDrawingRequest): string {
+    return this.drawingsService.getAdminCustomDrawingRequestImageUrl(request.id);
   }
 
-  onReferencePreviewError(): void {
-    this.revokeReferencePreview();
-    this.drawingRequestsMessage = 'The reference image could not be displayed. Please try loading it again.';
+  onCustomRequestImageError(request: CustomDrawingRequest): void {
+    this.customRequestImageErrors[request.id] = true;
     this.cdr.markForCheck();
   }
 
@@ -453,9 +451,4 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     }
   }
 
-  private revokeReferencePreview(): void {
-    if (this.referencePreviewUrl) URL.revokeObjectURL(this.referencePreviewUrl);
-    this.referencePreviewUrl = '';
-    this.referencePreviewRequestId = null;
-  }
 }
