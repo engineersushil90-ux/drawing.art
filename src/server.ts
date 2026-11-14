@@ -1407,13 +1407,14 @@ app.post('/api/custom-drawing-requests', (req, res, next) => {
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const description = typeof req.body?.description === 'string' ? req.body.description.trim() : '';
   const website = typeof req.body?.website === 'string' ? req.body.website.trim() : '';
+  const minimumDescriptionLength = req.file ? 4 : 15;
   if (
     !name || name.length > 80
     || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254
-    || description.length < 15 || description.length > 2000
+    || description.length < minimumDescriptionLength || description.length > 2000
     || website
   ) {
-    res.status(400).json({ error: 'Provide your name, a valid email address, and a 15 to 2000 character drawing description.' });
+    res.status(400).json({ error: `Provide your name, a valid email address, and a ${minimumDescriptionLength} to 2000 character drawing description.` });
     return;
   }
 

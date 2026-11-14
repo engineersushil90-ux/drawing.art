@@ -54,6 +54,22 @@ describe('ContactComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('4/15');
   });
 
+  it('allows a short drawing description when a reference image is attached', () => {
+    const component = fixture.componentInstance;
+    component.request = {
+      name: 'Art customer',
+      email: 'customer@example.com',
+      description: 'Draw',
+      website: ''
+    };
+    component.referenceImage = new File(['image'], 'reference.jpg', { type: 'image/jpeg' });
+    fixture.detectChanges();
+
+    const submitButton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(submitButton.disabled).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('4/4');
+  });
+
   it('re-enables submission and warns about possible duplicates after a timeout', () => {
     vi.useFakeTimers();
     drawingsService.submitCustomDrawingRequest.mockReturnValueOnce(NEVER);

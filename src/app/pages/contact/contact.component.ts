@@ -33,14 +33,15 @@ import { DrawingsService } from '../../core/services/drawings.service';
             <textarea
               name="description"
               [(ngModel)]="request.description"
-              minlength="15"
+              [minlength]="referenceImage ? 4 : 15"
               maxlength="2000"
               rows="5"
               aria-describedby="description-help"
               required
             ></textarea>
             <small id="description-help" class="field-help">
-              Describe the drawing in at least 15 characters ({{ request.description.trim().length }}/15).
+              {{ referenceImage ? 'With a reference image, use at least 4 characters.' : 'Without a reference image, use at least 15 characters.' }}
+              ({{ request.description.trim().length }}/{{ referenceImage ? 4 : 15 }}).
             </small>
           </label>
           <label>
