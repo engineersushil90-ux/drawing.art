@@ -95,6 +95,17 @@
       </p>
 
       <a
+        *ngIf="hasNewHindiComics"
+        class="comics-new-link"
+        routerLink="/hindi-comics"
+        [queryParams]="newHindiComicTarget"
+        aria-label="Open the new Hindi comic"
+      >
+        <span>Hindi Comics</span>
+        <span class="comics-new-burst" aria-hidden="true">New</span>
+      </a>
+
+      <a
         class="round-link"
         href="#work"
       >

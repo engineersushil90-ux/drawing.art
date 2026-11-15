@@ -5,6 +5,14 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9
 @keyframes new-badge-blink { to { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .new-badge { animation: none; } }
 
+.hero { position: relative; }
+.comics-new-link { position: absolute; left: 47.5%; bottom: 28%; display: inline-flex; align-items: center; gap: 12px; color: #26342d; font-size: 12px; text-decoration: none; }
+.comics-new-link:hover { color: #a64b3a; }
+.comics-new-burst { display: grid; width: 40px; height: 44px; place-items: center; background: #f21e2b; color: #fff; clip-path: polygon(50% 0%, 61% 30%, 94% 19%, 76% 45%, 100% 55%, 74% 66%, 84% 100%, 53% 79%, 29% 100%, 32% 67%, 0% 61%, 27% 43%, 17% 12%); font: 700 10px Arial, sans-serif; animation: comics-new-blink 1s steps(2, start) infinite; }
+@keyframes comics-new-blink { to { opacity: .4; } }
+@media (max-width: 700px) { .comics-new-link { position: static; margin: 20px 0 0; } }
+@media (prefers-reduced-motion: reduce) { .comics-new-burst { animation: none; } }
+
 .age-gate-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 20px; background: rgba(22, 29, 25, .72); }
 .age-gate { position: relative; width: min(100%, 520px); max-height: 90vh; overflow: auto; padding: clamp(24px, 5vw, 42px); border-radius: 16px; background: #fffdf9; color: #26342d; box-shadow: 0 24px 80px rgba(0, 0, 0, .25); }
 .age-gate h2 { margin: 0 0 12px; font: 38px Georgia, serif; }

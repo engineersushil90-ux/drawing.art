@@ -109,6 +109,14 @@ describe('DrawingArtComponent', () => {
     expect(component.getArtworkImage({ ...artwork, imageLarge: undefined, imageSmall: undefined })).toBe('');
   });
 
+  it('shows a clickable Hindi Comics announcement in the hero for new comics', () => {
+    const announcement = fixture.nativeElement.querySelector('.comics-new-link') as HTMLAnchorElement;
+
+    expect(announcement.textContent).toContain('Hindi Comics');
+    expect(announcement.querySelector('.comics-new-burst')?.textContent.trim()).toBe('New');
+    expect(announcement.getAttribute('href')).toContain('/hindi-comics?comic=changing-room&part=part-1');
+  });
+
   it('shows and updates like counts for drawings with root-relative image URLs', () => {
     const artwork = {
       title: 'Likeable drawing',
