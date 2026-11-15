@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="{{WIDTH}}" height="{{HEIGHT}}" viewBox="0 0 {{WIDTH}} {{HEIGHT}}">
   <defs>
-    <pattern id="watermark" width="290" height="180" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)">
-      <text x="0" y="48" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="3" fill="#fff" fill-opacity=".52" stroke="#111" stroke-opacity=".42" stroke-width="1.5" paint-order="stroke fill">SK DRAWING</text>
-      <text x="145" y="138" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="3" fill="#fff" fill-opacity=".52" stroke="#111" stroke-opacity=".42" stroke-width="1.5" paint-order="stroke fill">SK DRAWING</text>
+    <pattern id="watermark" width="580" height="360" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)">
+      <text x="0" y="96" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="3" fill="#fff" fill-opacity=".2" stroke="#111" stroke-opacity=".2" stroke-width="1.5" paint-order="stroke fill">SK DRAWING</text>
+      <text x="290" y="276" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="3" fill="#fff" fill-opacity=".2" stroke="#111" stroke-opacity=".2" stroke-width="1.5" paint-order="stroke fill">SK DRAWING</text>
     </pattern>
   </defs>
   <rect width="{{WIDTH}}" height="{{HEIGHT}}" fill="url(#watermark)" />
