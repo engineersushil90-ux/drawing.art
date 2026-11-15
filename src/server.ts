@@ -754,6 +754,45 @@ function normalizeDrawingName(name: string): string {
   return name.normalize('NFC').toLocaleLowerCase('en');
 }
 
+async function drawingNameExists(name: string): Promise<boolean> {
+  const normalizedName = normalizeDrawingName(name);
+
+  async function scan(directory: string, root: string): Promise<boolean> {
+    let entries: Dirent<string>[];
+    try {
+      entries = await readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return false;
+      throw error;
+    }
+
+    for (const entry of entries) {
+      const fullPath = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (directory === root && entry.name.toLowerCase() === 'comics') continue;
+        if (await scan(fullPath, root)) return true;
+        continue;
+      }
+
+      const extension = extname(entry.name).toLowerCase();
+      if (
+        entry.isFile()
+        && imageExtensions.has(extension)
+        && normalizeDrawingName(basename(entry.name, extension)) === normalizedName
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  for (const root of [drawingsRoot, uploadedDrawingsRoot]) {
+    if (await scan(root, root)) return true;
+  }
+  return false;
+}
+
 async function listUploadedDrawings(): Promise<Array<{
   image: string;
   imageSmall: string;
@@ -1628,10 +1667,7 @@ app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
 
   try {
     const upload = drawingUploadQueue.then(async () => {
-      const existingDrawings = await scanDrawings();
-      if (existingDrawings.some(drawing => normalizeDrawingName(drawing.title) === normalizeDrawingName(fileStem))) {
-        return false;
-      }
+      if (await drawingNameExists(fileStem)) return false;
       await mkdir(destinationDirectory, { recursive: true });
       await writeFile(destinationPath, uploadedFile.buffer, { flag: 'wx' });
       return true;
