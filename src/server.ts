@@ -36,7 +36,7 @@ app.use('/api', (req, res, next) => {
   if (origin && allowedApiOrigins.has(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
@@ -748,6 +748,64 @@ function currentIndiaDate(): string {
   const part = (type: string) => dateParts.find(value => value.type === type)?.value ?? '';
 
   return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function normalizeDrawingName(name: string): string {
+  return name.normalize('NFC').toLocaleLowerCase('en');
+}
+
+async function listUploadedDrawings(): Promise<Array<{
+  image: string;
+  imageSmall: string;
+  title: string;
+  category: string;
+}>> {
+  const drawings: Array<{
+    image: string;
+    imageSmall: string;
+    title: string;
+    category: string;
+  }> = [];
+  const categoryNamesByFolder = new Map(
+    [...artworkUploadCategories.entries()].map(([name, folder]) => [folder, name])
+  );
+
+  async function scan(directory: string): Promise<void> {
+    let entries: Dirent<string>[];
+    try {
+      entries = await readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return;
+      throw error;
+    }
+
+    for (const entry of entries) {
+      const fullPath = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        await scan(fullPath);
+        continue;
+      }
+
+      const extension = extname(entry.name).toLowerCase();
+      if (!entry.isFile() || !imageExtensions.has(extension)) continue;
+
+      const relativePath = relative(uploadedDrawingsRoot, fullPath);
+      const pathParts = relativePath.split(/[\\/]/);
+      const category = categoryNamesByFolder.get(pathParts[0]);
+      if (!category) continue;
+
+      const image = `drawings/${pathParts.join('/')}`;
+      drawings.push({
+        image,
+        imageSmall: getArtworkPreviewUrl(image, 480),
+        title: basename(entry.name, extension),
+        category
+      });
+    }
+  }
+
+  await scan(uploadedDrawingsRoot);
+  return drawings.sort((left, right) => left.title.localeCompare(right.title));
 }
 
 interface DailyActivity {
@@ -1496,6 +1554,8 @@ function getArtworkPreviewUrl(imagePath: string, width: number): string {
   return `/api/drawings/preview?file=${encodeURIComponent(imagePath)}&width=${width}`;
 }
 
+let drawingUploadQueue = Promise.resolve();
+
 app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
   const origin = req.headers.origin;
   if (!origin || !allowedApiOrigins.has(origin)) {
@@ -1516,10 +1576,11 @@ app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
     res.status(400).json({ error: 'Choose an image to upload.' });
     return;
   }
+  const uploadedFile = req.file;
 
   let metadata: Awaited<ReturnType<ReturnType<typeof sharp>['metadata']>>;
   try {
-    metadata = await sharp(req.file.buffer, { limitInputPixels: 40_000_000 }).metadata();
+    metadata = await sharp(uploadedFile.buffer, { limitInputPixels: 40_000_000 }).metadata();
   } catch {
     res.status(400).json({ error: 'The image file could not be read. Upload a valid JPG, PNG, or WebP image.' });
     return;
@@ -1542,7 +1603,7 @@ app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
     return;
   }
   try {
-    await sharp(req.file.buffer, { limitInputPixels: 40_000_000 })
+    await sharp(uploadedFile.buffer, { limitInputPixels: 40_000_000 })
       .rotate()
       .resize({ width: 960, withoutEnlargement: true })
       .webp({ quality: 82 })
@@ -1553,21 +1614,90 @@ app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
   }
 
   const date = currentIndiaDate();
-  const timestamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
-  const fileName = `SK_${timestamp}_${randomUUID().slice(0, 8)}${extension}`;
+  const originalName = basename(uploadedFile.originalname.replaceAll('\\', '/'));
+  const originalStem = basename(originalName, extname(originalName));
+  const fileStem = originalStem
+    .replace(/[<>:"|?*\u0000-\u001f/\\]/g, '-')
+    .trim()
+    .replace(/[. ]+$/g, '')
+    .slice(0, 100) || `sketch-${randomUUID().slice(0, 8)}`;
+  const fileName = `${fileStem}${extension}`;
   const relativePath = `${categoryFolder}/${date}/${fileName}`;
   const destinationDirectory = join(uploadedDrawingsRoot, categoryFolder, date);
   const destinationPath = join(destinationDirectory, fileName);
 
   try {
-    await mkdir(destinationDirectory, { recursive: true });
-    await writeFile(destinationPath, req.file.buffer, { flag: 'wx' });
+    const upload = drawingUploadQueue.then(async () => {
+      const existingDrawings = await scanDrawings();
+      if (existingDrawings.some(drawing => normalizeDrawingName(drawing.title) === normalizeDrawingName(fileStem))) {
+        return false;
+      }
+      await mkdir(destinationDirectory, { recursive: true });
+      await writeFile(destinationPath, uploadedFile.buffer, { flag: 'wx' });
+      return true;
+    });
+    drawingUploadQueue = upload.then(() => undefined, () => undefined);
+    if (!await upload) {
+      res.status(409).json({ error: `A drawing named "${fileStem}" already exists. Rename the file or delete the existing drawing first.` });
+      return;
+    }
     res.status(201).json({
       ok: true,
       image: `drawings/${relativePath.replaceAll('\\', '/')}`,
       category: req.body.category
     });
   } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'EEXIST') {
+      res.status(409).json({ error: `A drawing named "${fileStem}" already exists. Rename the file or delete the existing drawing first.` });
+      return;
+    }
+    next(error);
+  }
+});
+
+app.get('/api/admin/drawings', requireOwner, async (_req, res, next) => {
+  try {
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(await listUploadedDrawings());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/admin/drawings', requireOwner, async (req, res, next) => {
+  const image: string = typeof req.body?.image === 'string' ? req.body.image : '';
+  const parts: string[] = image.replace(/^\/+/, '').split('/');
+  const allowedFolders = new Set(artworkUploadCategories.values());
+  if (
+    parts.length < 4
+    || parts[0] !== 'drawings'
+    || !allowedFolders.has(parts[1])
+    || parts.some(part => !part || part === '.' || part === '..' || part.includes('\\'))
+    || !imageExtensions.has(extname(parts[parts.length - 1]).toLowerCase())
+  ) {
+    res.status(400).json({ error: 'Choose a valid uploaded drawing to delete.' });
+    return;
+  }
+
+  const filePath = resolve(uploadedDrawingsRoot, ...parts.slice(1));
+  const relativePath = relative(uploadedDrawingsRoot, filePath);
+  if (relativePath === '..' || relativePath.startsWith(`..${sep}`)) {
+    res.status(400).json({ error: 'Choose a valid uploaded drawing to delete.' });
+    return;
+  }
+
+  try {
+    if (!(await statFile(filePath)).isFile()) {
+      res.status(404).json({ error: 'Uploaded drawing not found.' });
+      return;
+    }
+    await unlink(filePath);
+    res.json({ ok: true });
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      res.status(404).json({ error: 'Uploaded drawing not found.' });
+      return;
+    }
     next(error);
   }
 });

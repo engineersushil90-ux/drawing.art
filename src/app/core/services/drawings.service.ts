@@ -70,6 +70,13 @@ export interface CustomDrawingRequest {
   hasReferenceImage: boolean;
 }
 
+export interface AdminDrawing {
+  image: string;
+  imageSmall: string;
+  title: string;
+  category: string;
+}
+
 const API_BASE_URL = 'https://drawing-art.onrender.com';
 
 export function normalizeImagePath(image: string, category?: string): string {
@@ -165,6 +172,24 @@ export class DrawingsService {
       formData,
       { headers: this.adminHeaders(), withCredentials: true }
     );
+  }
+
+  getAdminDrawings(): Observable<AdminDrawing[]> {
+    return this.http.get<AdminDrawing[]>(`${this.apiBaseUrl}/api/admin/drawings`, {
+      headers: this.adminHeaders(),
+      withCredentials: true
+    }).pipe(map(drawings => drawings.map(drawing => ({
+      ...drawing,
+      imageSmall: `${this.apiBaseUrl}${drawing.imageSmall}`
+    }))));
+  }
+
+  deleteAdminDrawing(image: string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.apiBaseUrl}/api/admin/drawings`, {
+      headers: this.adminHeaders(),
+      withCredentials: true,
+      body: { image }
+    });
   }
 
   getComicPages(comicId: string, partId: string): Observable<string[]> {

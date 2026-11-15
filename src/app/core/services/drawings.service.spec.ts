@@ -63,6 +63,35 @@ describe('DrawingsService', () => {
     request.flush({ ok: true, image: 'drawings/ColorArt/new.png', category: 'Color Art' });
   });
 
+  it('loads uploaded drawings for the admin and resolves their previews against the API host', () => {
+    service.getAdminDrawings().subscribe(drawings => {
+      expect(drawings[0].imageSmall).toBe(
+        'https://drawing-art.onrender.com/api/drawings/preview?file=drawings%2FColorArt%2F2026-11-15%2Fsketch.png&width=480'
+      );
+    });
+
+    const request = http.expectOne('https://drawing-art.onrender.com/api/admin/drawings');
+    expect(request.request.withCredentials).toBe(true);
+    request.flush([{
+      image: 'drawings/ColorArt/2026-11-15/sketch.png',
+      imageSmall: '/api/drawings/preview?file=drawings%2FColorArt%2F2026-11-15%2Fsketch.png&width=480',
+      title: 'sketch',
+      category: 'Color Art'
+    }]);
+  });
+
+  it('deletes an uploaded drawing through the admin endpoint', () => {
+    service.deleteAdminDrawing('drawings/ColorArt/2026-11-15/sketch.png').subscribe(response => {
+      expect(response.ok).toBe(true);
+    });
+
+    const request = http.expectOne('https://drawing-art.onrender.com/api/admin/drawings');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.withCredentials).toBe(true);
+    expect(request.request.body).toEqual({ image: 'drawings/ColorArt/2026-11-15/sketch.png' });
+    request.flush({ ok: true });
+  });
+
   it('loads comic page URLs from the image API', () => {
     service.getComicPages('changing-room', 'part-1').subscribe(pages => {
       expect(pages).toEqual([

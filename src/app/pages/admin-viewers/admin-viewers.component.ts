@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Subscription, timeout } from 'rxjs';
 import {
+  AdminDrawing,
   AdultViewer,
   CustomDrawingRequest,
   DrawingsService,
@@ -200,6 +201,38 @@ import { HINDI_COMICS } from '../hindi-comics/hindi-comics.data';
           <a *ngIf="sketchUploadSucceeded" routerLink="/" fragment="work" class="gallery-link">Open gallery</a>
         </section>
 
+        <section *ngIf="authenticated" class="uploaded-drawings" aria-labelledby="uploaded-drawings-title">
+          <div class="list-heading">
+            <div>
+              <h2 id="uploaded-drawings-title">Uploaded sketches</h2>
+              <p class="description">Manage sketches uploaded here. Gallery files included in the site are not deletable.</p>
+            </div>
+            <button type="button" class="refresh-button" [disabled]="loadingAdminDrawings" (click)="loadAdminDrawings(true)">
+              {{ loadingAdminDrawings ? 'Loading…' : 'Refresh' }}
+            </button>
+          </div>
+          <p *ngIf="adminDrawingsMessage" class="message" role="status">{{ adminDrawingsMessage }}</p>
+          <p *ngIf="loadingAdminDrawings" role="status">Loading uploaded sketches…</p>
+          <p *ngIf="!loadingAdminDrawings && !adminDrawings.length">No uploaded sketches yet.</p>
+          <div class="uploaded-drawing-list" *ngIf="!loadingAdminDrawings && adminDrawings.length">
+            <article class="uploaded-drawing" *ngFor="let drawing of adminDrawings">
+              <img [src]="drawing.imageSmall" [alt]="drawing.title" loading="lazy">
+              <div>
+                <strong>{{ drawing.title }}</strong>
+                <p class="description">{{ drawing.category }}</p>
+                <button
+                  type="button"
+                  class="delete-drawing-button"
+                  [disabled]="deletingDrawingImage !== null"
+                  (click)="deleteUploadedDrawing(drawing)"
+                >
+                  {{ deletingDrawingImage === drawing.image ? 'Deleting…' : 'Delete' }}
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section *ngIf="authenticated" class="comic-upload" aria-labelledby="comic-upload-title">
           <h2 id="comic-upload-title">Upload a Hindi comic page</h2>
           <p class="description">Choose a comic and part, then upload pages one at a time in reading order. JPG, PNG, or WebP (15 MB max).</p>
@@ -282,6 +315,14 @@ import { HINDI_COMICS } from '../hindi-comics/hindi-comics.data';
     .sketch-upload h2{margin:0 0 8px;font:26px Georgia,serif}
     .sketch-upload form{margin-top:20px}
     .sketch-upload select{padding:13px;border:1px solid #d8d4cc;border-radius:8px;background:#fffdf9;font:inherit}
+    .uploaded-drawings{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
+    .uploaded-drawings h2{margin:0 0 8px;font:26px Georgia,serif}
+    .uploaded-drawing-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:18px}
+    .uploaded-drawing{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid #e8e2d9;border-radius:10px}
+    .uploaded-drawing img{width:88px;height:88px;border-radius:6px;object-fit:cover;background:#f7f1e8}
+    .uploaded-drawing strong{overflow-wrap:anywhere}
+    .uploaded-drawing .description{margin:5px 0}
+    .delete-drawing-button{padding:8px 12px;background:#8c3d31}
     .comic-upload{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
     .comic-upload h2{margin:0 0 8px;font:26px Georgia,serif}
     .comic-upload form{margin-top:20px}
@@ -327,6 +368,10 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   uploadingSketch = false;
   sketchUploadMessage = '';
   sketchUploadSucceeded = false;
+  adminDrawings: AdminDrawing[] = [];
+  loadingAdminDrawings = false;
+  deletingDrawingImage: string | null = null;
+  adminDrawingsMessage = '';
   comicPageComicId = HINDI_COMICS[0]?.id ?? '';
   comicPagePartId = HINDI_COMICS[0]?.parts[0]?.id ?? '';
   selectedComicPageFile: File | null = null;
@@ -459,6 +504,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.loadViewers();
     this.loadPendingReviews();
     this.loadCustomDrawingRequests();
+    this.loadAdminDrawings();
   }
 
   private getLoginErrorMessage(error: { error?: { error?: string }; name?: string; status?: number }): string {
@@ -581,6 +627,48 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.sketchUploadSucceeded = false;
   }
 
+  loadAdminDrawings(showSuccessMessage = false): void {
+    if (this.loadingAdminDrawings) return;
+    this.loadingAdminDrawings = true;
+    this.adminDrawingsMessage = '';
+    this.drawingsService.getAdminDrawings().pipe(timeout(30_000)).subscribe({
+      next: drawings => {
+        this.adminDrawings = drawings;
+        this.loadingAdminDrawings = false;
+        if (showSuccessMessage) this.adminDrawingsMessage = 'Uploaded sketches refreshed.';
+        this.cdr.markForCheck();
+      },
+      error: error => {
+        this.loadingAdminDrawings = false;
+        this.adminDrawingsMessage = this.getLoadErrorMessage(error, 'uploaded sketches');
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  deleteUploadedDrawing(drawing: AdminDrawing): void {
+    if (this.deletingDrawingImage || !window.confirm(`Delete "${drawing.title}" from ${drawing.category}?`)) return;
+    this.deletingDrawingImage = drawing.image;
+    this.adminDrawingsMessage = '';
+    this.drawingsService.deleteAdminDrawing(drawing.image).pipe(timeout(30_000)).subscribe({
+      next: () => {
+        this.adminDrawings = this.adminDrawings.filter(item => item.image !== drawing.image);
+        this.deletingDrawingImage = null;
+        this.adminDrawingsMessage = `"${drawing.title}" deleted.`;
+        this.cdr.markForCheck();
+      },
+      error: error => {
+        this.deletingDrawingImage = null;
+        this.adminDrawingsMessage = error?.name === 'TimeoutError'
+          ? 'Delete timed out. Refresh the list to check whether the sketch was deleted before retrying.'
+          : error?.error?.error || 'Could not delete the sketch. Please try again.';
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
   uploadSketch(): void {
     if (!this.selectedSketchFile || this.uploadingSketch) return;
     this.uploadingSketch = true;
@@ -593,6 +681,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
         if (this.sketchUploadInput) this.sketchUploadInput.nativeElement.value = '';
         this.sketchUploadSucceeded = true;
         this.sketchUploadMessage = `Sketch uploaded to ${response.category}.`;
+        this.loadAdminDrawings();
         this.cdr.markForCheck();
       },
       error: error => {

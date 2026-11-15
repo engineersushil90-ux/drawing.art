@@ -16,6 +16,8 @@ describe('AdminViewersComponent', () => {
       image: 'drawings/ColorArt/2026-11-15/SK_test.jpeg',
       category
     })),
+    getAdminDrawings: vi.fn(() => of([])),
+    deleteAdminDrawing: vi.fn(() => of({ ok: true })),
     uploadComicPage: vi.fn((_file: File, comicId: string, partId: string) => of({
       ok: true,
       page: `/api/hindi-comics/page?file=${comicId}%2F${partId}%2Fpage.webp`,
@@ -59,6 +61,8 @@ describe('AdminViewersComponent', () => {
     drawingsService.adminLogin.mockClear();
     drawingsService.getAdminSession.mockClear();
     drawingsService.uploadSketch.mockClear();
+    drawingsService.getAdminDrawings.mockClear();
+    drawingsService.deleteAdminDrawing.mockClear();
     drawingsService.uploadComicPage.mockClear();
     drawingsService.getAdultViewers.mockClear();
     drawingsService.getPendingArtworkReviews.mockClear();
@@ -93,6 +97,7 @@ describe('AdminViewersComponent', () => {
     expect(drawingsService.getAdultViewers).toHaveBeenCalledOnce();
     expect(drawingsService.getPendingArtworkReviews).toHaveBeenCalledOnce();
     expect(drawingsService.getCustomDrawingRequests).toHaveBeenCalledOnce();
+    expect(drawingsService.getAdminDrawings).toHaveBeenCalledOnce();
     expect(fixture.componentInstance.message).toBe('Signed in successfully.');
     expect(fixture.nativeElement.textContent).toContain('Test Viewer');
     expect(fixture.nativeElement.textContent).toContain('viewer@example.com');
@@ -115,6 +120,7 @@ describe('AdminViewersComponent', () => {
     expect(drawingsService.getAdultViewers).toHaveBeenCalled();
     expect(drawingsService.getPendingArtworkReviews).toHaveBeenCalled();
     expect(drawingsService.getCustomDrawingRequests).toHaveBeenCalled();
+    expect(drawingsService.getAdminDrawings).toHaveBeenCalled();
     restoredFixture.destroy();
   });
 
@@ -217,6 +223,40 @@ describe('AdminViewersComponent', () => {
     expect(drawingsService.uploadSketch).toHaveBeenCalledWith(file, 'Color Art');
     expect(component.sketchUploadSucceeded).toBe(true);
     expect(component.sketchUploadMessage).toBe('Sketch uploaded to Color Art.');
+  });
+
+  it('shows the server duplicate-name message and keeps the selected file', () => {
+    drawingsService.uploadSketch.mockReturnValueOnce(throwError(() => ({
+      status: 409,
+      error: { error: 'A drawing named "drawing" already exists.' }
+    })));
+    const component = fixture.componentInstance;
+    const file = new File(['image'], 'drawing.png', { type: 'image/png' });
+    component.selectedSketchFile = file;
+
+    component.uploadSketch();
+
+    expect(component.selectedSketchFile).toBe(file);
+    expect(component.sketchUploadSucceeded).toBe(false);
+    expect(component.sketchUploadMessage).toBe('A drawing named "drawing" already exists.');
+  });
+
+  it('deletes an uploaded sketch after confirmation', () => {
+    const component = fixture.componentInstance;
+    const drawing = {
+      image: 'drawings/ColorArt/2026-11-15/sketch.png',
+      imageSmall: 'https://drawing-art.onrender.com/api/drawings/preview?file=sketch.png&width=480',
+      title: 'sketch',
+      category: 'Color Art'
+    };
+    component.adminDrawings = [drawing];
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    component.deleteUploadedDrawing(drawing);
+
+    expect(drawingsService.deleteAdminDrawing).toHaveBeenCalledWith(drawing.image);
+    expect(component.adminDrawings).toEqual([]);
+    expect(component.adminDrawingsMessage).toBe('"sketch" deleted.');
   });
 
   it('uploads a comic page to the selected comic part', () => {

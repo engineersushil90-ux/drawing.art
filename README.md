@@ -22,7 +22,7 @@ Configure these environment variables on the API server before enabling the feat
 
 ## Uploading sketches
 
-Sign in at `/admin` and use **Upload a sketch** to add a JPG, PNG, or WebP (up to 15 MB) to Pencil Sketches, Color Art, or 18+ Sketches. Uploaded originals are stored under `DATA_DIR/drawings`; the gallery serves watermarked previews. Configure `DATA_DIR` to a persistent disk path on the API host so uploads survive restarts and deployments.
+Sign in at `/admin` and use **Upload a sketch** to add a JPG, PNG, or WebP (up to 15 MB) to Pencil Sketches, Color Art, or 18+ Sketches. A case-insensitive name check prevents uploading another drawing with an existing filename stem; the admin page also lists uploaded sketches and lets the owner delete them. Only images uploaded through the admin page can be deleted there; drawings included in the repository are not deletable. Uploaded originals are stored under `DATA_DIR/drawings`; the gallery serves watermarked previews. Configure `DATA_DIR` to a persistent disk path on the API host so uploads survive restarts and deployments.
 
 To add Hindi comic pages, sign in at `/admin`, choose **Upload a Hindi comic page**, select the comic and part, then upload each page in reading order. Pages are optimized and stored under `DATA_DIR/comics`, and the reader displays watermarked previews in that order. Configure `DATA_DIR` to a persistent disk path on the API host so comic pages survive restarts and deployments.
 
