@@ -11,6 +11,11 @@ describe('AdminViewersComponent', () => {
     getAdminSession: vi.fn(() => new Observable<{ ok: boolean }>(subscriber => {
       subscriber.error({ status: 401 });
     })),
+    uploadSketch: vi.fn((_file: File, category: string) => of({
+      ok: true,
+      image: 'drawings/ColorArt/2026-11-15/SK_test.jpeg',
+      category
+    })),
     getAdultViewers: vi.fn(() => of([{
       name: 'Test Viewer',
       email: 'viewer@example.com',
@@ -48,6 +53,7 @@ describe('AdminViewersComponent', () => {
   beforeEach(async () => {
     drawingsService.adminLogin.mockClear();
     drawingsService.getAdminSession.mockClear();
+    drawingsService.uploadSketch.mockClear();
     drawingsService.getAdultViewers.mockClear();
     drawingsService.getPendingArtworkReviews.mockClear();
     drawingsService.moderateArtworkReview.mockClear();
@@ -189,6 +195,22 @@ describe('AdminViewersComponent', () => {
 
     expect(component.loadingDrawingRequests).toBe(false);
     expect(component.drawingRequestsMessage).toBe('Drawing requests refreshed.');
+  });
+
+  it('uploads the selected image to the chosen sketch collection', () => {
+    const component = fixture.componentInstance;
+    component.authenticated = true;
+    component.sketchCategory = 'Color Art';
+    const file = new File(['image'], 'drawing.png', { type: 'image/png' });
+    component.selectedSketchFile = file;
+    fixture.detectChanges();
+
+    component.uploadSketch();
+    fixture.detectChanges();
+
+    expect(drawingsService.uploadSketch).toHaveBeenCalledWith(file, 'Color Art');
+    expect(component.sketchUploadSucceeded).toBe(true);
+    expect(component.sketchUploadMessage).toBe('Sketch uploaded to Color Art.');
   });
 
   it('sorts viewers latest first and paginates at 20 rows', () => {

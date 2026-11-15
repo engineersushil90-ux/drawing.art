@@ -623,10 +623,28 @@ async function getWatermarkOverlay(width: number, height: number): Promise<Buffe
     .replaceAll('{{HEIGHT}}', String(height)));
 }
 
-async function getWatermarkedImage(imagePath: string): Promise<Buffer> {
+async function getWatermarkedImage(imagePath: string, width = 960): Promise<Buffer> {
+  const imageInfo = await statFile(imagePath);
+  const cacheKey = `${imagePath}:${imageInfo.mtimeMs}:${width}`;
+  let preview = watermarkedPreviewCache.get(cacheKey);
+  if (preview) return preview;
+
+  preview = renderWatermarkedImage(imagePath, width);
+  watermarkedPreviewCache.set(cacheKey, preview);
+  if (watermarkedPreviewCache.size > 100) {
+    const oldestKey = watermarkedPreviewCache.keys().next().value;
+    if (oldestKey) watermarkedPreviewCache.delete(oldestKey);
+  }
+  preview.catch(() => watermarkedPreviewCache.delete(cacheKey));
+  return preview;
+}
+
+const watermarkedPreviewCache = new Map<string, Promise<Buffer>>();
+
+async function renderWatermarkedImage(imagePath: string, width: number): Promise<Buffer> {
   const { data, info } = await sharp(imagePath)
     .rotate()
-    .resize({ width: 960, withoutEnlargement: true })
+    .resize({ width, withoutEnlargement: true })
     .toBuffer({ resolveWithObject: true });
 
   return sharp(data)
@@ -649,10 +667,9 @@ app.get('/api/18plus/image', async (req, res, next) => {
     return;
   }
   const file = typeof req.query['file'] === 'string' ? req.query['file'] : '';
-  const adultRoot = resolve(drawingsRoot, '18+Sketches');
-  const imagePath = resolve(adultRoot, file);
-  const pathFromAdultRoot = relative(adultRoot, imagePath);
-  if (!file || !pathFromAdultRoot || pathFromAdultRoot.startsWith('..') || imagePath === adultRoot || !imagePath.startsWith(`${adultRoot}${sep}`) || !imageExtensions.has(extname(imagePath).toLowerCase())) {
+  const adultFilePath = `18+Sketches/${file.replaceAll('\\', '/')}`;
+  const imagePath = await resolveStoredDrawingPath(adultFilePath);
+  if (!file || !imagePath || !imageExtensions.has(extname(adultFilePath).toLowerCase())) {
     res.sendStatus(404);
     return;
   }
@@ -693,10 +710,31 @@ const drawingsRoot = join(
 
 const defaultDataDirectory = join(process.cwd(), 'data');
 const dataDirectory = process.env['DATA_DIR'] || defaultDataDirectory;
+const uploadedDrawingsRoot = join(dataDirectory, 'drawings');
 const supabaseUrl = process.env['SUPABASE_URL']?.replace(/\/+$/, '');
 const supabaseServiceRoleKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
 const supabaseAnonKey = process.env['SUPABASE_ANON_KEY'];
 const supabaseEnabled = Boolean(supabaseUrl && supabaseServiceRoleKey);
+
+async function resolveStoredDrawingPath(filePath: string): Promise<string | null> {
+  const parts = filePath.split(/[\\/]/);
+  if (parts.some(part => !part || part === '.' || part === '..' || part.includes('\\'))) return null;
+
+  for (const root of [drawingsRoot, uploadedDrawingsRoot]) {
+    const absolutePath = resolve(root, ...parts);
+    const relativePath = relative(root, absolutePath);
+    if (relativePath === '..' || relativePath.startsWith(`..${sep}`) || absolutePath === root) return null;
+
+    try {
+      if ((await statFile(absolutePath)).isFile()) return absolutePath;
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && ['ENOENT', 'ENOTDIR'].includes(String(error.code))) continue;
+      throw error;
+    }
+  }
+
+  return null;
+}
 
 function currentIndiaDate(): string {
   const dateParts = new Intl.DateTimeFormat('en-CA', {
@@ -1027,6 +1065,42 @@ const imageExtensions = new Set([
 
 ]);
 
+const artworkUploadCategories = new Map([
+  ['Pencil Sketches', 'PencilSketches'],
+  ['Color Art', 'ColorArt'],
+  ['18+ Sketches', '18+Sketches']
+]);
+
+const artworkUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 1, fields: 1, fieldSize: 100 },
+  fileFilter: (_req, file, callback) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      callback(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
+      return;
+    }
+    callback(null, true);
+  }
+});
+
+function parseArtworkUpload(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  artworkUpload.single('image')(req, res, error => {
+    if (!error) {
+      next();
+      return;
+    }
+    if (error instanceof multer.MulterError) {
+      res.status(error.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({
+        error: error.code === 'LIMIT_FILE_SIZE'
+          ? 'Images must be 15 MB or smaller.'
+          : 'Upload one JPG, PNG, or WebP image.'
+      });
+      return;
+    }
+    next(error);
+  });
+}
+
 function getTimestampFromDrawingTitle(title: string): string | undefined {
   const match = /^SK_(\d{14})$/.exec(title);
   if (!match) return undefined;
@@ -1101,7 +1175,8 @@ async function scanDrawings(
 
 
   async function scan(
-    currentDirectory: string
+    currentDirectory: string,
+    sourceRoot: string
   ): Promise<void> {
 
     const entries = await readdir(
@@ -1125,7 +1200,7 @@ async function scanDrawings(
        */
       if (entry.isDirectory()) {
 
-        await scan(fullPath);
+        await scan(fullPath, sourceRoot);
 
         continue;
       }
@@ -1150,7 +1225,7 @@ async function scanDrawings(
        */
       const relativePath =
         relative(
-          drawingsRoot,
+          sourceRoot,
           fullPath
         );
 
@@ -1230,6 +1305,14 @@ async function scanDrawings(
       const responsiveVariants = category === '18+ Sketches'
         ? undefined
         : imageVariants[`drawings/${pathParts.join('/')}`];
+      const variants = responsiveVariants ?? (category === '18+ Sketches'
+        ? undefined
+        : {
+          small: getArtworkPreviewUrl(`drawings/${pathParts.join('/')}`, 480),
+          large: getArtworkPreviewUrl(`drawings/${pathParts.join('/')}`, 960),
+          smallWidth: 480,
+          largeWidth: 960
+        });
 
       drawings.push({
 
@@ -1247,12 +1330,12 @@ async function scanDrawings(
 
         image: imagePath,
 
-        ...(responsiveVariants
+        ...(variants
           ? {
-            imageSmall: responsiveVariants.small,
-            imageLarge: responsiveVariants.large,
-            imageSmallWidth: responsiveVariants.smallWidth,
-            imageLargeWidth: responsiveVariants.largeWidth
+            imageSmall: variants.small,
+            imageLarge: variants.large,
+            imageSmallWidth: variants.smallWidth,
+            imageLargeWidth: variants.largeWidth
           }
           : {}),
 
@@ -1269,12 +1352,101 @@ async function scanDrawings(
   }
 
 
-  await scan(directory);
+  await scan(directory, directory);
+  if (directory === drawingsRoot) {
+    try {
+      if ((await statFile(uploadedDrawingsRoot)).isDirectory()) {
+        await scan(uploadedDrawingsRoot, uploadedDrawingsRoot);
+      }
+    } catch (error) {
+      if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+    }
+  }
 
 
   return drawings;
 
 }
+
+function getArtworkPreviewUrl(imagePath: string, width: number): string {
+  return `/api/drawings/preview?file=${encodeURIComponent(imagePath)}&width=${width}`;
+}
+
+app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || !allowedApiOrigins.has(origin)) {
+    res.status(403).json({ error: 'Sketch uploads are only allowed from the site.' });
+    return;
+  }
+  next();
+}, parseArtworkUpload, async (req, res, next) => {
+
+  const categoryFolder = typeof req.body?.category === 'string'
+    ? artworkUploadCategories.get(req.body.category)
+    : undefined;
+  if (!categoryFolder) {
+    res.status(400).json({ error: 'Choose Pencil Sketches, Color Art, or 18+ Sketches.' });
+    return;
+  }
+  if (!req.file) {
+    res.status(400).json({ error: 'Choose an image to upload.' });
+    return;
+  }
+
+  let metadata: Awaited<ReturnType<ReturnType<typeof sharp>['metadata']>>;
+  try {
+    metadata = await sharp(req.file.buffer, { limitInputPixels: 40_000_000 }).metadata();
+  } catch {
+    res.status(400).json({ error: 'The image file could not be read. Upload a valid JPG, PNG, or WebP image.' });
+    return;
+  }
+  const extension = metadata.format === 'jpeg'
+    ? '.jpeg'
+    : metadata.format === 'png'
+      ? '.png'
+      : metadata.format === 'webp'
+        ? '.webp'
+        : '';
+  if (
+    !extension
+    || !metadata.width
+    || !metadata.height
+    || metadata.width * metadata.height > 40_000_000
+    || (metadata.pages || 1) > 1
+  ) {
+    res.status(400).json({ error: 'The image must be a single-frame JPG, PNG, or WebP under 40 megapixels.' });
+    return;
+  }
+  try {
+    await sharp(req.file.buffer, { limitInputPixels: 40_000_000 })
+      .rotate()
+      .resize({ width: 960, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+  } catch {
+    res.status(400).json({ error: 'The image could not be decoded. Please upload a complete, valid image file.' });
+    return;
+  }
+
+  const date = currentIndiaDate();
+  const timestamp = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
+  const fileName = `SK_${timestamp}_${randomUUID().slice(0, 8)}${extension}`;
+  const relativePath = `${categoryFolder}/${date}/${fileName}`;
+  const destinationDirectory = join(uploadedDrawingsRoot, categoryFolder, date);
+  const destinationPath = join(destinationDirectory, fileName);
+
+  try {
+    await mkdir(destinationDirectory, { recursive: true });
+    await writeFile(destinationPath, req.file.buffer, { flag: 'wx' });
+    res.status(201).json({
+      ok: true,
+      image: `drawings/${relativePath.replaceAll('\\', '/')}`,
+      category: req.body.category
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 
 /**
@@ -1616,16 +1788,30 @@ async function validateReviewImagePath(value: unknown): Promise<string | null> {
     return null;
   }
 
-  const absolutePath = resolve(drawingsRoot, filePath);
-  const relativePath = relative(drawingsRoot, absolutePath);
-  if (relativePath === '..' || relativePath.startsWith(`..${sep}`)) return null;
-
-  try {
-    return (await statFile(absolutePath)).isFile() ? imagePath : null;
-  } catch {
-    return null;
-  }
+  return await resolveStoredDrawingPath(filePath) ? imagePath : null;
 }
+
+app.get('/api/drawings/preview', async (req, res, next) => {
+  try {
+    const imagePath = await validateReviewImagePath(req.query['file']);
+    const width = Number(req.query['width']);
+    if (!imagePath || imagePath.startsWith('drawings/18+Sketches/') || ![480, 960].includes(width)) {
+      res.sendStatus(404);
+      return;
+    }
+
+    const filePath = await resolveStoredDrawingPath(imagePath.slice('drawings/'.length));
+    if (!filePath) {
+      res.sendStatus(404);
+      return;
+    }
+
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.type('image/webp').send(await getWatermarkedImage(filePath, width));
+  } catch (error) {
+    next(error);
+  }
+});
 
 async function readArtworkReviews(
   imagePath?: string,
@@ -1833,7 +2019,11 @@ app.get('/api/admin/review-image', requireOwner, async (req, res, next) => {
       return;
     }
 
-    const filePath = resolve(drawingsRoot, imagePath.slice('drawings/'.length));
+    const filePath = await resolveStoredDrawingPath(imagePath.slice('drawings/'.length));
+    if (!filePath) {
+      res.status(404).json({ error: 'Artwork image not found.' });
+      return;
+    }
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.sendFile(filePath, error => error && next(error));

@@ -103,9 +103,18 @@ export class DrawingsService {
       : '';
     return this.http.get<Artwork[]>(`${this.apiBaseUrl}/api/drawings${tokenQuery}`, {
       withCredentials: true
-    }).pipe(map(drawings => drawings.map(artwork => artwork.category === '18+ Sketches'
-      ? { ...artwork, image: `${this.apiBaseUrl}${artwork.image}` }
-      : artwork)));
+    }).pipe(map(drawings => drawings.map(artwork => ({
+      ...artwork,
+      ...(artwork.category === '18+ Sketches'
+        ? { image: `${this.apiBaseUrl}${artwork.image}` }
+        : {}),
+      ...(artwork.imageSmall?.startsWith('/api/')
+        ? { imageSmall: `${this.apiBaseUrl}${artwork.imageSmall}` }
+        : {}),
+      ...(artwork.imageLarge?.startsWith('/api/')
+        ? { imageLarge: `${this.apiBaseUrl}${artwork.imageLarge}` }
+        : {})
+    }))));
   }
 
   registerAdultViewer(details: { name: string; email: string; isAdult: boolean }): Observable<AdultAccessResponse> {
@@ -142,6 +151,20 @@ export class DrawingsService {
       headers: this.adminHeaders(),
       withCredentials: true
     }).pipe(timeout(8000));
+  }
+
+  uploadSketch(
+    file: File,
+    category: 'Pencil Sketches' | 'Color Art' | '18+ Sketches'
+  ): Observable<{ ok: boolean; image: string; category: string }> {
+    const formData = new FormData();
+    formData.append('category', category);
+    formData.append('image', file, file.name);
+    return this.http.post<{ ok: boolean; image: string; category: string }>(
+      `${this.apiBaseUrl}/api/admin/drawings`,
+      formData,
+      { headers: this.adminHeaders(), withCredentials: true }
+    );
   }
 
   getAdultViewers(): Observable<AdultViewer[]> {

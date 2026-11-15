@@ -20,4 +20,8 @@ Configure these environment variables on the API server before enabling the feat
 - `SUPABASE_SERVICE_ROLE_KEY`: the server-only service role key, used for persistent viewer and payment records.
 - `DATA_DIR`: needed for the local JSON fallback; with Supabase configured, the persistent disk is not required for viewer records.
 
+## Uploading sketches
+
+Sign in at `/admin` and use **Upload a sketch** to add a JPG, PNG, or WebP (up to 15 MB) to Pencil Sketches, Color Art, or 18+ Sketches. Uploaded originals are stored under `DATA_DIR/drawings`; the gallery serves watermarked previews. Configure `DATA_DIR` to a persistent disk path on the API host so uploads survive restarts and deployments.
+
 Open `/admin` and sign in with the configured owner credentials to view the 18+ gallery's registered names, emails, last-view times, and total unique email count. Viewer details require admin authentication. Email ownership and the age check are not independently verified.

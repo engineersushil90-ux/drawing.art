@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Subscription, timeout } from 'rxjs';
@@ -165,6 +165,39 @@ import {
             <button type="button" [disabled]="drawingRequestPage === drawingRequestPageCount" (click)="nextDrawingRequestPage()">Next</button>
           </nav>
         </section>
+
+        <section *ngIf="authenticated" class="sketch-upload" aria-labelledby="sketch-upload-title">
+          <h2 id="sketch-upload-title">Upload a sketch</h2>
+          <p class="description">Choose a collection and upload a JPG, PNG, or WebP image (15 MB max).</p>
+          <form (ngSubmit)="uploadSketch()">
+            <label>
+              Collection
+              <select name="sketchCategory" [(ngModel)]="sketchCategory">
+                <option value="Pencil Sketches">Pencil Sketches</option>
+                <option value="Color Art">Color Art</option>
+                <option value="18+ Sketches">18+ Sketches</option>
+              </select>
+            </label>
+            <label>
+              Sketch image
+              <input
+                #sketchUploadInput
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                (change)="onSketchFileSelected($event)"
+                required
+              >
+            </label>
+            <p *ngIf="selectedSketchFile" class="login-hint">{{ selectedSketchFile.name }}</p>
+            <button type="submit" [disabled]="uploadingSketch || !selectedSketchFile">
+              {{ uploadingSketch ? 'Uploading…' : 'Upload sketch' }}
+            </button>
+          </form>
+          <p *ngIf="sketchUploadMessage" [class.upload-success]="sketchUploadSucceeded" class="message" role="status">
+            {{ sketchUploadMessage }}
+          </p>
+          <a *ngIf="sketchUploadSucceeded" routerLink="/" fragment="work" class="gallery-link">Open gallery</a>
+        </section>
       </section>
     </main>
   `,
@@ -204,12 +237,19 @@ import {
     .drawing-request{padding:18px 0;border-bottom:1px solid #e8e2d9}
     .drawing-request>a{color:#8c5c4d;overflow-wrap:anywhere}
     .request-reference-preview{display:block;max-width:min(100%,520px);max-height:520px;margin-top:14px;border-radius:10px;object-fit:contain;background:#f7f1e8}
+    .sketch-upload{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
+    .sketch-upload h2{margin:0 0 8px;font:26px Georgia,serif}
+    .sketch-upload form{margin-top:20px}
+    .sketch-upload select{padding:13px;border:1px solid #d8d4cc;border-radius:8px;background:#fffdf9;font:inherit}
+    .upload-success{color:#356b3a}
+    .gallery-link{display:inline-block;margin-top:4px;color:#8c5c4d}
     @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}}
   `]
 })
 export class AdminViewersComponent implements OnInit, OnDestroy {
   private readonly drawingsService = inject(DrawingsService);
   private readonly cdr = inject(ChangeDetectorRef);
+  @ViewChild('sketchUploadInput') private sketchUploadInput?: ElementRef<HTMLInputElement>;
   private loginDeadline: ReturnType<typeof setTimeout> | undefined;
   private loginSubscription: Subscription | undefined;
   username = '';
@@ -235,6 +275,11 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   loadingDrawingRequests = false;
   drawingRequestsMessage = '';
   customRequestImageErrors: Record<string, boolean> = {};
+  sketchCategory: 'Pencil Sketches' | 'Color Art' | '18+ Sketches' = 'Pencil Sketches';
+  selectedSketchFile: File | null = null;
+  uploadingSketch = false;
+  sketchUploadMessage = '';
+  sketchUploadSucceeded = false;
 
   get viewerPageCount(): number {
     return Math.ceil(this.viewers.length / this.pageSize);
@@ -466,6 +511,38 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
       error: error => {
         this.loadingDrawingRequests = false;
         this.drawingRequestsMessage = this.getLoadErrorMessage(error, 'drawing requests');
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onSketchFileSelected(event: Event): void {
+    const input = event.currentTarget as HTMLInputElement;
+    this.selectedSketchFile = input.files?.[0] ?? null;
+    this.sketchUploadMessage = '';
+    this.sketchUploadSucceeded = false;
+  }
+
+  uploadSketch(): void {
+    if (!this.selectedSketchFile || this.uploadingSketch) return;
+    this.uploadingSketch = true;
+    this.sketchUploadMessage = '';
+    this.sketchUploadSucceeded = false;
+    this.drawingsService.uploadSketch(this.selectedSketchFile, this.sketchCategory).pipe(timeout(60_000)).subscribe({
+      next: response => {
+        this.uploadingSketch = false;
+        this.selectedSketchFile = null;
+        if (this.sketchUploadInput) this.sketchUploadInput.nativeElement.value = '';
+        this.sketchUploadSucceeded = true;
+        this.sketchUploadMessage = `Sketch uploaded to ${response.category}.`;
+        this.cdr.markForCheck();
+      },
+      error: error => {
+        this.uploadingSketch = false;
+        this.sketchUploadMessage = error?.name === 'TimeoutError'
+          ? 'Upload timed out. Check the gallery before retrying to avoid uploading the same sketch twice.'
+          : error?.error?.error || 'Could not upload the sketch. Please try again.';
         this.handleAdminAuthorizationError(error);
         this.cdr.markForCheck();
       }
