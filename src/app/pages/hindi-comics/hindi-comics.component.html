@@ -3,7 +3,15 @@
     <a class="brand" routerLink="/drawing-art">drawing<span>.art</span></a>
     <nav aria-label="Main navigation">
       <a routerLink="/drawing-art">Drawings</a>
-      <a routerLink="/hindi-comics" aria-current="page">Hindi Comics</a>
+      <a
+        routerLink="/hindi-comics"
+        [queryParams]="newComicTarget"
+        (click)="selectNewComic()"
+        aria-current="page"
+      >
+        Hindi Comics
+        <span *ngIf="newComicTarget" class="new-badge">NEW</span>
+      </a>
     </nav>
   </header>
 
@@ -22,6 +30,7 @@
             (click)="selectComic(comic)"
           >
             <span>{{ comic.title }}</span>
+            <span *ngIf="comic.isNew" class="new-badge">NEW</span>
             <span class="chevron" aria-hidden="true">⌄</span>
           </button>
 
@@ -35,6 +44,7 @@
               (click)="selectPart(part)"
             >
               {{ part.title }}
+              <span *ngIf="part.isNew" class="new-badge">NEW</span>
             </button>
           </div>
         </section>

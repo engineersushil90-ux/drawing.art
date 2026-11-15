@@ -1,17 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-
-interface ComicPart {
-  id: string;
-  title: string;
-}
-
-interface ComicSeries {
-  id: string;
-  title: string;
-  parts: ComicPart[];
-}
+import { ActivatedRoute, RouterModule } from '@angular/router';
+import { getFirstNewComicTarget, HINDI_COMICS, ComicPart, ComicSeries } from './hindi-comics.data';
 
 @Component({
   selector: 'app-hindi-comics',
@@ -20,19 +10,24 @@ interface ComicSeries {
   styleUrl: './hindi-comics.component.scss'
 })
 export class HindiComicsComponent {
-  readonly comics: ComicSeries[] = [
-    {
-      id: 'changing-room',
-      title: 'Changing Room',
-      parts: [
-        { id: 'part-1', title: 'Part 1' },
-        { id: 'part-2', title: 'Part 2' }
-      ]
-    }
-  ];
+  private readonly route = inject(ActivatedRoute);
+  readonly comics = HINDI_COMICS;
+  readonly newComicTarget = getFirstNewComicTarget();
 
   selectedComicId = this.comics[0].id;
   selectedPartId = this.comics[0].parts[0].id;
+
+  constructor() {
+    const comicId = this.route.snapshot.queryParamMap.get('comic');
+    const partId = this.route.snapshot.queryParamMap.get('part');
+    const comic = this.comics.find(item => item.id === comicId);
+    if (comic) {
+      this.selectComic(comic);
+      if (partId && comic.parts.some(part => part.id === partId)) {
+        this.selectedPartId = partId;
+      }
+    }
+  }
 
   get selectedComic(): ComicSeries | null {
     return this.comics.find(comic => comic.id === this.selectedComicId) ?? null;
@@ -49,5 +44,14 @@ export class HindiComicsComponent {
 
   selectPart(part: ComicPart): void {
     this.selectedPartId = part.id;
+  }
+
+  selectNewComic(): void {
+    if (!this.newComicTarget) return;
+    const comic = this.comics.find(item => item.id === this.newComicTarget?.comic);
+    if (!comic) return;
+    this.selectComic(comic);
+    const part = comic.parts.find(item => item.id === this.newComicTarget?.part);
+    if (part) this.selectPart(part);
   }
 }

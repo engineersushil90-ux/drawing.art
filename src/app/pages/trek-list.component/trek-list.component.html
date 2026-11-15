@@ -22,9 +22,11 @@
 
       <a
         routerLink="/hindi-comics"
+        [queryParams]="newHindiComicTarget"
         (click)="isMenuOpen = false"
       >
         Hindi Comics
+        <span *ngIf="hasNewHindiComics" class="new-badge">NEW</span>
       </a>
 
       <a

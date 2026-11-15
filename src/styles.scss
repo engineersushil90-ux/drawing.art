@@ -1,6 +1,10 @@
 html { scroll-behavior: smooth; }
 body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9; }
 
+.new-badge { display: inline-block; margin-left: 7px; padding: 3px 6px; border-radius: 999px; background: #c85c4a; color: #fff; font: 700 9px/1 Arial, sans-serif; letter-spacing: .5px; vertical-align: middle; animation: new-badge-blink 1s steps(2, start) infinite; }
+@keyframes new-badge-blink { to { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .new-badge { animation: none; } }
+
 .age-gate-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 20px; background: rgba(22, 29, 25, .72); }
 .age-gate { position: relative; width: min(100%, 520px); max-height: 90vh; overflow: auto; padding: clamp(24px, 5vw, 42px); border-radius: 16px; background: #fffdf9; color: #26342d; box-shadow: 0 24px 80px rgba(0, 0, 0, .25); }
 .age-gate h2 { margin: 0 0 12px; font: 38px Georgia, serif; }

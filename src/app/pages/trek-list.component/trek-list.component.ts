@@ -16,6 +16,7 @@ import {
   ArtworkReview,
   normalizeImagePath
 } from '../../core/services/drawings.service';
+import { getFirstNewComicTarget, hasNewComicContent } from '../hindi-comics/hindi-comics.data';
 
 
 @Component({
@@ -63,6 +64,8 @@ export class DrawingArtComponent implements OnInit {
   reviewMessage = '';
 
   isMenuOpen = false;
+  readonly newHindiComicTarget = getFirstNewComicTarget();
+  readonly hasNewHindiComics = hasNewComicContent();
 
   isLoading = true;
 

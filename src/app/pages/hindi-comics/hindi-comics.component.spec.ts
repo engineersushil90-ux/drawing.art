@@ -24,6 +24,20 @@ describe('HindiComicsComponent', () => {
     expect(sidebar.textContent).toContain('Part 2');
   });
 
+  it('marks new content and opens the new comic target', () => {
+    const newLink = fixture.nativeElement.querySelector('.site-header nav a[aria-current="page"]') as HTMLAnchorElement;
+    expect(newLink.querySelector('.new-badge')).not.toBeNull();
+    expect(newLink.getAttribute('href')).toContain('comic=changing-room');
+    expect(newLink.getAttribute('href')).toContain('part=part-1');
+    expect(fixture.nativeElement.querySelectorAll('.comic-sidebar .new-badge')).toHaveLength(3);
+
+    component.selectPart(component.comics[0].parts[1]);
+    component.selectNewComic();
+
+    expect(component.selectedComic?.title).toBe('Changing Room');
+    expect(component.selectedPart?.title).toBe('Part 1');
+  });
+
   it('updates the reader heading when a part is selected', () => {
     const partTwo = fixture.nativeElement.querySelectorAll('.part-link')[1] as HTMLButtonElement;
     partTwo.click();
