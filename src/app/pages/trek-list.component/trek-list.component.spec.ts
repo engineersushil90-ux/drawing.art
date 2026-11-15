@@ -102,8 +102,11 @@ describe('DrawingArtComponent', () => {
     const heroSource = fixture.nativeElement.querySelector('.hero-art source') as HTMLSourceElement;
     expect(heroImage.getAttribute('fetchpriority')).toBe('high');
     expect(heroImage.getAttribute('loading')).toBe('eager');
+    expect(heroImage.getAttribute('src')).toBe(artwork.imageLarge);
     expect(heroSource.srcset).toContain('featured-480.webp 480w');
     expect(heroSource.srcset).toContain('featured-960.webp 960w');
+    expect(component.getArtworkImage({ ...artwork, imageLarge: undefined })).toBe(artwork.imageSmall);
+    expect(component.getArtworkImage({ ...artwork, imageLarge: undefined, imageSmall: undefined })).toBe('');
   });
 
   it('shows and updates like counts for drawings with root-relative image URLs', () => {

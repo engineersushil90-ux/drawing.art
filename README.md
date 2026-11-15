@@ -1,5 +1,11 @@
 # webapp-UI
 
+## Artwork watermarks
+
+The image-variant build embeds a repeating `SK DRAWING` watermark in the 480px and 960px WebP previews used by the public gallery and lightbox. The Angular build excludes `public/drawings/`, so the original artwork files are not served as frontend assets. The 18+ image API also returns a watermarked preview no wider than 960px.
+
+This prevents the site from serving clean originals, but cannot stop screenshots or removal attempts. Keep original artwork out of any publicly accessible source repository or storage.
+
 ## 18+ gallery and owner access
 
 All images in the 18+ gallery are currently free after the visitor confirms they are at least 18. Payment-based locking is temporarily disabled in both the gallery and image API; the existing payment/admin tracking code remains available if paid access is re-enabled later.

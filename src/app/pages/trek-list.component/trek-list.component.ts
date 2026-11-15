@@ -193,7 +193,11 @@ private readonly cdr =
   }
 
   getArtworkImage(artwork: Artwork): string {
-    if (artwork.category !== '18+ Sketches' || !this.adultImageAccessToken) {
+    if (artwork.category !== '18+ Sketches') {
+      return artwork.imageLarge ?? artwork.imageSmall ?? '';
+    }
+
+    if (!this.adultImageAccessToken) {
       return artwork.image;
     }
 

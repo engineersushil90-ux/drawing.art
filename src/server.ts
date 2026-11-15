@@ -594,10 +594,15 @@ async function getBlurredPreview(imagePath: string): Promise<Buffer> {
   let preview = blurredPreviewCache.get(cacheKey);
   if (!preview) {
     preview = sharp(imagePath)
+      .rotate()
       .resize({ width: 720, withoutEnlargement: true })
       .blur(36)
       .jpeg({ quality: 48 })
-      .toBuffer();
+      .toBuffer({ resolveWithObject: true })
+      .then(async ({ data, info }) => sharp(data)
+        .composite([{ input: await getWatermarkOverlay(info.width, info.height) }])
+        .jpeg({ quality: 48 })
+        .toBuffer());
     blurredPreviewCache.set(cacheKey, preview);
     if (blurredPreviewCache.size > 100) {
       const oldestKey = blurredPreviewCache.keys().next().value;
@@ -606,6 +611,28 @@ async function getBlurredPreview(imagePath: string): Promise<Buffer> {
     preview.catch(() => blurredPreviewCache.delete(cacheKey));
   }
   return preview;
+}
+
+let watermarkTemplatePromise: Promise<string> | undefined;
+
+async function getWatermarkOverlay(width: number, height: number): Promise<Buffer> {
+  watermarkTemplatePromise ??= readFile(join(process.cwd(), 'tools', 'drawing-watermark.svg'), 'utf8');
+  const template = await watermarkTemplatePromise;
+  return Buffer.from(template
+    .replaceAll('{{WIDTH}}', String(width))
+    .replaceAll('{{HEIGHT}}', String(height)));
+}
+
+async function getWatermarkedImage(imagePath: string): Promise<Buffer> {
+  const { data, info } = await sharp(imagePath)
+    .rotate()
+    .resize({ width: 960, withoutEnlargement: true })
+    .toBuffer({ resolveWithObject: true });
+
+  return sharp(data)
+    .composite([{ input: await getWatermarkOverlay(info.width, info.height) }])
+    .webp({ quality: 82 })
+    .toBuffer();
 }
 
 app.get('/api/18plus/image', async (req, res, next) => {
@@ -638,7 +665,11 @@ app.get('/api/18plus/image', async (req, res, next) => {
     }
     return;
   }
-  res.sendFile(imagePath, error => error && next(error));
+  try {
+    res.type('image/webp').send(await getWatermarkedImage(imagePath));
+  } catch (error) {
+    next(error);
+  }
 });
 
 

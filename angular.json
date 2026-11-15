@@ -29,7 +29,7 @@
                 "glob": "**/*",
                   "input": "public",
                   "ignore": [
-                    "drawings/18+Sketches/**"
+                    "drawings/**"
                   ]
               }
             ],
