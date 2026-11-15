@@ -57,7 +57,10 @@
         <h1>{{ selectedComic.title }}</h1>
         <p class="part-heading">{{ selectedPart.title }}</p>
         <p *ngIf="comicPagesLoading" class="reader-placeholder" role="status">Comic pages load ho rahe hain…</p>
-        <p *ngIf="comicPagesError" class="reader-placeholder reader-error" role="alert">{{ comicPagesError }}</p>
+        <div *ngIf="comicPagesError" class="reader-placeholder reader-error" role="alert">
+          <p>{{ comicPagesError }}</p>
+          <button type="button" class="reader-retry" (click)="retryComicPages()">Try again</button>
+        </div>
         <div *ngIf="!comicPagesLoading && !comicPagesError && !comicPages.length" class="reader-placeholder" role="status">
           <span class="reader-icon" aria-hidden="true">▤</span>
           <p>Is part ke comic pages abhi add nahi kiye gaye hain.</p>

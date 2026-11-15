@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -14,6 +14,7 @@ import { getFirstNewComicTarget, HINDI_COMICS, ComicPart, ComicSeries } from './
 export class HindiComicsComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly drawingsService = inject(DrawingsService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private comicPagesSubscription?: Subscription;
   readonly comics = HINDI_COMICS;
   readonly newComicTarget = getFirstNewComicTarget();
@@ -29,10 +30,10 @@ export class HindiComicsComponent implements OnDestroy {
     const partId = this.route.snapshot.queryParamMap.get('part');
     const comic = this.comics.find(item => item.id === comicId);
     if (comic) {
-      this.selectComic(comic);
-      if (partId && comic.parts.some(part => part.id === partId)) {
-        this.selectedPartId = partId;
-      }
+      this.selectedComicId = comic.id;
+      this.selectedPartId = comic.parts.find(part => part.id === partId)?.id
+        ?? comic.parts[0]?.id
+        ?? '';
     }
     this.loadComicPages();
   }
@@ -113,11 +114,19 @@ export class HindiComicsComponent implements OnDestroy {
       next: pages => {
         this.comicPages = pages;
         this.comicPagesLoading = false;
+        this.cdr.markForCheck();
       },
       error: error => {
         this.comicPagesLoading = false;
-        this.comicPagesError = error?.error?.error || 'Comic pages could not be loaded. Please try again later.';
+        this.comicPagesError = error?.name === 'TimeoutError'
+          ? 'Comic pages took too long to load. Please try again.'
+          : error?.error?.error || 'Comic pages could not be loaded. Please try again later.';
+        this.cdr.markForCheck();
       }
     });
+  }
+
+  retryComicPages(): void {
+    this.loadComicPages();
   }
 }

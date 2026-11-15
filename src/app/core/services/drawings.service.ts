@@ -170,6 +170,7 @@ export class DrawingsService {
   getComicPages(comicId: string, partId: string): Observable<string[]> {
     const params = new HttpParams().set('comic', comicId).set('part', partId);
     return this.http.get<{ pages: string[] }>(`${this.apiBaseUrl}/api/hindi-comics/pages`, { params }).pipe(
+      timeout(15_000),
       map(response => response.pages.map(page =>
         page.startsWith('/api/') ? `${this.apiBaseUrl}${page}` : page
       ))
