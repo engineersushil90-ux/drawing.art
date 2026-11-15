@@ -7,6 +7,11 @@ export const routes: Routes = [
       .then(module => module.DrawingArtComponent)
   },
   {
+    path: 'hindi-comics',
+    loadComponent: () => import('./pages/hindi-comics/hindi-comics.component')
+      .then(module => module.HindiComicsComponent)
+  },
+  {
     path: 'privacy-policy',
     loadComponent: () => import('./pages/privacy-policy/privacy-policy.component')
       .then(module => module.PrivacyPolicyComponent)

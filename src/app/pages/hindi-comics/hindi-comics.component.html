@@ -1,0 +1,60 @@
+<main class="comics-page">
+  <header class="site-header">
+    <a class="brand" routerLink="/drawing-art">drawing<span>.art</span></a>
+    <nav aria-label="Main navigation">
+      <a routerLink="/drawing-art">Drawings</a>
+      <a routerLink="/hindi-comics" aria-current="page">Hindi Comics</a>
+    </nav>
+  </header>
+
+  <section class="comics-layout" aria-label="Hindi comic library">
+    <aside class="comic-sidebar">
+      <p class="eyebrow">Library</p>
+      <h2>Comics</h2>
+
+      <nav class="comic-list" aria-label="Comics and parts">
+        <section *ngFor="let comic of comics" class="comic-group">
+          <button
+            type="button"
+            class="comic-title"
+            [class.active]="selectedComicId === comic.id"
+            [attr.aria-expanded]="selectedComicId === comic.id"
+            (click)="selectComic(comic)"
+          >
+            <span>{{ comic.title }}</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+
+          <div *ngIf="selectedComicId === comic.id" class="part-list">
+            <button
+              *ngFor="let part of comic.parts"
+              type="button"
+              class="part-link"
+              [class.active]="selectedPartId === part.id"
+              [attr.aria-current]="selectedPartId === part.id ? 'page' : null"
+              (click)="selectPart(part)"
+            >
+              {{ part.title }}
+            </button>
+          </div>
+        </section>
+      </nav>
+    </aside>
+
+    <section class="comic-reader" aria-live="polite">
+      <p class="eyebrow">Hindi Comics</p>
+      <ng-container *ngIf="selectedComic && selectedPart; else noSelection">
+        <h1>{{ selectedComic.title }}</h1>
+        <p class="part-heading">{{ selectedPart.title }}</p>
+        <div class="reader-placeholder" role="status">
+          <span class="reader-icon" aria-hidden="true">▤</span>
+          <p>Is part ke comic pages abhi add nahi kiye gaye hain.</p>
+        </div>
+      </ng-container>
+      <ng-template #noSelection>
+        <h1>Comic select karein</h1>
+        <p class="part-heading">Padhna shuru karne ke liye left menu se comic aur part chunein.</p>
+      </ng-template>
+    </section>
+  </section>
+</main>
