@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Dirent } from 'node:fs';
 import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import sharp from 'sharp';
 import multer from 'multer';
@@ -1164,8 +1165,40 @@ function comicPageKey(comicId: string, partId: string): string {
   return `${comicId}/${partId}`;
 }
 
+function getPublicComicFolderName(comicId: string): string {
+  return comicId.split('-').map(word => `${word[0].toUpperCase()}${word.slice(1)}`).join('');
+}
+
+async function getPublicComicPageFiles(comicId: string, partId: string): Promise<string[]> {
+  const partMatch = /^part-(\d+)$/.exec(partId);
+  if (!partMatch) return [];
+
+  const directory = join(drawingsRoot, 'Comics', getPublicComicFolderName(comicId));
+  let entries: Dirent<string>[];
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && ['ENOENT', 'ENOTDIR'].includes(String(error.code))) return [];
+    throw error;
+  }
+
+  const pattern = new RegExp(`^Part${partMatch[1]}(?:[-_](\\d+))?\\.(?:jpe?g|png|webp)$`, 'i');
+  return entries
+    .filter(entry => entry.isFile() && pattern.test(entry.name))
+    .map(entry => ({
+      name: entry.name,
+      order: Number(pattern.exec(entry.name)?.[1] || 0)
+    }))
+    .sort((left, right) => left.order - right.order || left.name.localeCompare(right.name))
+    .map(entry => entry.name);
+}
+
 function getComicPageUrl(comicId: string, partId: string, file: string): string {
   return `/api/hindi-comics/page?file=${encodeURIComponent(`${comicId}/${partId}/${file}`)}`;
+}
+
+function getPublicComicPageUrl(comicId: string, partId: string, file: string): string {
+  return `/api/hindi-comics/page?source=${encodeURIComponent(`${comicId}/${partId}/${file}`)}`;
 }
 
 async function resolveComicPagePath(filePath: string): Promise<string | null> {
@@ -1321,6 +1354,9 @@ async function scanDrawings(
       const pathParts =
         relativePath.split(/[\\/]/);
 
+      if (pathParts[0]?.toLowerCase() === 'comics') {
+        continue;
+      }
 
       /*
        * First folder determines category.
@@ -1546,8 +1582,14 @@ app.get('/api/hindi-comics/pages', async (req, res, next) => {
   try {
     const manifest = await readComicPageManifest();
     const files = manifest[comicPageKey(comicId, partId)] || [];
+    const publicFiles = await getPublicComicPageFiles(comicId, partId);
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ pages: files.map(file => getComicPageUrl(comicId, partId, file)) });
+    res.json({
+      pages: [
+        ...publicFiles.map(file => getPublicComicPageUrl(comicId, partId, file)),
+        ...files.map(file => getComicPageUrl(comicId, partId, file))
+      ]
+    });
   } catch (error) {
     next(error);
   }
@@ -1555,7 +1597,26 @@ app.get('/api/hindi-comics/pages', async (req, res, next) => {
 
 app.get('/api/hindi-comics/page', async (req, res, next) => {
   const file = typeof req.query['file'] === 'string' ? req.query['file'] : '';
+  const source = typeof req.query['source'] === 'string' ? req.query['source'] : '';
   try {
+    if (source) {
+      const parts = source.split(/[\\/]/);
+      if (parts.length !== 3 || !comicIdPattern.test(parts[0]) || !comicIdPattern.test(parts[1])) {
+        res.sendStatus(404);
+        return;
+      }
+      const publicFiles = await getPublicComicPageFiles(parts[0], parts[1]);
+      if (!publicFiles.includes(parts[2])) {
+        res.sendStatus(404);
+        return;
+      }
+      const imagePath = join(drawingsRoot, 'Comics', getPublicComicFolderName(parts[0]), parts[2]);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.type('image/webp').send(await getWatermarkedImage(imagePath, 1600));
+      return;
+    }
+
     const parts = file.split(/[\\/]/);
     if (parts.length !== 3 || !comicIdPattern.test(parts[0]) || !comicIdPattern.test(parts[1])) {
       res.sendStatus(404);
@@ -1635,7 +1696,7 @@ app.post('/api/admin/hindi-comics/pages', requireOwner, (req, res, next) => {
       pages.push(file);
       manifest[key] = pages;
       await saveDataFile('hindi-comic-pages.json', JSON.stringify(manifest, null, 2));
-      return pages.length;
+      return (await getPublicComicPageFiles(comicId, partId)).length + pages.length;
     });
     comicPageWriteQueue = update.then(() => undefined, () => undefined);
     const pageNumber = await update;

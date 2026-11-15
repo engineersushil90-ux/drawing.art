@@ -26,4 +26,6 @@ Sign in at `/admin` and use **Upload a sketch** to add a JPG, PNG, or WebP (up t
 
 To add Hindi comic pages, sign in at `/admin`, choose **Upload a Hindi comic page**, select the comic and part, then upload each page in reading order. Pages are optimized and stored under `DATA_DIR/comics`, and the reader displays watermarked previews in that order. Configure `DATA_DIR` to a persistent disk path on the API host so comic pages survive restarts and deployments.
 
+Comic images already in the repository can instead go under `public/drawings/Comics/<ComicName>/`, using names like `Part1.png`, `Part1-2.png`, and `Part1-3.png`. These are served in the matching Hindi Comics reader part and excluded from the regular drawings gallery.
+
 Open `/admin` and sign in with the configured owner credentials to view the 18+ gallery's registered names, emails, last-view times, and total unique email count. Viewer details require admin authentication. Email ownership and the age check are not independently verified.
