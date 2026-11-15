@@ -16,6 +16,11 @@ describe('AdminViewersComponent', () => {
       image: 'drawings/ColorArt/2026-11-15/SK_test.jpeg',
       category
     })),
+    uploadComicPage: vi.fn((_file: File, comicId: string, partId: string) => of({
+      ok: true,
+      page: `/api/hindi-comics/page?file=${comicId}%2F${partId}%2Fpage.webp`,
+      pageNumber: 1
+    })),
     getAdultViewers: vi.fn(() => of([{
       name: 'Test Viewer',
       email: 'viewer@example.com',
@@ -54,6 +59,7 @@ describe('AdminViewersComponent', () => {
     drawingsService.adminLogin.mockClear();
     drawingsService.getAdminSession.mockClear();
     drawingsService.uploadSketch.mockClear();
+    drawingsService.uploadComicPage.mockClear();
     drawingsService.getAdultViewers.mockClear();
     drawingsService.getPendingArtworkReviews.mockClear();
     drawingsService.moderateArtworkReview.mockClear();
@@ -211,6 +217,23 @@ describe('AdminViewersComponent', () => {
     expect(drawingsService.uploadSketch).toHaveBeenCalledWith(file, 'Color Art');
     expect(component.sketchUploadSucceeded).toBe(true);
     expect(component.sketchUploadMessage).toBe('Sketch uploaded to Color Art.');
+  });
+
+  it('uploads a comic page to the selected comic part', () => {
+    const component = fixture.componentInstance;
+    component.authenticated = true;
+    component.comicPageComicId = 'changing-room';
+    component.comicPagePartId = 'part-2';
+    const file = new File(['page'], 'changing-room-part-2-page-1.png', { type: 'image/png' });
+    component.selectedComicPageFile = file;
+    fixture.detectChanges();
+
+    component.uploadComicPage();
+    fixture.detectChanges();
+
+    expect(drawingsService.uploadComicPage).toHaveBeenCalledWith(file, 'changing-room', 'part-2');
+    expect(component.comicPageUploadSucceeded).toBe(true);
+    expect(component.comicPageUploadMessage).toContain('Page 1 uploaded to Changing Room, Part 2.');
   });
 
   it('sorts viewers latest first and paginates at 20 rows', () => {

@@ -62,4 +62,41 @@ describe('DrawingsService', () => {
     });
     request.flush({ ok: true, image: 'drawings/ColorArt/new.png', category: 'Color Art' });
   });
+
+  it('loads comic page URLs from the image API', () => {
+    service.getComicPages('changing-room', 'part-1').subscribe(pages => {
+      expect(pages).toEqual([
+        'https://drawing-art.onrender.com/api/hindi-comics/page?file=changing-room%2Fpart-1%2Fpage.webp'
+      ]);
+    });
+
+    const request = http.expectOne(
+      'https://drawing-art.onrender.com/api/hindi-comics/pages?comic=changing-room&part=part-1'
+    );
+    request.flush({ pages: ['/api/hindi-comics/page?file=changing-room%2Fpart-1%2Fpage.webp'] });
+  });
+
+  it('uploads a comic page to the selected part', () => {
+    const image = new File(['page'], 'part-1-page-1.png', { type: 'image/png' });
+    service.uploadComicPage(image, 'changing-room', 'part-1').subscribe(response => {
+      expect(response.pageNumber).toBe(1);
+    });
+
+    const request = http.expectOne('https://drawing-art.onrender.com/api/admin/hindi-comics/pages');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBe(true);
+    const formData = request.request.body as FormData;
+    expect(formData.get('comicId')).toBe('changing-room');
+    expect(formData.get('partId')).toBe('part-1');
+    expect(formData.get('image')).toMatchObject({
+      name: 'part-1-page-1.png',
+      type: 'image/png',
+      size: 4
+    });
+    request.flush({
+      ok: true,
+      page: '/api/hindi-comics/page?file=changing-room%2Fpart-1%2Fpage.webp',
+      pageNumber: 1
+    });
+  });
 });

@@ -1,15 +1,25 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
+import { DrawingsService } from '../../core/services/drawings.service';
 import { HindiComicsComponent } from './hindi-comics.component';
 
 describe('HindiComicsComponent', () => {
   let fixture: ComponentFixture<HindiComicsComponent>;
   let component: HindiComicsComponent;
+  const drawingsService = {
+    getComicPages: vi.fn(() => of([] as string[]))
+  };
 
   beforeEach(async () => {
+    drawingsService.getComicPages.mockReset();
+    drawingsService.getComicPages.mockReturnValue(of([]));
     await TestBed.configureTestingModule({
       imports: [HindiComicsComponent],
-      providers: [provideRouter([])]
+      providers: [
+        provideRouter([]),
+        { provide: DrawingsService, useValue: drawingsService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(HindiComicsComponent);
@@ -45,5 +55,40 @@ describe('HindiComicsComponent', () => {
 
     expect(component.selectedPart?.title).toBe('Part 2');
     expect(fixture.nativeElement.querySelector('.part-heading').textContent.trim()).toBe('Part 2');
+  });
+
+  it('navigates between parts with controls below the comic reader', () => {
+    const navigation = fixture.nativeElement.querySelector('.part-navigation') as HTMLElement;
+    const [previous, next] = Array.from(navigation.querySelectorAll('button')) as HTMLButtonElement[];
+
+    expect(navigation.previousElementSibling?.classList.contains('reader-placeholder')).toBe(true);
+    expect(previous.disabled).toBe(true);
+    expect(next.disabled).toBe(false);
+
+    next.click();
+    fixture.detectChanges();
+
+    expect(component.selectedPart?.title).toBe('Part 2');
+    expect(previous.disabled).toBe(false);
+    expect(next.disabled).toBe(true);
+
+    previous.click();
+    fixture.detectChanges();
+
+    expect(component.selectedPart?.title).toBe('Part 1');
+  });
+
+  it('loads the selected part pages in order', () => {
+    const pages = ['/api/hindi-comics/page?page=1', '/api/hindi-comics/page?page=2'];
+    drawingsService.getComicPages.mockReturnValueOnce(of(pages));
+
+    const partTwo = fixture.nativeElement.querySelectorAll('.part-link')[1] as HTMLButtonElement;
+    partTwo.click();
+    fixture.detectChanges();
+
+    const images = fixture.nativeElement.querySelectorAll('.comic-pages img') as NodeListOf<HTMLImageElement>;
+    expect(drawingsService.getComicPages).toHaveBeenLastCalledWith('changing-room', 'part-2');
+    expect(Array.from(images, image => image.getAttribute('src'))).toEqual(pages);
+    expect(fixture.nativeElement.textContent).not.toContain('comic pages abhi add nahi kiye gaye hain');
   });
 });

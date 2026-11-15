@@ -24,4 +24,6 @@ Configure these environment variables on the API server before enabling the feat
 
 Sign in at `/admin` and use **Upload a sketch** to add a JPG, PNG, or WebP (up to 15 MB) to Pencil Sketches, Color Art, or 18+ Sketches. Uploaded originals are stored under `DATA_DIR/drawings`; the gallery serves watermarked previews. Configure `DATA_DIR` to a persistent disk path on the API host so uploads survive restarts and deployments.
 
+To add Hindi comic pages, sign in at `/admin`, choose **Upload a Hindi comic page**, select the comic and part, then upload each page in reading order. Pages are optimized and stored under `DATA_DIR/comics`, and the reader displays watermarked previews in that order. Configure `DATA_DIR` to a persistent disk path on the API host so comic pages survive restarts and deployments.
+
 Open `/admin` and sign in with the configured owner credentials to view the 18+ gallery's registered names, emails, last-view times, and total unique email count. Viewer details require admin authentication. Email ownership and the age check are not independently verified.

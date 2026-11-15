@@ -56,10 +56,23 @@
       <ng-container *ngIf="selectedComic && selectedPart; else noSelection">
         <h1>{{ selectedComic.title }}</h1>
         <p class="part-heading">{{ selectedPart.title }}</p>
-        <div class="reader-placeholder" role="status">
+        <p *ngIf="comicPagesLoading" class="reader-placeholder" role="status">Comic pages load ho rahe hain…</p>
+        <p *ngIf="comicPagesError" class="reader-placeholder reader-error" role="alert">{{ comicPagesError }}</p>
+        <div *ngIf="!comicPagesLoading && !comicPagesError && !comicPages.length" class="reader-placeholder" role="status">
           <span class="reader-icon" aria-hidden="true">▤</span>
           <p>Is part ke comic pages abhi add nahi kiye gaye hain.</p>
         </div>
+        <div *ngIf="comicPages.length" class="comic-pages">
+          <img *ngFor="let page of comicPages; let index = index" [src]="page" [alt]="selectedComic.title + ' ' + selectedPart.title + ', page ' + (index + 1)" loading="lazy" decoding="async">
+        </div>
+        <nav class="part-navigation" aria-label="Comic part navigation">
+          <button type="button" (click)="previousPart()" [disabled]="!hasPreviousPart">
+            &larr; Previous
+          </button>
+          <button type="button" (click)="nextPart()" [disabled]="!hasNextPart">
+            Next &rarr;
+          </button>
+        </nav>
       </ng-container>
       <ng-template #noSelection>
         <h1>Comic select karein</h1>

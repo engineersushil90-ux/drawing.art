@@ -9,6 +9,7 @@ import {
   DrawingsService,
   ModerationArtworkReview
 } from '../../core/services/drawings.service';
+import { HINDI_COMICS } from '../hindi-comics/hindi-comics.data';
 
 @Component({
   selector: 'app-admin-viewers',
@@ -198,6 +199,46 @@ import {
           </p>
           <a *ngIf="sketchUploadSucceeded" routerLink="/" fragment="work" class="gallery-link">Open gallery</a>
         </section>
+
+        <section *ngIf="authenticated" class="comic-upload" aria-labelledby="comic-upload-title">
+          <h2 id="comic-upload-title">Upload a Hindi comic page</h2>
+          <p class="description">Choose a comic and part, then upload pages one at a time in reading order. JPG, PNG, or WebP (15 MB max).</p>
+          <form (ngSubmit)="uploadComicPage()">
+            <label>
+              Comic
+              <select
+                name="comicPageComicId"
+                [(ngModel)]="comicPageComicId"
+                (ngModelChange)="onComicPageComicChanged($event)"
+              >
+                <option *ngFor="let comic of hindiComics" [value]="comic.id">{{ comic.title }}</option>
+              </select>
+            </label>
+            <label>
+              Part
+              <select name="comicPagePartId" [(ngModel)]="comicPagePartId">
+                <option *ngFor="let part of selectedComicParts" [value]="part.id">{{ part.title }}</option>
+              </select>
+            </label>
+            <label>
+              Comic page image
+              <input
+                #comicPageUploadInput
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                (change)="onComicPageFileSelected($event)"
+                required
+              >
+            </label>
+            <p *ngIf="selectedComicPageFile" class="login-hint">{{ selectedComicPageFile.name }}</p>
+            <button type="submit" [disabled]="uploadingComicPage || !selectedComicPageFile || !comicPagePartId">
+              {{ uploadingComicPage ? 'Uploading…' : 'Upload comic page' }}
+            </button>
+          </form>
+          <p *ngIf="comicPageUploadMessage" [class.upload-success]="comicPageUploadSucceeded" class="message" role="status">
+            {{ comicPageUploadMessage }}
+          </p>
+        </section>
       </section>
     </main>
   `,
@@ -241,6 +282,10 @@ import {
     .sketch-upload h2{margin:0 0 8px;font:26px Georgia,serif}
     .sketch-upload form{margin-top:20px}
     .sketch-upload select{padding:13px;border:1px solid #d8d4cc;border-radius:8px;background:#fffdf9;font:inherit}
+    .comic-upload{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
+    .comic-upload h2{margin:0 0 8px;font:26px Georgia,serif}
+    .comic-upload form{margin-top:20px}
+    .comic-upload select{padding:13px;border:1px solid #d8d4cc;border-radius:8px;background:#fffdf9;font:inherit}
     .upload-success{color:#356b3a}
     .gallery-link{display:inline-block;margin-top:4px;color:#8c5c4d}
     @media(max-width:600px){.admin-page{padding:24px 16px}.admin-card{margin-top:7vh}h1{font-size:34px}.list-heading{align-items:flex-start}}
@@ -250,8 +295,10 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   private readonly drawingsService = inject(DrawingsService);
   private readonly cdr = inject(ChangeDetectorRef);
   @ViewChild('sketchUploadInput') private sketchUploadInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('comicPageUploadInput') private comicPageUploadInput?: ElementRef<HTMLInputElement>;
   private loginDeadline: ReturnType<typeof setTimeout> | undefined;
   private loginSubscription: Subscription | undefined;
+  readonly hindiComics = HINDI_COMICS;
   username = '';
   password = '';
   busy = false;
@@ -280,6 +327,16 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   uploadingSketch = false;
   sketchUploadMessage = '';
   sketchUploadSucceeded = false;
+  comicPageComicId = HINDI_COMICS[0]?.id ?? '';
+  comicPagePartId = HINDI_COMICS[0]?.parts[0]?.id ?? '';
+  selectedComicPageFile: File | null = null;
+  uploadingComicPage = false;
+  comicPageUploadMessage = '';
+  comicPageUploadSucceeded = false;
+
+  get selectedComicParts() {
+    return this.hindiComics.find(comic => comic.id === this.comicPageComicId)?.parts ?? [];
+  }
 
   get viewerPageCount(): number {
     return Math.ceil(this.viewers.length / this.pageSize);
@@ -543,6 +600,48 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
         this.sketchUploadMessage = error?.name === 'TimeoutError'
           ? 'Upload timed out. Check the gallery before retrying to avoid uploading the same sketch twice.'
           : error?.error?.error || 'Could not upload the sketch. Please try again.';
+        this.handleAdminAuthorizationError(error);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onComicPageComicChanged(comicId: string): void {
+    this.comicPagePartId = this.hindiComics.find(comic => comic.id === comicId)?.parts[0]?.id ?? '';
+  }
+
+  onComicPageFileSelected(event: Event): void {
+    const input = event.currentTarget as HTMLInputElement;
+    this.selectedComicPageFile = input.files?.[0] ?? null;
+    this.comicPageUploadMessage = '';
+    this.comicPageUploadSucceeded = false;
+  }
+
+  uploadComicPage(): void {
+    if (!this.selectedComicPageFile || !this.comicPageComicId || !this.comicPagePartId || this.uploadingComicPage) return;
+    this.uploadingComicPage = true;
+    this.comicPageUploadMessage = '';
+    this.comicPageUploadSucceeded = false;
+    this.drawingsService.uploadComicPage(
+      this.selectedComicPageFile,
+      this.comicPageComicId,
+      this.comicPagePartId
+    ).pipe(timeout(60_000)).subscribe({
+      next: response => {
+        this.uploadingComicPage = false;
+        this.selectedComicPageFile = null;
+        if (this.comicPageUploadInput) this.comicPageUploadInput.nativeElement.value = '';
+        const comic = this.hindiComics.find(item => item.id === this.comicPageComicId);
+        const part = this.selectedComicParts.find(item => item.id === this.comicPagePartId);
+        this.comicPageUploadSucceeded = true;
+        this.comicPageUploadMessage = `Page ${response.pageNumber} uploaded to ${comic?.title}, ${part?.title}. Upload the next page to add it after this one.`;
+        this.cdr.markForCheck();
+      },
+      error: error => {
+        this.uploadingComicPage = false;
+        this.comicPageUploadMessage = error?.name === 'TimeoutError'
+          ? 'Upload timed out. Check the comic before retrying to avoid uploading the same page twice.'
+          : error?.error?.error || 'Could not upload the comic page. Please try again.';
         this.handleAdminAuthorizationError(error);
         this.cdr.markForCheck();
       }

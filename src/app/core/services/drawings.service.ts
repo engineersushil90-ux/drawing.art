@@ -167,6 +167,31 @@ export class DrawingsService {
     );
   }
 
+  getComicPages(comicId: string, partId: string): Observable<string[]> {
+    const params = new HttpParams().set('comic', comicId).set('part', partId);
+    return this.http.get<{ pages: string[] }>(`${this.apiBaseUrl}/api/hindi-comics/pages`, { params }).pipe(
+      map(response => response.pages.map(page =>
+        page.startsWith('/api/') ? `${this.apiBaseUrl}${page}` : page
+      ))
+    );
+  }
+
+  uploadComicPage(
+    file: File,
+    comicId: string,
+    partId: string
+  ): Observable<{ ok: boolean; page: string; pageNumber: number }> {
+    const formData = new FormData();
+    formData.append('comicId', comicId);
+    formData.append('partId', partId);
+    formData.append('image', file, file.name);
+    return this.http.post<{ ok: boolean; page: string; pageNumber: number }>(
+      `${this.apiBaseUrl}/api/admin/hindi-comics/pages`,
+      formData,
+      { headers: this.adminHeaders(), withCredentials: true }
+    );
+  }
+
   getAdultViewers(): Observable<AdultViewer[]> {
     return this.http.get<AdultViewer[]>(`${this.apiBaseUrl}/api/admin/18plus-viewers`, {
       headers: this.adminHeaders(),

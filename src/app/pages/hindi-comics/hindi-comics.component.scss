@@ -189,6 +189,53 @@
   font-size: 38px;
 }
 
+.comic-pages {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+
+.comic-pages img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #e9e3da;
+  border-radius: 8px;
+  background: #faf7f1;
+}
+
+.reader-error {
+  color: #9a3428;
+}
+
+.part-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.part-navigation button {
+  min-width: 120px;
+  padding: 12px 18px;
+  border: 1px solid #b86f58;
+  border-radius: 7px;
+  background: #fffdf9;
+  color: #26342d;
+  font: inherit;
+  cursor: pointer;
+}
+
+.part-navigation button:hover:not(:disabled) {
+  background: #f7f1e8;
+}
+
+.part-navigation button:disabled {
+  border-color: #ded8ce;
+  color: #a7aaa6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 700px) {
   .site-header {
     height: 68px;

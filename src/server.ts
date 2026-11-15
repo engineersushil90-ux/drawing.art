@@ -711,6 +711,7 @@ const drawingsRoot = join(
 const defaultDataDirectory = join(process.cwd(), 'data');
 const dataDirectory = process.env['DATA_DIR'] || defaultDataDirectory;
 const uploadedDrawingsRoot = join(dataDirectory, 'drawings');
+const uploadedComicPagesRoot = join(dataDirectory, 'comics');
 const supabaseUrl = process.env['SUPABASE_URL']?.replace(/\/+$/, '');
 const supabaseServiceRoleKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
 const supabaseAnonKey = process.env['SUPABASE_ANON_KEY'];
@@ -1101,6 +1102,93 @@ function parseArtworkUpload(req: express.Request, res: express.Response, next: e
   });
 }
 
+const comicPageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 1, fields: 2, fieldSize: 100, parts: 3 },
+  fileFilter: (_req, file, callback) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      callback(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
+      return;
+    }
+    callback(null, true);
+  }
+});
+
+function parseComicPageUpload(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  comicPageUpload.single('image')(req, res, error => {
+    if (!error) {
+      next();
+      return;
+    }
+    if (error instanceof multer.MulterError) {
+      res.status(error.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({
+        error: error.code === 'LIMIT_FILE_SIZE'
+          ? 'Comic pages must be 15 MB or smaller.'
+          : 'Upload one JPG, PNG, or WebP comic page.'
+      });
+      return;
+    }
+    next(error);
+  });
+}
+
+interface ComicPageManifest {
+  [comicAndPart: string]: string[];
+}
+
+const comicIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const comicPageFilePattern = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\.webp$/i;
+let comicPageWriteQueue: Promise<void> = Promise.resolve();
+
+function readComicPageManifest(): Promise<ComicPageManifest> {
+  return readDataFile('hindi-comic-pages.json').then(content => {
+    const parsed: unknown = JSON.parse(content);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('Hindi comic page manifest must be an object');
+    }
+    const manifest: ComicPageManifest = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!Array.isArray(value) || !value.every(file => typeof file === 'string' && comicPageFilePattern.test(file))) {
+        throw new Error(`Invalid Hindi comic page manifest entry: ${key}`);
+      }
+      manifest[key] = value;
+    }
+    return manifest;
+  }).catch(error => {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return {};
+    throw error;
+  });
+}
+
+function comicPageKey(comicId: string, partId: string): string {
+  return `${comicId}/${partId}`;
+}
+
+function getComicPageUrl(comicId: string, partId: string, file: string): string {
+  return `/api/hindi-comics/page?file=${encodeURIComponent(`${comicId}/${partId}/${file}`)}`;
+}
+
+async function resolveComicPagePath(filePath: string): Promise<string | null> {
+  const parts = filePath.split(/[\\/]/);
+  if (
+    parts.length !== 3
+    || !comicIdPattern.test(parts[0])
+    || !comicIdPattern.test(parts[1])
+    || !comicPageFilePattern.test(parts[2])
+  ) return null;
+
+  const absolutePath = resolve(uploadedComicPagesRoot, ...parts);
+  const relativePath = relative(uploadedComicPagesRoot, absolutePath);
+  if (relativePath === '..' || relativePath.startsWith(`..${sep}`) || absolutePath === uploadedComicPagesRoot) return null;
+
+  try {
+    return (await statFile(absolutePath)).isFile() ? absolutePath : null;
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && ['ENOENT', 'ENOTDIR'].includes(String(error.code))) return null;
+    throw error;
+  }
+}
+
 function getTimestampFromDrawingTitle(title: string): string | undefined {
   const match = /^SK_(\d{14})$/.exec(title);
   if (!match) return undefined;
@@ -1442,6 +1530,119 @@ app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
       ok: true,
       image: `drawings/${relativePath.replaceAll('\\', '/')}`,
       category: req.body.category
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/hindi-comics/pages', async (req, res, next) => {
+  const comicId = typeof req.query['comic'] === 'string' ? req.query['comic'] : '';
+  const partId = typeof req.query['part'] === 'string' ? req.query['part'] : '';
+  if (!comicIdPattern.test(comicId) || !comicIdPattern.test(partId)) {
+    res.status(400).json({ error: 'Choose a valid comic and part.' });
+    return;
+  }
+  try {
+    const manifest = await readComicPageManifest();
+    const files = manifest[comicPageKey(comicId, partId)] || [];
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ pages: files.map(file => getComicPageUrl(comicId, partId, file)) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/hindi-comics/page', async (req, res, next) => {
+  const file = typeof req.query['file'] === 'string' ? req.query['file'] : '';
+  try {
+    const parts = file.split(/[\\/]/);
+    if (parts.length !== 3 || !comicIdPattern.test(parts[0]) || !comicIdPattern.test(parts[1])) {
+      res.sendStatus(404);
+      return;
+    }
+    const manifest = await readComicPageManifest();
+    if (!manifest[comicPageKey(parts[0], parts[1])]?.includes(parts[2])) {
+      res.sendStatus(404);
+      return;
+    }
+    const imagePath = await resolveComicPagePath(file);
+    if (!imagePath) {
+      res.sendStatus(404);
+      return;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.type('image/webp').send(await getWatermarkedImage(imagePath, 1600));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/admin/hindi-comics/pages', requireOwner, (req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || !allowedApiOrigins.has(origin)) {
+    res.status(403).json({ error: 'Comic uploads are only allowed from the site.' });
+    return;
+  }
+  next();
+}, parseComicPageUpload, async (req, res, next) => {
+  const comicId = typeof req.body?.comicId === 'string' ? req.body.comicId : '';
+  const partId = typeof req.body?.partId === 'string' ? req.body.partId : '';
+  if (!comicIdPattern.test(comicId) || !comicIdPattern.test(partId)) {
+    res.status(400).json({ error: 'Choose a valid comic and part.' });
+    return;
+  }
+  if (!req.file) {
+    res.status(400).json({ error: 'Choose a comic page image to upload.' });
+    return;
+  }
+
+  let optimizedImage: Buffer;
+  try {
+    const image = sharp(req.file.buffer, { limitInputPixels: 40_000_000 });
+    const metadata = await image.metadata();
+    if (
+      !['jpeg', 'png', 'webp'].includes(metadata.format || '')
+      || !metadata.width
+      || !metadata.height
+      || metadata.width * metadata.height > 40_000_000
+      || (metadata.pages || 1) > 1
+    ) {
+      res.status(400).json({ error: 'The comic page must be a single-frame JPG, PNG, or WebP under 40 megapixels.' });
+      return;
+    }
+    optimizedImage = await sharp(req.file.buffer, { limitInputPixels: 40_000_000 })
+      .rotate()
+      .resize({ width: 1800, withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toBuffer();
+  } catch {
+    res.status(400).json({ error: 'The comic page could not be decoded. Upload a complete, valid image file.' });
+    return;
+  }
+
+  const file = `${randomUUID()}.webp`;
+  const destinationDirectory = join(uploadedComicPagesRoot, comicId, partId);
+  const destinationPath = join(destinationDirectory, file);
+  try {
+    await mkdir(destinationDirectory, { recursive: true });
+    await writeFile(destinationPath, optimizedImage, { flag: 'wx' });
+    const update = comicPageWriteQueue.then(async () => {
+      const manifest = await readComicPageManifest();
+      const key = comicPageKey(comicId, partId);
+      const pages = manifest[key] || [];
+      pages.push(file);
+      manifest[key] = pages;
+      await saveDataFile('hindi-comic-pages.json', JSON.stringify(manifest, null, 2));
+      return pages.length;
+    });
+    comicPageWriteQueue = update.then(() => undefined, () => undefined);
+    const pageNumber = await update;
+    res.status(201).json({
+      ok: true,
+      page: getComicPageUrl(comicId, partId, file),
+      pageNumber
     });
   } catch (error) {
     next(error);
