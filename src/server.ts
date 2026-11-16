@@ -851,21 +851,27 @@ interface DailyActivity {
   date: string;
   likes: number;
   visits: number;
+  likesByImage: Record<string, number>;
 }
 
 async function readDailyActivity(): Promise<DailyActivity> {
   const date = currentIndiaDate();
 
   if (supabaseEnabled) {
-    const rows = await supabaseRequest<Array<{ likes: number; visits: number }>>(
-      `daily_activity?select=likes,visits&activity_date=eq.${date}`
+    const rows = await supabaseRequest<Array<{
+      likes: number;
+      visits: number;
+      likes_by_image: Record<string, number> | null;
+    }>>(
+      `daily_activity?select=likes,visits,likes_by_image&activity_date=eq.${date}`
     );
     const activity = rows[0];
 
     return {
       date,
       likes: Number(activity?.likes) || 0,
-      visits: Number(activity?.visits) || 0
+      visits: Number(activity?.visits) || 0,
+      likesByImage: activity?.likes_by_image ?? {}
     };
   }
 
@@ -873,21 +879,29 @@ async function readDailyActivity(): Promise<DailyActivity> {
     const stored = JSON.parse(await readDataFile('daily-activity.json')) as DailyActivity;
 
     return stored.date === date
-      ? { date, likes: Number(stored.likes) || 0, visits: Number(stored.visits) || 0 }
-      : { date, likes: 0, visits: 0 };
+      ? {
+          date,
+          likes: Number(stored.likes) || 0,
+          visits: Number(stored.visits) || 0,
+          likesByImage: stored.likesByImage ?? {}
+        }
+      : { date, likes: 0, visits: 0, likesByImage: {} };
   } catch {
-    return { date, likes: 0, visits: 0 };
+    return { date, likes: 0, visits: 0, likesByImage: {} };
   }
 }
 
 let dailyActivityWriteQueue: Promise<void> = Promise.resolve();
 
-function incrementDailyActivity(counter: 'likes' | 'visits'): Promise<DailyActivity> {
+function incrementDailyActivity(counter: 'likes' | 'visits', image?: string): Promise<DailyActivity> {
   const update = dailyActivityWriteQueue.then(async () => {
     const current = await readDailyActivity();
     const activity = {
       ...current,
-      [counter]: current[counter] + 1
+      [counter]: current[counter] + 1,
+      likesByImage: counter === 'likes' && image
+        ? { ...current.likesByImage, [image]: (current.likesByImage[image] || 0) + 1 }
+        : current.likesByImage
     };
 
     await saveDataFile('daily-activity.json', JSON.stringify(activity, null, 2));
@@ -2552,7 +2566,7 @@ app.post('/api/likes', async (req, res, next) => {
       const likes = await readLikes();
       likes[image] = (likes[image] || 0) + 1;
       await saveLikes(likes);
-      await incrementDailyActivity('likes');
+      await incrementDailyActivity('likes', image);
       return { image, likes: likes[image] };
     });
 

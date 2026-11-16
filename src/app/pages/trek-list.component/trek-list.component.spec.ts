@@ -164,6 +164,48 @@ describe('DrawingArtComponent', () => {
     expect(fixture.nativeElement.querySelector('.review-form')).not.toBeNull();
   });
 
+  it('immediately filters drawings by today likes and reviews when their checkboxes are selected', () => {
+    const todayArtwork = {
+      title: 'Today drawing',
+      category: 'Pencil Sketches',
+      year: '2026',
+      image: '/drawings/PencilSketches/today.jpg',
+      alt: 'Today drawing'
+    };
+    const reviewedArtwork = {
+      title: 'Reviewed drawing',
+      category: 'Pencil Sketches',
+      year: '2026',
+      image: '/drawings/PencilSketches/reviewed.jpg',
+      alt: 'Reviewed drawing'
+    };
+    drawingsResponse = [todayArtwork, reviewedArtwork];
+    reviewCountsResponse = { 'drawings/PencilSketches/reviewed.jpg': 2 };
+    component.loadDrawings();
+    component.todayLikesByImage = { 'drawings/PencilSketches/today.jpg': 1 };
+    fixture.detectChanges();
+
+    const todayCheckbox = fixture.nativeElement.querySelector(
+      'input[name="todayLikesFilter"]'
+    ) as HTMLInputElement;
+    todayCheckbox.checked = true;
+    todayCheckbox.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(component.visibleArtworks.map(artwork => artwork.title)).toEqual(['Today drawing']);
+
+    const reviewsCheckbox = fixture.nativeElement.querySelector(
+      'input[name="reviewsFilter"]'
+    ) as HTMLInputElement;
+    todayCheckbox.checked = false;
+    todayCheckbox.dispatchEvent(new Event('change'));
+    reviewsCheckbox.checked = true;
+    reviewsCheckbox.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(component.visibleArtworks.map(artwork => artwork.title)).toEqual(['Reviewed drawing']);
+  });
+
   it('allows liking 18+ sketches and updates their count', () => {
     const artwork = {
       title: 'Likeable adult drawing',

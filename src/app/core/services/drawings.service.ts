@@ -30,6 +30,7 @@ export interface DailyActivityResponse {
   date: string;
   likes: number;
   visits: number;
+  likesByImage?: Record<string, number>;
 }
 
 export interface AdultViewer {

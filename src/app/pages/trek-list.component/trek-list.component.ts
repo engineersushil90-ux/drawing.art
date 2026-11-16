@@ -123,6 +123,9 @@ export class DrawingArtComponent implements OnInit {
   // --------------------------------------------------
 
   likes: Record<string, number> = {};
+  todayLikesByImage: Record<string, number> = {};
+  showTodayLikesOnly = false;
+  showReviewedOnly = false;
 
   get totalLikes(): number {
     return Object.values(this.likes).reduce(
@@ -257,6 +260,14 @@ private readonly cdr =
       filtered = this.artworks.filter(
         artwork => artwork.category === this.activeCategory
       );
+    }
+
+    if (this.showTodayLikesOnly) {
+      filtered = filtered.filter(artwork => this.getTodayLikeCount(artwork) > 0);
+    }
+
+    if (this.showReviewedOnly) {
+      filtered = filtered.filter(artwork => this.getArtworkReviewCount(artwork) > 0);
     }
 
     return filtered.sort((a, b) => {
@@ -459,6 +470,7 @@ loadDrawings(imageAccessToken = ''): void {
         next: activity => {
           this.todayLikes = activity.likes;
           this.todayVisits = activity.visits;
+          this.todayLikesByImage = activity.likesByImage ?? {};
           this.cdr.detectChanges();
         },
         error: error => {
@@ -523,8 +535,16 @@ loadDrawings(imageAccessToken = ''): void {
     return this.likes[normalizeImagePath(artwork.image, artwork.category)] || 0;
   }
 
+  getTodayLikeCount(artwork: Artwork): number {
+    return this.todayLikesByImage[normalizeImagePath(artwork.image, artwork.category)] || 0;
+  }
+
   getArtworkReviewCount(artwork: Artwork): number {
     return this.artworkReviewCounts[normalizeImagePath(artwork.image, artwork.category)] || 0;
+  }
+
+  onActivityFilterChange(): void {
+    this.currentPage = 1;
   }
 
 

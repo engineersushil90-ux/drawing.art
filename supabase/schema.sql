@@ -11,8 +11,12 @@ create table if not exists public.site_visits (
 create table if not exists public.daily_activity (
   activity_date date primary key,
   likes bigint not null default 0 check (likes >= 0),
-  visits bigint not null default 0 check (visits >= 0)
+  visits bigint not null default 0 check (visits >= 0),
+  likes_by_image jsonb not null default '{}'::jsonb
 );
+
+alter table public.daily_activity
+  add column if not exists likes_by_image jsonb not null default '{}'::jsonb;
 
 create table if not exists public.artwork_reviews (
   id uuid primary key default gen_random_uuid(),
@@ -58,10 +62,20 @@ begin
   set likes = existing.likes + 1
   returning likes into updated_count;
 
-  insert into public.daily_activity as existing (activity_date, likes, visits)
-  values ((now() at time zone 'Asia/Kolkata')::date, 1, 0)
+  insert into public.daily_activity as existing (activity_date, likes, visits, likes_by_image)
+  values (
+    (now() at time zone 'Asia/Kolkata')::date,
+    1,
+    0,
+    jsonb_build_object(p_image_path, 1)
+  )
   on conflict (activity_date) do update
-  set likes = existing.likes + 1;
+  set likes = existing.likes + 1,
+      likes_by_image = coalesce(existing.likes_by_image, '{}'::jsonb)
+        || jsonb_build_object(
+          p_image_path,
+          coalesce((existing.likes_by_image ->> p_image_path)::bigint, 0) + 1
+        );
 
   return updated_count;
 end;

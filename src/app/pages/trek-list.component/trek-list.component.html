@@ -259,6 +259,26 @@
         {{ category }}
       </button>
 
+      <label style="align-self:center;white-space:nowrap">
+        <input
+          type="checkbox"
+          name="todayLikesFilter"
+          [(ngModel)]="showTodayLikesOnly"
+          (ngModelChange)="onActivityFilterChange()"
+        />
+        Today likes
+      </label>
+
+      <label style="align-self:center;white-space:nowrap">
+        <input
+          type="checkbox"
+          name="reviewsFilter"
+          [(ngModel)]="showReviewedOnly"
+          (ngModelChange)="onActivityFilterChange()"
+        />
+        Reviews &amp; comments
+      </label>
+
     </div>
 
     <p
