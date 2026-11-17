@@ -181,9 +181,15 @@ describe('DrawingArtComponent', () => {
 
     expect(firstPageAds).toHaveLength(2);
     expect(firstPageAds.map(link => link.href)).toEqual([
-      'https://link.amazon/B0fJLrWQn',
+      'https://www.amazon.in/DJI-Standard-Tracking-Touchscreen-Stabilized/dp/B0FKTBGNR8?linkCode=sl2&tag=sksushilkumar-21&linkId=be2a043faa386257bacfb8ecb1033245',
       'https://link.amazon/B0aiAVdOC',
     ]);
+    expect(firstPageAds[0].querySelector('.affiliate-ad-name')?.textContent).toBe(
+      'DJI Osmo Pocket 4 Standard Combo'
+    );
+    expect(firstPageAds[0].querySelector('.affiliate-ad-description')?.textContent).toContain(
+      '4K/240fps'
+    );
     expect(firstPageAds[0].target).toBe('_blank');
     expect(firstPageAds[0].rel).toContain('sponsored');
     expect(firstPageAds[0].textContent).toContain('Sponsored');
