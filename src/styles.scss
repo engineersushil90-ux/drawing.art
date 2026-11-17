@@ -41,6 +41,24 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9
 .locked-art-overlay span { font-size: 13px; font-weight: 700; }
 .payment-contact { display: inline-flex; align-items: center; padding: 11px 16px; border-radius: 7px; background: #26342d; color: white; font-size: 13px; text-decoration: none; }
 
+.work-section .gallery { position: relative; }
+.affiliate-rail { position: absolute; top: 30%; z-index: 2; display: grid; gap: 5px; width: clamp(58px, 5vw, 72px); padding: 9px 7px; border: 1px solid #e3dfd7; border-radius: 8px; background: #fffdf9; color: #26342d; font-size: 10px; line-height: 1.35; text-align: center; text-decoration: none; box-shadow: 0 3px 12px rgba(0, 0, 0, .06); }
+.affiliate-rail strong { font-size: 12px; }
+.affiliate-rail-left { left: calc(-6.5vw + 8px); }
+.affiliate-rail-right { right: calc(-6.5vw + 8px); }
+.affiliate-rail:hover, .affiliate-bottom-link:hover { border-color: #26342d; color: #a64b3a; }
+.affiliate-section { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; padding: 28px 6.5vw; border-top: 1px solid #e8e2d9; background: #f7f1e8; color: #26342d; }
+.affiliate-section-copy { max-width: 390px; }
+.affiliate-section-copy .eyebrow { margin: 0 0 8px; }
+.affiliate-section-copy h2 { margin: 0; font: 24px Georgia, serif; }
+.affiliate-section-copy > p:last-child { margin: 8px 0 0; color: #647069; font-size: 11px; line-height: 1.5; }
+.affiliate-links-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.affiliate-bottom-link { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid #d5d2ca; border-radius: 999px; color: #26342d; font-size: 11px; text-decoration: none; }
+.affiliate-bottom-link span { font-size: 13px; }
+@media (min-width: 1100px) { .affiliate-link-side { display: none; } }
+@media (max-width: 1099px) { .affiliate-rail { display: none; } }
+@media (max-width: 700px) { .affiliate-section { align-items: flex-start; padding: 24px 7vw; } .affiliate-links-list { gap: 7px; } .affiliate-bottom-link { padding: 8px 10px; } }
+
 .reviews-backdrop { position: fixed; inset: 0; z-index: 2050; display: grid; place-items: center; padding: 20px; background: rgba(22, 29, 25, .78); }
 .reviews-dialog { position: relative; width: min(100%, 680px); max-height: 90vh; overflow: auto; padding: clamp(24px, 5vw, 42px); border-radius: 16px; background: #fffdf9; color: #26342d; }
 .reviews-close { position: absolute; top: 14px; right: 17px; border: 0; background: none; color: #26342d; font-size: 28px; cursor: pointer; }

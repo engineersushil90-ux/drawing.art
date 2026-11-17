@@ -33,6 +33,12 @@ export class DrawingArtComponent implements OnInit {
 
   readonly currentYear = new Date().getFullYear();
 
+  readonly affiliateLinks = [
+    { label: 'Amazon pick 1', url: 'https://link.amazon/B0fJLrWQn' },
+    { label: 'Amazon pick 2', url: 'https://link.amazon/B0aiAVdOC' },
+    { label: 'Amazon pick 3', url: 'https://link.amazon/B00KuDa73' },
+    { label: 'Amazon pick 4', url: 'https://link.amazon/B06OCJu6p' }
+  ];
 
   readonly categories = [
     'All Drawings',

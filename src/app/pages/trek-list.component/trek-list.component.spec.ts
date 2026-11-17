@@ -164,6 +164,27 @@ describe('DrawingArtComponent', () => {
     expect(fixture.nativeElement.querySelector('.review-form')).not.toBeNull();
   });
 
+  it('renders all affiliate links with sponsored-link protections and a disclosure', () => {
+    fixture.detectChanges();
+
+    const affiliateLinks = Array.from(
+      fixture.nativeElement.querySelectorAll('.affiliate-bottom-link')
+    ) as HTMLAnchorElement[];
+
+    expect(affiliateLinks).toHaveLength(4);
+    expect(affiliateLinks.map(link => link.href)).toEqual([
+      'https://link.amazon/B0fJLrWQn',
+      'https://link.amazon/B0aiAVdOC',
+      'https://link.amazon/B00KuDa73',
+      'https://link.amazon/B06OCJu6p'
+    ]);
+    expect(affiliateLinks[0].target).toBe('_blank');
+    expect(affiliateLinks[0].rel).toContain('sponsored');
+    expect(fixture.nativeElement.textContent).toContain(
+      'I may earn a commission from qualifying purchases, at no extra cost to you.'
+    );
+  });
+
   it('immediately filters drawings by today likes and reviews when their checkboxes are selected', () => {
     const todayArtwork = {
       title: 'Today drawing',

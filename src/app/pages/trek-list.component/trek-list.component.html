@@ -321,6 +321,28 @@
       *ngIf="!isLoading && visibleArtworks.length > 0"
     >
 
+      <a
+        class="affiliate-rail affiliate-rail-left"
+        [href]="affiliateLinks[0].url"
+        target="_blank"
+        rel="sponsored nofollow noopener noreferrer"
+        aria-label="Amazon affiliate pick 1"
+      >
+        Affiliate pick
+        <strong>01</strong>
+      </a>
+
+      <a
+        class="affiliate-rail affiliate-rail-right"
+        [href]="affiliateLinks[1].url"
+        target="_blank"
+        rel="sponsored nofollow noopener noreferrer"
+        aria-label="Amazon affiliate pick 2"
+      >
+        Affiliate pick
+        <strong>02</strong>
+      </a>
+
       <article
         *ngFor="let artwork of visibleArtworks"
         class="art-card"
@@ -704,6 +726,28 @@
 
     </div>
 
+  </section>
+
+  <section class="affiliate-section" aria-labelledby="affiliate-links-title">
+    <div class="affiliate-section-copy">
+      <p class="eyebrow">Affiliate links</p>
+      <h2 id="affiliate-links-title">A few helpful picks</h2>
+      <p>I may earn a commission from qualifying purchases, at no extra cost to you.</p>
+    </div>
+
+    <div class="affiliate-links-list">
+      <a
+        *ngFor="let link of affiliateLinks; let index = index"
+        class="affiliate-bottom-link"
+        [class.affiliate-link-side]="index < 2"
+        [href]="link.url"
+        target="_blank"
+        rel="sponsored nofollow noopener noreferrer"
+      >
+        {{ link.label }}
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
   </section>
 
 
