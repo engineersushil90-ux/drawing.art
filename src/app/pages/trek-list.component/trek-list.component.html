@@ -321,34 +321,12 @@
       *ngIf="!isLoading && visibleArtworks.length > 0"
     >
 
-      <a
-        class="affiliate-rail affiliate-rail-left"
-        [href]="affiliateLinks[0].url"
-        target="_blank"
-        rel="sponsored nofollow noopener noreferrer"
-        aria-label="Amazon affiliate pick 1"
-      >
-        Affiliate pick
-        <strong>01</strong>
-      </a>
-
-      <a
-        class="affiliate-rail affiliate-rail-right"
-        [href]="affiliateLinks[1].url"
-        target="_blank"
-        rel="sponsored nofollow noopener noreferrer"
-        aria-label="Amazon affiliate pick 2"
-      >
-        Affiliate pick
-        <strong>02</strong>
-      </a>
-
-      <article
-        *ngFor="let artwork of visibleArtworks"
-        class="art-card"
-        [class.locked-artwork]="isLockedArtwork(artwork)"
-        (click)="openArtwork(artwork)"
-      >
+      <ng-container *ngFor="let artwork of visibleArtworks; let index = index">
+        <article
+          class="art-card"
+          [class.locked-artwork]="isLockedArtwork(artwork)"
+          (click)="openArtwork(artwork)"
+        >
 
         <div class="image-wrap">
 
@@ -440,7 +418,23 @@
 
         </div>
 
-      </article>
+        </article>
+
+        <a
+          *ngIf="getAffiliateLinkAfterArtwork(index) as affiliateLink"
+          class="affiliate-ad-card"
+          [href]="affiliateLink.url"
+          target="_blank"
+          rel="sponsored nofollow noopener noreferrer"
+          [attr.aria-label]="'Sponsored affiliate link: ' + affiliateLink.label"
+        >
+          <span class="affiliate-ad-label">Sponsored</span>
+          <span class="affiliate-ad-art" aria-hidden="true">↗</span>
+          <span class="affiliate-ad-name">{{ affiliateLink.label }}</span>
+          <span class="affiliate-ad-description">Explore on Amazon.</span>
+          <span class="affiliate-ad-cta">View product <span aria-hidden="true">↗</span></span>
+        </a>
+      </ng-container>
 
     </div>
 
@@ -727,29 +721,6 @@
     </div>
 
   </section>
-
-  <section class="affiliate-section" aria-labelledby="affiliate-links-title">
-    <div class="affiliate-section-copy">
-      <p class="eyebrow">Affiliate links</p>
-      <h2 id="affiliate-links-title">A few helpful picks</h2>
-      <p>I may earn a commission from qualifying purchases, at no extra cost to you.</p>
-    </div>
-
-    <div class="affiliate-links-list">
-      <a
-        *ngFor="let link of affiliateLinks; let index = index"
-        class="affiliate-bottom-link"
-        [class.affiliate-link-side]="index < 2"
-        [href]="link.url"
-        target="_blank"
-        rel="sponsored nofollow noopener noreferrer"
-      >
-        {{ link.label }}
-        <span aria-hidden="true">↗</span>
-      </a>
-    </div>
-  </section>
-
 
   <!-- =====================================================
        FOOTER

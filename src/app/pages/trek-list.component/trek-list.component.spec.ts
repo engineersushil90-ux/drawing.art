@@ -164,25 +164,45 @@ describe('DrawingArtComponent', () => {
     expect(fixture.nativeElement.querySelector('.review-form')).not.toBeNull();
   });
 
-  it('renders all affiliate links with sponsored-link protections and a disclosure', () => {
+  it('inserts sponsored affiliate cards between artwork cards across gallery pages', () => {
+    drawingsResponse = Array.from({ length: 30 }, (_, index) => ({
+      title: `Drawing ${index + 1}`,
+      category: 'Pencil Sketches',
+      year: '2026',
+      image: `/drawings/PencilSketches/drawing-${index + 1}.jpg`,
+      alt: `Drawing ${index + 1}`
+    }));
+    component.loadDrawings();
     fixture.detectChanges();
 
-    const affiliateLinks = Array.from(
-      fixture.nativeElement.querySelectorAll('.affiliate-bottom-link')
+    const firstPageAds = Array.from(
+      fixture.nativeElement.querySelectorAll('.affiliate-ad-card')
     ) as HTMLAnchorElement[];
 
-    expect(affiliateLinks).toHaveLength(4);
-    expect(affiliateLinks.map(link => link.href)).toEqual([
+    expect(firstPageAds).toHaveLength(2);
+    expect(firstPageAds.map(link => link.href)).toEqual([
       'https://link.amazon/B0fJLrWQn',
       'https://link.amazon/B0aiAVdOC',
+    ]);
+    expect(firstPageAds[0].target).toBe('_blank');
+    expect(firstPageAds[0].rel).toContain('sponsored');
+    expect(firstPageAds[0].textContent).toContain('Sponsored');
+    expect(firstPageAds[0].previousElementSibling?.classList.contains('art-card')).toBe(true);
+    expect(firstPageAds[0].nextElementSibling?.classList.contains('art-card')).toBe(true);
+
+    const nextPageButton = fixture.nativeElement.querySelector(
+      '.pagination-arrow:not(:disabled)'
+    ) as HTMLButtonElement;
+    nextPageButton.click();
+    fixture.detectChanges();
+    const secondPageAds = Array.from(
+      fixture.nativeElement.querySelectorAll('.affiliate-ad-card')
+    ) as HTMLAnchorElement[];
+    expect(secondPageAds).toHaveLength(2);
+    expect(secondPageAds.map(link => link.href)).toEqual([
       'https://link.amazon/B00KuDa73',
       'https://link.amazon/B06OCJu6p'
     ]);
-    expect(affiliateLinks[0].target).toBe('_blank');
-    expect(affiliateLinks[0].rel).toContain('sponsored');
-    expect(fixture.nativeElement.textContent).toContain(
-      'I may earn a commission from qualifying purchases, at no extra cost to you.'
-    );
   });
 
   it('immediately filters drawings by today likes and reviews when their checkboxes are selected', () => {

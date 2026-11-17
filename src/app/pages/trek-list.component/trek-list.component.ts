@@ -33,7 +33,7 @@ export class DrawingArtComponent implements OnInit {
 
   readonly currentYear = new Date().getFullYear();
 
-  readonly affiliateLinks = [
+  readonly affiliateLinks: Array<{ label: string; url: string }> = [
     { label: 'Amazon pick 1', url: 'https://link.amazon/B0fJLrWQn' },
     { label: 'Amazon pick 2', url: 'https://link.amazon/B0aiAVdOC' },
     { label: 'Amazon pick 3', url: 'https://link.amazon/B00KuDa73' },
@@ -547,6 +547,16 @@ loadDrawings(imageAccessToken = ''): void {
 
   getArtworkReviewCount(artwork: Artwork): number {
     return this.artworkReviewCounts[normalizeImagePath(artwork.image, artwork.category)] || 0;
+  }
+
+  getAffiliateLinkAfterArtwork(index: number): { label: string; url: string } | null {
+    if (index !== 5 && index !== 11) return null;
+
+    const artworkNumber = (this.currentPage - 1) * this.pageSize + index + 1;
+    if (artworkNumber >= this.filteredArtworks.length) return null;
+
+    const linkIndex = (this.currentPage - 1) * 2 + (index === 5 ? 0 : 1);
+    return this.affiliateLinks[linkIndex] ?? null;
   }
 
   onActivityFilterChange(): void {
