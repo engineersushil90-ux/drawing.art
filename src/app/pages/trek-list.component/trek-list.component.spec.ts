@@ -164,7 +164,7 @@ describe('DrawingArtComponent', () => {
     expect(fixture.nativeElement.querySelector('.review-form')).not.toBeNull();
   });
 
-  it('inserts sponsored affiliate cards between artwork cards across gallery pages', () => {
+  it('does not render Amazon affiliate cards in the gallery', () => {
     drawingsResponse = Array.from({ length: 30 }, (_, index) => ({
       title: `Drawing ${index + 1}`,
       category: 'Pencil Sketches',
@@ -175,40 +175,7 @@ describe('DrawingArtComponent', () => {
     component.loadDrawings();
     fixture.detectChanges();
 
-    const firstPageAds = Array.from(
-      fixture.nativeElement.querySelectorAll('.affiliate-ad-card')
-    ) as HTMLAnchorElement[];
-
-    expect(firstPageAds).toHaveLength(2);
-    expect(firstPageAds.map(link => link.href)).toEqual([
-      'https://www.amazon.in/DJI-Standard-Tracking-Touchscreen-Stabilized/dp/B0FKTBGNR8?linkCode=sl2&tag=sksushilkumar-21&linkId=be2a043faa386257bacfb8ecb1033245',
-      'https://link.amazon/B0aiAVdOC',
-    ]);
-    expect(firstPageAds[0].querySelector('.affiliate-ad-name')?.textContent).toBe(
-      'DJI Osmo Pocket 4 Standard Combo'
-    );
-    expect(firstPageAds[0].querySelector('.affiliate-ad-description')?.textContent).toContain(
-      '4K/240fps'
-    );
-    expect(firstPageAds[0].target).toBe('_blank');
-    expect(firstPageAds[0].rel).toContain('sponsored');
-    expect(firstPageAds[0].textContent).toContain('Sponsored');
-    expect(firstPageAds[0].previousElementSibling?.classList.contains('art-card')).toBe(true);
-    expect(firstPageAds[0].nextElementSibling?.classList.contains('art-card')).toBe(true);
-
-    const nextPageButton = fixture.nativeElement.querySelector(
-      '.pagination-arrow:not(:disabled)'
-    ) as HTMLButtonElement;
-    nextPageButton.click();
-    fixture.detectChanges();
-    const secondPageAds = Array.from(
-      fixture.nativeElement.querySelectorAll('.affiliate-ad-card')
-    ) as HTMLAnchorElement[];
-    expect(secondPageAds).toHaveLength(2);
-    expect(secondPageAds.map(link => link.href)).toEqual([
-      'https://link.amazon/B00KuDa73',
-      'https://link.amazon/B06OCJu6p'
-    ]);
+    expect(fixture.nativeElement.querySelector('.affiliate-ad-card')).toBeNull();
   });
 
   it('immediately filters drawings by today likes and reviews when their checkboxes are selected', () => {

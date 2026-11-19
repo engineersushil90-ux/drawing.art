@@ -33,17 +33,6 @@ export class DrawingArtComponent implements OnInit {
 
   readonly currentYear = new Date().getFullYear();
 
-  readonly affiliateLinks: Array<{ label: string; url: string; detail?: string }> = [
-    {
-      label: 'DJI Osmo Pocket 4 Standard Combo',
-      detail: 'Pocket vlog camera · 1″ CMOS · 4K/240fps',
-      url: 'https://www.amazon.in/DJI-Standard-Tracking-Touchscreen-Stabilized/dp/B0FKTBGNR8?linkCode=sl2&tag=sksushilkumar-21&linkId=be2a043faa386257bacfb8ecb1033245'
-    },
-    { label: 'Amazon pick 2', url: 'https://link.amazon/B0aiAVdOC' },
-    { label: 'Amazon pick 3', url: 'https://link.amazon/B00KuDa73' },
-    { label: 'Amazon pick 4', url: 'https://link.amazon/B06OCJu6p' }
-  ];
-
   readonly categories = [
     'All Drawings',
     'Pencil Sketches',
@@ -551,16 +540,6 @@ loadDrawings(imageAccessToken = ''): void {
 
   getArtworkReviewCount(artwork: Artwork): number {
     return this.artworkReviewCounts[normalizeImagePath(artwork.image, artwork.category)] || 0;
-  }
-
-  getAffiliateLinkAfterArtwork(index: number): { label: string; url: string; detail?: string } | null {
-    if (index !== 5 && index !== 11) return null;
-
-    const artworkNumber = (this.currentPage - 1) * this.pageSize + index + 1;
-    if (artworkNumber >= this.filteredArtworks.length) return null;
-
-    const linkIndex = (this.currentPage - 1) * 2 + (index === 5 ? 0 : 1);
-    return this.affiliateLinks[linkIndex] ?? null;
   }
 
   onActivityFilterChange(): void {

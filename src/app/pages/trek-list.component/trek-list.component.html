@@ -163,20 +163,6 @@
     id="work"
   >
 
-    <!-- TOP AD UNIT (temporarily disabled)
-    <div class="ad-container" style="text-align: center; margin-bottom: 30px;">
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-client="ca-pub-5452732942778566"
-           data-ad-slot="AUTO_AD_SLOT_HERE"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>
-           (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
-    </div>
-    -->
-
     <div class="section-heading">
 
       <div>
@@ -420,20 +406,6 @@
 
         </article>
 
-        <a
-          *ngIf="getAffiliateLinkAfterArtwork(index) as affiliateLink"
-          class="affiliate-ad-card"
-          [href]="affiliateLink.url"
-          target="_blank"
-          rel="sponsored nofollow noopener noreferrer"
-          [attr.aria-label]="'Sponsored affiliate link: ' + affiliateLink.label"
-        >
-          <span class="affiliate-ad-label">Sponsored</span>
-          <span class="affiliate-ad-art" aria-hidden="true">↗</span>
-          <span class="affiliate-ad-name">{{ affiliateLink.label }}</span>
-          <span class="affiliate-ad-description">{{ affiliateLink.detail || 'Explore on Amazon.' }}</span>
-          <span class="affiliate-ad-cta">View product <span aria-hidden="true">↗</span></span>
-        </a>
       </ng-container>
 
     </div>
