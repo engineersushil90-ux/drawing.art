@@ -398,7 +398,9 @@ loadDrawings(imageAccessToken = ''): void {
 
         // Force UI refresh
         this.cdr.detectChanges();
-        this.loadAdsterraBanner();
+        if (typeof window !== 'undefined') {
+          window.requestAnimationFrame(() => this.loadAdsterraBanner());
+        }
       },
 
       error: error => {
@@ -432,6 +434,10 @@ loadDrawings(imageAccessToken = ''): void {
     script.async = true;
     script.setAttribute('data-cfasync', 'false');
     script.src = 'https://pl31519231.profitableratecpmnetwork.com/d66d76d37023e9948f826d169d902c1f/invoke.js';
+    script.onerror = () => {
+      console.warn('Adsterra banner script failed to load. Check browser ad blocking or network access.');
+      this.adsterraBannerScript = null;
+    };
     document.body.appendChild(script);
     this.adsterraBannerScript = script;
   }
