@@ -2,6 +2,7 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  AfterViewChecked,
   inject,
   afterNextRender,
   ChangeDetectorRef
@@ -26,7 +27,7 @@ import { getFirstNewComicTarget, hasNewComicContent } from '../hindi-comics/hind
   templateUrl: './trek-list.component.html',
   styleUrl: './trek-list.component.scss'
 })
-export class DrawingArtComponent implements OnInit, OnDestroy {
+export class DrawingArtComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   // --------------------------------------------------
   // BASIC PAGE DATA
@@ -69,6 +70,7 @@ export class DrawingArtComponent implements OnInit, OnDestroy {
 
   isLoading = true;
   private adsterraBannerScript: HTMLScriptElement | null = null;
+  private adsterraContainer: HTMLElement | null = null;
 
   adultAccessOpen = false;
   adultAccessBusy = false;
@@ -377,6 +379,7 @@ private readonly cdr =
 loadDrawings(imageAccessToken = ''): void {
   this.adsterraBannerScript?.remove();
   this.adsterraBannerScript = null;
+  this.adsterraContainer = null;
   this.isLoading = true;
   this.loadArtworkReviewCounts(imageAccessToken);
 
@@ -398,9 +401,6 @@ loadDrawings(imageAccessToken = ''): void {
 
         // Force UI refresh
         this.cdr.detectChanges();
-        if (typeof window !== 'undefined') {
-          window.requestAnimationFrame(() => this.loadAdsterraBanner());
-        }
       },
 
       error: error => {
@@ -420,6 +420,24 @@ loadDrawings(imageAccessToken = ''): void {
 
   ngOnDestroy(): void {
     this.adsterraBannerScript?.remove();
+    this.adsterraContainer = null;
+  }
+
+  ngAfterViewChecked(): void {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    if (!['smarttraffic.in', 'www.smarttraffic.in'].includes(window.location.hostname)) return;
+
+    const container = document.getElementById('container-d66d76d37023e9948f826d169d902c1f');
+    if (!container) {
+      this.adsterraContainer = null;
+      return;
+    }
+    if (container === this.adsterraContainer) return;
+
+    this.adsterraBannerScript?.remove();
+    this.adsterraBannerScript = null;
+    this.adsterraContainer = container;
+    window.requestAnimationFrame(() => this.loadAdsterraBanner());
   }
 
   private loadAdsterraBanner(): void {
