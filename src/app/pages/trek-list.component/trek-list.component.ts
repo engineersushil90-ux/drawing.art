@@ -461,7 +461,7 @@ loadDrawings(imageAccessToken = ''): void {
       console.warn('Adsterra banner script failed to load. Check browser ad blocking or network access.');
       this.adsterraBannerScript = null;
     };
-    document.body.appendChild(script);
+    container.parentNode?.insertBefore(script, container);
     this.adsterraBannerScript = script;
   }
 
