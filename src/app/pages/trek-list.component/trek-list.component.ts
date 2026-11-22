@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  OnDestroy,
   inject,
   afterNextRender,
   ChangeDetectorRef
@@ -25,7 +26,7 @@ import { getFirstNewComicTarget, hasNewComicContent } from '../hindi-comics/hind
   templateUrl: './trek-list.component.html',
   styleUrl: './trek-list.component.scss'
 })
-export class DrawingArtComponent implements OnInit {
+export class DrawingArtComponent implements OnInit, OnDestroy {
 
   // --------------------------------------------------
   // BASIC PAGE DATA
@@ -67,6 +68,7 @@ export class DrawingArtComponent implements OnInit {
   readonly hasNewHindiComics = hasNewComicContent();
 
   isLoading = true;
+  private adsterraBannerScript: HTMLScriptElement | null = null;
 
   adultAccessOpen = false;
   adultAccessBusy = false;
@@ -373,6 +375,8 @@ private readonly cdr =
   // LOAD DRAWINGS
   // --------------------------------------------------
 loadDrawings(imageAccessToken = ''): void {
+  this.adsterraBannerScript?.remove();
+  this.adsterraBannerScript = null;
   this.isLoading = true;
   this.loadArtworkReviewCounts(imageAccessToken);
 
@@ -394,6 +398,7 @@ loadDrawings(imageAccessToken = ''): void {
 
         // Force UI refresh
         this.cdr.detectChanges();
+        this.loadAdsterraBanner();
       },
 
       error: error => {
@@ -410,6 +415,26 @@ loadDrawings(imageAccessToken = ''): void {
       }
     });
 }
+
+  ngOnDestroy(): void {
+    this.adsterraBannerScript?.remove();
+  }
+
+  private loadAdsterraBanner(): void {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    if (!['smarttraffic.in', 'www.smarttraffic.in'].includes(window.location.hostname)) return;
+    if (this.adsterraBannerScript) return;
+
+    const container = document.getElementById('container-d66d76d37023e9948f826d169d902c1f');
+    if (!container) return;
+
+    const script = document.createElement('script');
+    script.async = true;
+    script.setAttribute('data-cfasync', 'false');
+    script.src = 'https://pl31519231.profitableratecpmnetwork.com/d66d76d37023e9948f826d169d902c1f/invoke.js';
+    document.body.appendChild(script);
+    this.adsterraBannerScript = script;
+  }
 
   loadArtworkReviewCounts(adultAccessToken = ''): void {
     this.reviewCountsLoaded = false;
