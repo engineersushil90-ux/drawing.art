@@ -142,10 +142,10 @@ import { HINDI_COMICS } from '../hindi-comics/hindi-comics.data';
 
           <article class="drawing-request" *ngFor="let request of drawingRequestsOnPage">
             <div class="moderation-review-heading">
-              <strong>{{ request.name }}</strong>
+              <strong>{{ request.name }} <span class="request-type">{{ request.requestType === 'comic' ? 'Hindi comic idea' : request.requestType === 'sketch' ? 'Sketch idea' : 'Commission' }}</span></strong>
               <time [attr.datetime]="request.createdAt">{{ request.createdAt | date:'medium' }}</time>
             </div>
-            <a [href]="'mailto:' + request.email">{{ request.email }}</a>
+            <a *ngIf="request.email" [href]="'mailto:' + request.email">{{ request.email }}</a>
             <p class="moderation-comment">{{ request.description }}</p>
             <img
               *ngIf="request.hasReferenceImage && !customRequestImageErrors[request.id]"
@@ -179,6 +179,10 @@ import { HINDI_COMICS } from '../hindi-comics/hindi-comics.data';
                 <option value="Color Art">Color Art</option>
                 <option value="18+ Sketches">18+ Sketches</option>
               </select>
+            </label>
+            <label>
+              Suggested by (optional)
+              <input name="suggestedBy" type="text" [(ngModel)]="sketchSuggestedBy" maxlength="80" autocomplete="off">
             </label>
             <label>
               Sketch image
@@ -309,6 +313,7 @@ import { HINDI_COMICS } from '../hindi-comics/hindi-comics.data';
     .drawing-request-list{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
     .drawing-request-list h2{margin:0 0 8px;font:26px Georgia,serif}
     .drawing-request{padding:18px 0;border-bottom:1px solid #e8e2d9}
+    .request-type{display:inline-block;margin-left:8px;padding:3px 8px;border-radius:999px;background:#f0ebe3;color:#735b4d;font-size:12px;font-weight:500}
     .drawing-request>a{color:#8c5c4d;overflow-wrap:anywhere}
     .request-reference-preview{display:block;max-width:min(100%,520px);max-height:520px;margin-top:14px;border-radius:10px;object-fit:contain;background:#f7f1e8}
     .sketch-upload{margin-top:42px;padding-top:30px;border-top:1px solid #e8e2d9}
@@ -364,6 +369,7 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
   drawingRequestsMessage = '';
   customRequestImageErrors: Record<string, boolean> = {};
   sketchCategory: 'Pencil Sketches' | 'Color Art' | '18+ Sketches' = 'Pencil Sketches';
+  sketchSuggestedBy = '';
   selectedSketchFile: File | null = null;
   uploadingSketch = false;
   sketchUploadMessage = '';
@@ -674,10 +680,11 @@ export class AdminViewersComponent implements OnInit, OnDestroy {
     this.uploadingSketch = true;
     this.sketchUploadMessage = '';
     this.sketchUploadSucceeded = false;
-    this.drawingsService.uploadSketch(this.selectedSketchFile, this.sketchCategory).pipe(timeout(60_000)).subscribe({
+    this.drawingsService.uploadSketch(this.selectedSketchFile, this.sketchCategory, this.sketchSuggestedBy.trim()).pipe(timeout(60_000)).subscribe({
       next: response => {
         this.uploadingSketch = false;
         this.selectedSketchFile = null;
+        this.sketchSuggestedBy = '';
         if (this.sketchUploadInput) this.sketchUploadInput.nativeElement.value = '';
         this.sketchUploadSucceeded = true;
         this.sketchUploadMessage = `Sketch uploaded to ${response.category}.`;

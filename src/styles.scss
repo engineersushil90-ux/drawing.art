@@ -9,6 +9,22 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9
 .adsterra-gallery-label { color: #777; font-size: 10px; line-height: 1; }
 .adsterra-gallery-slot > div { display: flex; width: min(100%, 728px); min-height: 50px; justify-content: center; }
 
+.suggestion-box { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); gap: 24px; margin: 0 0 34px; padding: 24px; border: 1px solid #e3dfd7; border-radius: 16px; background: #fbf7f0; }
+.suggestion-copy h3 { margin: 0 0 8px; font: 24px Georgia, serif; }
+.suggestion-copy p:last-child { margin: 0; color: #647069; font-size: 13px; line-height: 1.6; }
+.suggestion-box .eyebrow { margin: 0 0 7px; color: #9c6355; font-size: 10px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; }
+.suggestion-box form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+.suggestion-box label { display: grid; gap: 6px; color: var(--ink); font-size: 12px; font-weight: 600; }
+.suggestion-box input, .suggestion-box select, .suggestion-box textarea { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #d5d2ca; border-radius: 8px; background: #fffdf9; color: var(--ink); font: inherit; }
+.suggestion-box textarea { resize: vertical; }
+.suggestion-topic { grid-column: 1 / -1; }
+.suggestion-box form > button { justify-self: start; padding: 10px 16px; border: 0; border-radius: 8px; background: var(--ink); color: #fff; font: inherit; cursor: pointer; }
+.suggestion-box form > button:disabled { cursor: not-allowed; opacity: .55; }
+.suggestion-message { align-self: center; margin: 0; color: #286343; font-size: 12px; }
+.suggestion-message.error { color: #9a3428; }
+.suggested-credit { color: #8c5c4d; font-style: italic; }
+@media (max-width: 700px) { .suggestion-box { grid-template-columns: 1fr; gap: 16px; padding: 18px; } .suggestion-box form { grid-template-columns: 1fr; } .suggestion-topic { grid-column: auto; } }
+
 .hero { position: relative; }
 .comics-new-link { position: absolute; left: 47.5%; bottom: 28%; display: inline-flex; align-items: center; gap: 12px; color: #26342d; font-size: 20px; font-weight: 700; text-decoration: none; animation: comics-new-blink 1s steps(2, start) infinite; }
 .comics-new-link > span:first-child { padding: 8px 12px; border: 2px solid #f21e2b; border-radius: 999px; background: #fffdf9; box-shadow: 0 3px 12px rgba(0, 0, 0, .15); }

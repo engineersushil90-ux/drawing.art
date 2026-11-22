@@ -1212,7 +1212,7 @@ const artworkUploadCategories = new Map([
 
 const artworkUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024, files: 1, fields: 1, fieldSize: 100 },
+  limits: { fileSize: 15 * 1024 * 1024, files: 1, fields: 2, fieldSize: 100, parts: 3 },
   fileFilter: (_req, file, callback) => {
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
       callback(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
@@ -1391,6 +1391,8 @@ interface Artwork {
 
   alt: string;
 
+  suggestedBy?: string;
+
   isFreePreview?: boolean;
 
   isPayment?: boolean;
@@ -1426,10 +1428,12 @@ function readDrawingImageVariants(): Promise<Record<string, ResponsiveImageVaria
  * gallery and runtime uploads. The public collection is never scanned here.
  */
 async function scanDrawings(): Promise<Artwork[]> {
-  const [indexContent, imageVariants] = await Promise.all([
+  const [indexContent, imageVariants, attributionContent] = await Promise.all([
     readFile(join(process.cwd(), 'public', 'drawings.json'), 'utf8'),
-    readDrawingImageVariants()
+    readDrawingImageVariants(),
+    readDataFile('drawing-attributions.json')
   ]);
+  const drawingAttributions = JSON.parse(attributionContent) as Record<string, string>;
   const publicIndex = JSON.parse(indexContent) as Array<{
     title: string;
     category: string;
@@ -1454,7 +1458,10 @@ async function scanDrawings(): Promise<Artwork[]> {
       imageLarge: variants?.large ?? getArtworkPreviewUrl(`drawings/${relativePath}`, 960),
       imageSmallWidth: variants?.smallWidth ?? 480,
       imageLargeWidth: variants?.largeWidth ?? 960,
-      alt: entry.alt
+      alt: entry.alt,
+      ...(drawingAttributions[`drawings/${relativePath}`]
+        ? { suggestedBy: drawingAttributions[`drawings/${relativePath}`] }
+        : {})
     };
   });
 
@@ -1629,6 +1636,10 @@ async function scanDrawings(): Promise<Artwork[]> {
 
         alt: title,
 
+        ...(drawingAttributions[`drawings/${pathParts.join('/')}`]
+          ? { suggestedBy: drawingAttributions[`drawings/${pathParts.join('/')}`] }
+          : {}),
+
         ...(category === '18+ Sketches'
           ? { isFreePreview: pathParts.includes('TopFive') }
           : {}),
@@ -1684,6 +1695,28 @@ function getArtworkPreviewUrl(imagePath: string, width: number): string {
 }
 
 let drawingUploadQueue = Promise.resolve();
+let drawingAttributionWriteQueue: Promise<void> = Promise.resolve();
+
+async function saveDrawingAttribution(imagePath: string, suggestedBy: string): Promise<void> {
+  const update = drawingAttributionWriteQueue.then(async () => {
+    const attributions = JSON.parse(await readDataFile('drawing-attributions.json')) as Record<string, string>;
+    attributions[imagePath] = suggestedBy;
+    await saveDataFile('drawing-attributions.json', JSON.stringify(attributions, null, 2));
+  });
+  drawingAttributionWriteQueue = update.then(() => undefined, () => undefined);
+  await update;
+}
+
+async function removeDrawingAttribution(imagePath: string): Promise<void> {
+  const update = drawingAttributionWriteQueue.then(async () => {
+    const attributions = JSON.parse(await readDataFile('drawing-attributions.json')) as Record<string, string>;
+    if (!Object.hasOwn(attributions, imagePath)) return;
+    delete attributions[imagePath];
+    await saveDataFile('drawing-attributions.json', JSON.stringify(attributions, null, 2));
+  });
+  drawingAttributionWriteQueue = update.then(() => undefined, () => undefined);
+  await update;
+}
 
 app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
   const origin = req.headers.origin;
@@ -1697,8 +1730,13 @@ app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
   const categoryFolder = typeof req.body?.category === 'string'
     ? artworkUploadCategories.get(req.body.category)
     : undefined;
+  const suggestedBy = typeof req.body?.suggestedBy === 'string' ? req.body.suggestedBy.trim() : '';
   if (!categoryFolder) {
     res.status(400).json({ error: 'Choose Pencil Sketches, Color Art, or 18+ Sketches.' });
+    return;
+  }
+  if (suggestedBy.length > 80) {
+    res.status(400).json({ error: 'The suggestion name must be 80 characters or fewer.' });
     return;
   }
   if (!req.file) {
@@ -1767,6 +1805,14 @@ app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
       res.status(409).json({ error: `A drawing named "${fileStem}" already exists. Rename the file or delete the existing drawing first.` });
       return;
     }
+    if (suggestedBy) {
+      try {
+        await saveDrawingAttribution(`drawings/${relativePath.replaceAll('\\', '/')}`, suggestedBy);
+      } catch (error) {
+        await unlink(destinationPath).catch(() => undefined);
+        throw error;
+      }
+    }
     invalidateDrawingsCache();
     res.status(201).json({
       ok: true,
@@ -1819,6 +1865,7 @@ app.delete('/api/admin/drawings', requireOwner, async (req, res, next) => {
       return;
     }
     await unlink(filePath);
+    await removeDrawingAttribution(image);
     invalidateDrawingsCache();
     res.json({ ok: true });
   } catch (error) {
@@ -2047,6 +2094,7 @@ interface StoredCustomDrawingRequest {
   name: string;
   email: string;
   description: string;
+  requestType: 'commission' | 'sketch' | 'comic';
   createdAt: string;
   referenceFile: string | null;
 }
@@ -2059,7 +2107,7 @@ let customDrawingRequestWriteQueue: Promise<void> = Promise.resolve();
 
 const customDrawingRequestUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 4, fieldSize: 8 * 1024, parts: 5 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5, fieldSize: 8 * 1024, parts: 6 },
   fileFilter: (_req, file, callback) => {
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
       callback(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
@@ -2130,14 +2178,22 @@ app.post('/api/custom-drawing-requests', (req, res, next) => {
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const description = typeof req.body?.description === 'string' ? req.body.description.trim() : '';
   const website = typeof req.body?.website === 'string' ? req.body.website.trim() : '';
+  const requestType = req.body?.requestType === 'sketch' || req.body?.requestType === 'comic'
+    ? req.body.requestType
+    : 'commission';
   const minimumDescriptionLength = req.file ? 4 : 15;
   if (
     !name || name.length > 80
-    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254
+    || (requestType === 'commission' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    || (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254))
     || description.length < minimumDescriptionLength || description.length > 2000
     || website
   ) {
-    res.status(400).json({ error: `Provide your name, a valid email address, and a ${minimumDescriptionLength} to 2000 character drawing description.` });
+    res.status(400).json({
+      error: requestType === 'commission'
+        ? `Provide your name, a valid email address, and a ${minimumDescriptionLength} to 2000 character drawing description.`
+        : `Provide your name and a ${minimumDescriptionLength} to 2000 character suggestion.`
+    });
     return;
   }
 
@@ -2173,6 +2229,7 @@ app.post('/api/custom-drawing-requests', (req, res, next) => {
     name,
     email,
     description,
+    requestType,
     createdAt: new Date().toISOString(),
     referenceFile: optimizedReference ? `${id}.webp` : null
   };

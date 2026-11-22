@@ -17,6 +17,7 @@ export interface Artwork {
   imageSmallWidth?: number;
   imageLargeWidth?: number;
   alt: string;
+  suggestedBy?: string;
   isFreePreview?: boolean;
   isPayment?: boolean;
 }
@@ -67,6 +68,7 @@ export interface CustomDrawingRequest {
   name: string;
   email: string;
   description: string;
+  requestType?: 'commission' | 'sketch' | 'comic';
   createdAt: string;
   hasReferenceImage: boolean;
 }
@@ -163,10 +165,12 @@ export class DrawingsService {
 
   uploadSketch(
     file: File,
-    category: 'Pencil Sketches' | 'Color Art' | '18+ Sketches'
+    category: 'Pencil Sketches' | 'Color Art' | '18+ Sketches',
+    suggestedBy = ''
   ): Observable<{ ok: boolean; image: string; category: string }> {
     const formData = new FormData();
     formData.append('category', category);
+    formData.append('suggestedBy', suggestedBy);
     formData.append('image', file, file.name);
     return this.http.post<{ ok: boolean; image: string; category: string }>(
       `${this.apiBaseUrl}/api/admin/drawings`,
@@ -312,7 +316,7 @@ export class DrawingsService {
   }
 
   submitCustomDrawingRequest(
-    request: { name: string; email: string; description: string; website: string },
+    request: { name: string; email: string; description: string; website: string; requestType?: 'commission' | 'sketch' | 'comic' },
     referenceImage?: File
   ): Observable<{ ok: boolean }> {
     const formData = new FormData();
@@ -320,6 +324,7 @@ export class DrawingsService {
     formData.append('email', request.email);
     formData.append('description', request.description);
     formData.append('website', request.website);
+    if (request.requestType) formData.append('requestType', request.requestType);
     if (referenceImage) formData.append('referenceImage', referenceImage);
     return this.http.post<{ ok: boolean }>(`${this.apiBaseUrl}/api/custom-drawing-requests`, formData);
   }

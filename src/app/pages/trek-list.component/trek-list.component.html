@@ -267,6 +267,35 @@
 
     </div>
 
+    <section class="suggestion-box" aria-labelledby="suggestion-title">
+      <div class="suggestion-copy">
+        <p class="eyebrow">Your idea could be next</p>
+        <h3 id="suggestion-title">Draw This / Request a Sketch</h3>
+        <p>Agla sketch ya Hindi comic kis topic par banau? Apna idea bhejein—email zaroori nahi. Agar idea use hua, aapka naam sketch ke saath credit mein dikhaya ja sakta hai.</p>
+      </div>
+      <form (ngSubmit)="submitSuggestion()" #suggestionForm="ngForm">
+        <label>
+          <span>Your name</span>
+          <input name="suggestionName" type="text" [(ngModel)]="suggestion.name" maxlength="80" autocomplete="name" required>
+        </label>
+        <label>
+          <span>Idea for</span>
+          <select name="suggestionType" [(ngModel)]="suggestion.type">
+            <option value="sketch">A sketch</option>
+            <option value="comic">A Hindi comic</option>
+          </select>
+        </label>
+        <label class="suggestion-topic">
+          <span>What should I draw or write?</span>
+          <textarea name="suggestionTopic" [(ngModel)]="suggestion.topic" minlength="15" maxlength="2000" rows="3" required></textarea>
+        </label>
+        <button type="submit" [disabled]="suggestionForm.invalid || suggestionSubmitting">
+          {{ suggestionSubmitting ? 'Sending…' : 'Send idea' }}
+        </button>
+        <p class="suggestion-message" [class.error]="suggestionError" *ngIf="suggestionMessage" role="status">{{ suggestionMessage }}</p>
+      </form>
+    </section>
+
     <p
       *ngIf="reviewCountsMessage"
       role="status"
@@ -393,6 +422,8 @@
             /
             {{ artwork.year }}
           </small>
+
+          <small *ngIf="artwork.suggestedBy" class="suggested-credit">Suggested by {{ artwork.suggestedBy }}</small>
 
           <button
             type="button"
@@ -811,6 +842,8 @@
           /
           {{ selectedArtwork.year }}
         </span>
+
+        <span *ngIf="selectedArtwork.suggestedBy">Suggested by {{ selectedArtwork.suggestedBy }}</span>
 
       </figcaption>
 

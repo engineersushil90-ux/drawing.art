@@ -11,6 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { timeout } from 'rxjs';
 
 import {
   DrawingsService,
@@ -36,6 +37,7 @@ export class DrawingArtComponent implements OnInit, OnDestroy, AfterViewChecked 
   readonly currentYear = new Date().getFullYear();
 
   readonly categories = [
+    'Top Liked / All-Time Best',
     'All Drawings',
     'Pencil Sketches',
     '18+ Sketches',
@@ -43,7 +45,7 @@ export class DrawingArtComponent implements OnInit, OnDestroy, AfterViewChecked 
   ];
 
 
-  activeCategory = 'All Drawings';
+  activeCategory = 'Top Liked / All-Time Best';
 
 
   // --------------------------------------------------
@@ -63,6 +65,10 @@ export class DrawingArtComponent implements OnInit, OnDestroy, AfterViewChecked 
   reviewComment = '';
   reviewWebsite = '';
   reviewMessage = '';
+  suggestion = { name: '', topic: '', type: 'sketch' as 'sketch' | 'comic' };
+  suggestionSubmitting = false;
+  suggestionMessage = '';
+  suggestionError = false;
 
   isMenuOpen = false;
   readonly newHindiComicTarget = getFirstNewComicTarget();
@@ -246,14 +252,15 @@ private readonly cdr =
   //   - 18+ Sketches
   //   - Feature Drawing
   //
-  // Other tabs show only their own category.
+  // Top Liked shows public artworks ranked by lifetime likes.
+  // Other category tabs show only their own category.
   //
 
   get filteredArtworks(): Artwork[] {
 
     let filtered: Artwork[];
 
-    if (this.activeCategory === 'All Drawings') {
+    if (this.activeCategory === 'Top Liked / All-Time Best' || this.activeCategory === 'All Drawings') {
 
       filtered = this.artworks.filter(
         artwork =>
@@ -276,6 +283,11 @@ private readonly cdr =
     }
 
     return filtered.sort((a, b) => {
+      if (this.activeCategory === 'Top Liked / All-Time Best') {
+        const likesOrder = this.getLikeCount(b) - this.getLikeCount(a);
+        if (likesOrder !== 0) return likesOrder;
+      }
+
       const numericId = (artwork: Artwork): string | undefined =>
         artwork.title.match(/\d+/)?.[0]
         ?? artwork.image.split(/[\\/]/).pop()?.match(/\d+/)?.[0];
@@ -554,6 +566,35 @@ loadDrawings(imageAccessToken = ''): void {
           console.error('Failed to load today activity:', error);
         }
       });
+  }
+
+  submitSuggestion(): void {
+    if (this.suggestionSubmitting) return;
+    const name = this.suggestion.name.trim();
+    const topic = this.suggestion.topic.trim();
+    if (!name || topic.length < 15) return;
+
+    this.suggestionSubmitting = true;
+    this.suggestionMessage = '';
+    this.suggestionError = false;
+    this.drawingsService.submitCustomDrawingRequest({
+      name,
+      email: '',
+      description: topic,
+      website: '',
+      requestType: this.suggestion.type
+    }).pipe(timeout(30_000)).subscribe({
+      next: () => {
+        this.suggestion = { name: '', topic: '', type: 'sketch' };
+        this.suggestionMessage = 'Thanks! Your idea has been sent.';
+        this.suggestionSubmitting = false;
+      },
+      error: error => {
+        this.suggestionError = true;
+        this.suggestionMessage = error?.error?.error || 'Could not send your idea. Please try again.';
+        this.suggestionSubmitting = false;
+      }
+    });
   }
 
   // --------------------------------------------------
