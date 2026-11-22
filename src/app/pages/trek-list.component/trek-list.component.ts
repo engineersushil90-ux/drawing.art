@@ -70,6 +70,7 @@ export class DrawingArtComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   isLoading = true;
   private adsterraBannerScript: HTMLScriptElement | null = null;
+  private adsterraSocialBarScript: HTMLScriptElement | null = null;
   private adsterraContainer: HTMLElement | null = null;
 
   adultAccessOpen = false;
@@ -420,6 +421,7 @@ loadDrawings(imageAccessToken = ''): void {
 
   ngOnDestroy(): void {
     this.adsterraBannerScript?.remove();
+    this.adsterraSocialBarScript?.remove();
     this.adsterraContainer = null;
   }
 
@@ -437,7 +439,10 @@ loadDrawings(imageAccessToken = ''): void {
     this.adsterraBannerScript?.remove();
     this.adsterraBannerScript = null;
     this.adsterraContainer = container;
-    window.requestAnimationFrame(() => this.loadAdsterraBanner());
+    window.requestAnimationFrame(() => {
+      this.loadAdsterraBanner();
+      this.loadAdsterraSocialBar();
+    });
   }
 
   private loadAdsterraBanner(): void {
@@ -451,13 +456,29 @@ loadDrawings(imageAccessToken = ''): void {
     const script = document.createElement('script');
     script.async = true;
     script.setAttribute('data-cfasync', 'false');
-    script.src = 'https://pl31519231.profitableratecpmnetwork.com/d66d76d37023e9948f826d169d902c1f/invoke.js';
+    script.src = 'https://bicea.org/21/d66d76d37023e9948f826d169d902c1f';
     script.onerror = () => {
       console.warn('Adsterra banner script failed to load. Check browser ad blocking or network access.');
       this.adsterraBannerScript = null;
     };
     document.body.appendChild(script);
     this.adsterraBannerScript = script;
+  }
+
+  private loadAdsterraSocialBar(): void {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    if (!['smarttraffic.in', 'www.smarttraffic.in'].includes(window.location.hostname)) return;
+    if (typeof window.matchMedia !== 'function' || !window.matchMedia('(min-width: 701px)').matches || this.adsterraSocialBarScript) return;
+
+    const script = document.createElement('script');
+    script.setAttribute('data-cfasync', 'false');
+    script.src = 'https://bicea.org/14/607e1cf3c3601f9cb8f2c28cd8903893';
+    script.onerror = () => {
+      console.warn('Adsterra Social Bar script failed to load. Check browser ad blocking or network access.');
+      this.adsterraSocialBarScript = null;
+    };
+    document.body.appendChild(script);
+    this.adsterraSocialBarScript = script;
   }
 
   loadArtworkReviewCounts(adultAccessToken = ''): void {
