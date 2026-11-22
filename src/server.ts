@@ -4,6 +4,11 @@ import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from
 import sharp from 'sharp';
 import multer from 'multer';
 
+// Image previews are generated on demand. Keep libvips' worker pool and decoded
+// image cache small so a burst of visitors cannot multiply native memory use.
+sharp.concurrency(2);
+sharp.cache({ memory: 24, files: 0, items: 50 });
+
 import {
   join,
   relative,
@@ -605,7 +610,7 @@ async function getBlurredPreview(imagePath: string): Promise<Buffer> {
         .jpeg({ quality: 48 })
         .toBuffer());
     blurredPreviewCache.set(cacheKey, preview);
-    if (blurredPreviewCache.size > 100) {
+    if (blurredPreviewCache.size > 16) {
       const oldestKey = blurredPreviewCache.keys().next().value;
       if (oldestKey) blurredPreviewCache.delete(oldestKey);
     }
@@ -632,7 +637,7 @@ async function getWatermarkedImage(imagePath: string, width = 960): Promise<Buff
 
   preview = renderWatermarkedImage(imagePath, width);
   watermarkedPreviewCache.set(cacheKey, preview);
-  if (watermarkedPreviewCache.size > 100) {
+  if (watermarkedPreviewCache.size > 16) {
     const oldestKey = watermarkedPreviewCache.keys().next().value;
     if (oldestKey) watermarkedPreviewCache.delete(oldestKey);
   }
