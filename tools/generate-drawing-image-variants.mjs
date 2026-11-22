@@ -12,6 +12,7 @@ import sharp from 'sharp';
 const projectRoot = process.cwd();
 const drawingsRoot = join(projectRoot, 'public', 'drawings');
 const optimizedRoot = join(projectRoot, 'public', 'drawings-optimized');
+const privateAdultOptimizedRoot = join(projectRoot, 'private-drawings-optimized');
 const watermarkTemplatePath = join(projectRoot, 'tools', 'drawing-watermark.svg');
 const watermarkTemplate = await readFile(watermarkTemplatePath, 'utf8');
 const generatorModifiedAt = Math.max(
@@ -97,10 +98,66 @@ async function scanDirectory(directory, relativeDirectory = '') {
   }
 }
 
+async function optimizePrivateAdultImage(sourcePath, relativePath) {
+  const metadata = await sharp(sourcePath, { limitInputPixels: 40_000_000 }).metadata();
+  if (!metadata.width || !metadata.height) return;
+
+  const sourceInfo = await stat(sourcePath);
+  const extension = extname(relativePath);
+  const outputBase = basename(relativePath, extension);
+  const directoryParts = relativePath.split(/[\\/]/);
+  directoryParts.pop();
+  const outputDirectory = join(privateAdultOptimizedRoot, '18+Sketches', ...directoryParts);
+  const outputPath = join(outputDirectory, `${outputBase}-960.webp`);
+  try {
+    const outputInfo = await stat(outputPath);
+    if (outputInfo.mtimeMs >= sourceInfo.mtimeMs && outputInfo.mtimeMs >= generatorModifiedAt) return;
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+  }
+
+  await mkdir(outputDirectory, { recursive: true });
+  const resized = await sharp(sourcePath, { limitInputPixels: 40_000_000 })
+    .rotate()
+    .resize({ width: 960, withoutEnlargement: true })
+    .webp({ quality: 82, effort: 4 })
+    .toBuffer({ resolveWithObject: true });
+  const watermark = Buffer.from(watermarkTemplate
+    .replaceAll('{{WIDTH}}', String(resized.info.width))
+    .replaceAll('{{HEIGHT}}', String(resized.info.height)));
+  await sharp(resized.data)
+    .composite([{ input: watermark }])
+    .webp({ quality: 82, effort: 4 })
+    .toFile(outputPath);
+  generatedVariants++;
+}
+
+async function scanPrivateAdultDirectory(directory, relativeDirectory = '') {
+  const entries = await readdir(directory, { withFileTypes: true });
+  for (const entry of entries) {
+    const sourcePath = join(directory, entry.name);
+    const relativePath = join(relativeDirectory, entry.name);
+    if (entry.isDirectory()) {
+      await scanPrivateAdultDirectory(sourcePath, relativePath);
+      continue;
+    }
+    if (imageExtensions.has(extname(entry.name).toLowerCase())) {
+      await optimizePrivateAdultImage(sourcePath, relativePath);
+    }
+  }
+}
+
 const categoryEntries = await readdir(drawingsRoot, { withFileTypes: true });
 for (const entry of categoryEntries) {
   if (!entry.isDirectory() || !publicCategories.has(entry.name)) continue;
   await scanDirectory(join(drawingsRoot, entry.name), entry.name);
+}
+
+const adultDrawingsRoot = join(drawingsRoot, '18+Sketches');
+try {
+  await scanPrivateAdultDirectory(adultDrawingsRoot);
+} catch (error) {
+  if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
 }
 
 await writeFile(

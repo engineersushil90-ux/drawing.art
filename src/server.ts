@@ -648,6 +648,27 @@ async function getWatermarkedImage(imagePath: string, width = 960): Promise<Buff
 const watermarkedPreviewCache = new Map<string, Promise<Buffer>>();
 
 async function renderWatermarkedImage(imagePath: string, width: number): Promise<Buffer> {
+  const adultSourceRoot = join(process.cwd(), 'public', 'drawings', '18+Sketches');
+  const adultRelativePath = relative(adultSourceRoot, imagePath);
+  if (
+    width === 960
+    && adultRelativePath !== ''
+    && adultRelativePath !== '..'
+    && !adultRelativePath.startsWith(`..${sep}`)
+  ) {
+    const outputPath = join(
+      process.cwd(),
+      'private-drawings-optimized',
+      '18+Sketches',
+      adultRelativePath.slice(0, -extname(adultRelativePath).length) + '-960.webp'
+    );
+    try {
+      return await readFile(outputPath);
+    } catch (error) {
+      if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+    }
+  }
+
   const { data, info } = await sharp(imagePath)
     .rotate()
     .resize({ width, withoutEnlargement: true })

@@ -35,6 +35,7 @@ yarn-error.log
 /connect.lock
 /coverage
 /public/drawings-optimized/
+/private-drawings-optimized/
 /public/drawing-image-variants.json
 /data/adult-sketch-viewers.json
 /data/drawings/
