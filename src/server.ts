@@ -1401,14 +1401,41 @@ function readDrawingImageVariants(): Promise<Record<string, ResponsiveImageVaria
 
 
 /*
- * Scan public/drawings recursively.
+ * Read the build-generated public gallery index, then add the private adult
+ * gallery and runtime uploads. The public collection is never scanned here.
  */
-async function scanDrawings(
-  directory: string = drawingsRoot
-): Promise<Artwork[]> {
-
-  const drawings: Artwork[] = [];
-  const imageVariants = await readDrawingImageVariants();
+async function scanDrawings(): Promise<Artwork[]> {
+  const [indexContent, imageVariants] = await Promise.all([
+    readFile(join(process.cwd(), 'public', 'drawings.json'), 'utf8'),
+    readDrawingImageVariants()
+  ]);
+  const publicIndex = JSON.parse(indexContent) as Array<{
+    title: string;
+    category: string;
+    year: string;
+    date?: string;
+    addedAt?: string;
+    image: string;
+    alt: string;
+  }>;
+  const drawings: Artwork[] = publicIndex.map(entry => {
+    const relativePath = entry.image.replace(/^drawings\//, '').replaceAll('\\', '/');
+    const encodedPath = relativePath.split('/').map(encodeURIComponent).join('/');
+    const variants = imageVariants[`drawings/${relativePath}`];
+    return {
+      title: entry.title,
+      category: entry.category,
+      year: entry.year,
+      ...(entry.date ? { date: entry.date } : {}),
+      ...(entry.addedAt ? { addedAt: entry.addedAt } : {}),
+      image: `/drawings/${encodedPath}`,
+      imageSmall: variants?.small ?? getArtworkPreviewUrl(`drawings/${relativePath}`, 480),
+      imageLarge: variants?.large ?? getArtworkPreviewUrl(`drawings/${relativePath}`, 960),
+      imageSmallWidth: variants?.smallWidth ?? 480,
+      imageLargeWidth: variants?.largeWidth ?? 960,
+      alt: entry.alt
+    };
+  });
 
 
   async function scan(
@@ -1592,20 +1619,43 @@ async function scanDrawings(
   }
 
 
-  await scan(directory, directory);
-  if (directory === drawingsRoot) {
-    try {
-      if ((await statFile(uploadedDrawingsRoot)).isDirectory()) {
-        await scan(uploadedDrawingsRoot, uploadedDrawingsRoot);
-      }
-    } catch (error) {
-      if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+  const adultDrawingsRoot = join(drawingsRoot, '18+Sketches');
+  try {
+    if ((await statFile(adultDrawingsRoot)).isDirectory()) {
+      await scan(adultDrawingsRoot, drawingsRoot);
     }
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+  }
+  try {
+    if ((await statFile(uploadedDrawingsRoot)).isDirectory()) {
+      await scan(uploadedDrawingsRoot, uploadedDrawingsRoot);
+    }
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
   }
 
 
   return drawings;
 
+}
+
+// Keep the generated gallery object in memory instead of walking every image
+// directory for each visitor. Upload and delete routes invalidate this cache.
+let drawingsCachePromise: Promise<Artwork[]> | undefined;
+
+function getCachedDrawings(): Promise<Artwork[]> {
+  if (!drawingsCachePromise) {
+    drawingsCachePromise = scanDrawings().catch(error => {
+      drawingsCachePromise = undefined;
+      throw error;
+    });
+  }
+  return drawingsCachePromise;
+}
+
+function invalidateDrawingsCache(): void {
+  drawingsCachePromise = undefined;
 }
 
 function getArtworkPreviewUrl(imagePath: string, width: number): string {
@@ -1696,6 +1746,7 @@ app.post('/api/admin/drawings', requireOwner, (req, res, next) => {
       res.status(409).json({ error: `A drawing named "${fileStem}" already exists. Rename the file or delete the existing drawing first.` });
       return;
     }
+    invalidateDrawingsCache();
     res.status(201).json({
       ok: true,
       image: `drawings/${relativePath.replaceAll('\\', '/')}`,
@@ -1747,6 +1798,7 @@ app.delete('/api/admin/drawings', requireOwner, async (req, res, next) => {
       return;
     }
     await unlink(filePath);
+    invalidateDrawingsCache();
     res.json({ ok: true });
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
@@ -1906,7 +1958,7 @@ app.get(
     try {
 
       const drawings =
-        await scanDrawings();
+        await getCachedDrawings();
 
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader('Referrer-Policy', 'no-referrer');
@@ -2617,5 +2669,8 @@ const port = Number(process.env['PORT'] || 4000);
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Node Express server listening on 0.0.0.0:${port}`);
+  void getCachedDrawings()
+    .then(() => console.log('Drawing index loaded into memory.'))
+    .catch(error => console.error('Failed to preload drawing index:', error));
 });
   
