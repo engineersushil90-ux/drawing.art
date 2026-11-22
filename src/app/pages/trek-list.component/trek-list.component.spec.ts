@@ -164,7 +164,7 @@ describe('DrawingArtComponent', () => {
     expect(fixture.nativeElement.querySelector('.review-form')).not.toBeNull();
   });
 
-  it('places the responsive Adsterra banner after six gallery images', () => {
+  it('keeps the Adsterra banner mounted across gallery page changes', () => {
     drawingsResponse = Array.from({ length: 30 }, (_, index) => ({
       title: `Drawing ${index + 1}`,
       category: 'Pencil Sketches',
@@ -181,7 +181,7 @@ describe('DrawingArtComponent', () => {
 
     expect(artworks).toHaveLength(15);
     expect(banner).not.toBeNull();
-    expect(artworks[5].nextElementSibling).toBe(banner);
+    expect(banner.classList.contains('adsterra-gallery-slot')).toBe(true);
     expect(banner.querySelector('#container-d66d76d37023e9948f826d169d902c1f')).not.toBeNull();
 
     const secondPageButton = fixture.nativeElement.querySelectorAll('.page-numbers button')[1] as HTMLButtonElement;
@@ -190,8 +190,8 @@ describe('DrawingArtComponent', () => {
     const nextPageBanner = fixture.nativeElement.querySelector('.adsterra-gallery-slot') as HTMLElement;
     const nextPageArtworks = fixture.nativeElement.querySelectorAll('.art-card');
 
-    expect(nextPageBanner).not.toBe(banner);
-    expect(nextPageArtworks[5].nextElementSibling).toBe(nextPageBanner);
+    expect(nextPageArtworks).toHaveLength(15);
+    expect(nextPageBanner).toBe(banner);
   });
 
   it('immediately filters drawings by today likes and reviews when their checkboxes are selected', () => {

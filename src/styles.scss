@@ -5,9 +5,10 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9
 @keyframes new-badge-blink { to { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .new-badge { animation: none; } }
 
-.adsterra-gallery-slot { grid-column: 1 / -1; display: flex; width: 100%; min-width: 0; min-height: 90px; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 8px 0; }
+.adsterra-gallery-slot { grid-column: 1 / -1; grid-row: 3; display: flex; width: 100%; min-width: 0; min-height: 90px; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 8px 0; }
 .adsterra-gallery-label { color: #777; font-size: 10px; line-height: 1; }
 .adsterra-gallery-slot > div { display: flex; width: min(100%, 728px); min-height: 50px; justify-content: center; }
+@media (max-width: 700px) { .adsterra-gallery-slot { grid-row: 4; } }
 
 .hero { position: relative; }
 .comics-new-link { position: absolute; left: 47.5%; bottom: 28%; display: inline-flex; align-items: center; gap: 12px; color: #26342d; font-size: 20px; font-weight: 700; text-decoration: none; animation: comics-new-blink 1s steps(2, start) infinite; }
