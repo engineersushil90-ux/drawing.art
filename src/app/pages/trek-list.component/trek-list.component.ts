@@ -72,6 +72,7 @@ export class DrawingArtComponent implements OnInit, OnDestroy, AfterViewChecked 
   private adsterraBannerScript: HTMLScriptElement | null = null;
   private adsterraSocialBarScript: HTMLScriptElement | null = null;
   private adsterraContainer: HTMLElement | null = null;
+  private adsterraLoadTimer: number | null = null;
 
   adultAccessOpen = false;
   adultAccessBusy = false;
@@ -420,6 +421,10 @@ loadDrawings(imageAccessToken = ''): void {
 }
 
   ngOnDestroy(): void {
+    if (this.adsterraLoadTimer !== null && typeof window !== 'undefined') {
+      window.clearTimeout(this.adsterraLoadTimer);
+      this.adsterraLoadTimer = null;
+    }
     this.adsterraBannerScript?.remove();
     this.adsterraSocialBarScript?.remove();
     this.adsterraContainer = null;
@@ -439,10 +444,13 @@ loadDrawings(imageAccessToken = ''): void {
     this.adsterraBannerScript?.remove();
     this.adsterraBannerScript = null;
     this.adsterraContainer = container;
-    window.requestAnimationFrame(() => {
+    if (this.adsterraLoadTimer !== null) window.clearTimeout(this.adsterraLoadTimer);
+    this.adsterraLoadTimer = window.setTimeout(() => {
+      this.adsterraLoadTimer = null;
+      if (!container.isConnected) return;
       this.loadAdsterraBanner();
       this.loadAdsterraSocialBar();
-    });
+    }, 500);
   }
 
   private loadAdsterraBanner(): void {
