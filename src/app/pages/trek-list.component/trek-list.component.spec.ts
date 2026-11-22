@@ -164,7 +164,7 @@ describe('DrawingArtComponent', () => {
     expect(fixture.nativeElement.querySelector('.review-form')).not.toBeNull();
   });
 
-  it('does not render Amazon affiliate cards in the gallery', () => {
+  it('places the responsive Adsterra banner after six gallery images', () => {
     drawingsResponse = Array.from({ length: 30 }, (_, index) => ({
       title: `Drawing ${index + 1}`,
       category: 'Pencil Sketches',
@@ -175,7 +175,14 @@ describe('DrawingArtComponent', () => {
     component.loadDrawings();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.affiliate-ad-card')).toBeNull();
+    const gallery = fixture.nativeElement.querySelector('.gallery') as HTMLElement;
+    const artworks = gallery.querySelectorAll('.art-card');
+    const banner = gallery.querySelector('.adsterra-gallery-slot') as HTMLElement;
+
+    expect(artworks).toHaveLength(15);
+    expect(banner).not.toBeNull();
+    expect(artworks[5].nextElementSibling).toBe(banner);
+    expect(banner.querySelector('#container-d66d76d37023e9948f826d169d902c1f')).not.toBeNull();
   });
 
   it('immediately filters drawings by today likes and reviews when their checkboxes are selected', () => {
