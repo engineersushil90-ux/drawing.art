@@ -307,7 +307,7 @@
       *ngIf="!isLoading && visibleArtworks.length > 0"
     >
 
-      <ng-container *ngFor="let artwork of visibleArtworks; let index = index">
+      <ng-template #artworkCard let-artwork>
         <article
           class="art-card"
           [class.locked-artwork]="isLockedArtwork(artwork)"
@@ -405,17 +405,20 @@
         </div>
 
         </article>
+      </ng-template>
 
+      <ng-container *ngFor="let artwork of visibleArtworks | slice:0:6">
+        <ng-container *ngTemplateOutlet="artworkCard; context: {$implicit: artwork}"></ng-container>
       </ng-container>
 
-      <aside
-        *ngIf="visibleArtworks.length > 5"
-        class="adsterra-gallery-slot"
-        aria-label="Advertisement"
-      >
+      <aside *ngIf="visibleArtworks.length > 5" class="adsterra-gallery-slot" aria-label="Advertisement">
         <span class="adsterra-gallery-label">Advertisement</span>
         <div id="container-d66d76d37023e9948f826d169d902c1f"></div>
       </aside>
+
+      <ng-container *ngFor="let artwork of visibleArtworks | slice:6">
+        <ng-container *ngTemplateOutlet="artworkCard; context: {$implicit: artwork}"></ng-container>
+      </ng-container>
 
     </div>
 

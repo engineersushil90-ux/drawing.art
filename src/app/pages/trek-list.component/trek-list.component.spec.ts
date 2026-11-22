@@ -182,6 +182,7 @@ describe('DrawingArtComponent', () => {
     expect(artworks).toHaveLength(15);
     expect(banner).not.toBeNull();
     expect(banner.classList.contains('adsterra-gallery-slot')).toBe(true);
+    expect(artworks[5].nextElementSibling).toBe(banner);
     expect(banner.querySelector('#container-d66d76d37023e9948f826d169d902c1f')).not.toBeNull();
 
     const secondPageButton = fixture.nativeElement.querySelectorAll('.page-numbers button')[1] as HTMLButtonElement;
@@ -192,6 +193,7 @@ describe('DrawingArtComponent', () => {
 
     expect(nextPageArtworks).toHaveLength(15);
     expect(nextPageBanner).toBe(banner);
+    expect(nextPageArtworks[5].nextElementSibling).toBe(nextPageBanner);
   });
 
   it('immediately filters drawings by today likes and reviews when their checkboxes are selected', () => {
