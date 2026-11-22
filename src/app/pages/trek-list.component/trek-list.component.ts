@@ -591,7 +591,10 @@ loadDrawings(imageAccessToken = ''): void {
       },
       error: error => {
         this.suggestionError = true;
-        this.suggestionMessage = error?.error?.error || 'Could not send your idea. Please try again.';
+        const serverMessage = error?.error?.error || '';
+        this.suggestionMessage = serverMessage.includes('Upload one JPG, PNG, or WebP reference image')
+          ? 'The request service needs an update before it can accept ideas. Please try again later.'
+          : serverMessage || 'Could not send your idea. Please try again.';
         this.suggestionSubmitting = false;
       }
     });
