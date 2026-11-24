@@ -69,7 +69,6 @@ export class DrawingArtComponent implements OnInit, OnDestroy, AfterViewChecked 
   suggestionSubmitting = false;
   suggestionMessage = '';
   suggestionError = false;
-  loadedArtworkImages: Record<string, boolean> = {};
 
   isMenuOpen = false;
   readonly newHindiComicTarget = getFirstNewComicTarget();
@@ -221,10 +220,6 @@ private readonly cdr =
 
     const separator = artwork.image.includes('?') ? '&' : '?';
     return `${artwork.image}${separator}access_token=${encodeURIComponent(this.adultImageAccessToken)}`;
-  }
-
-  markArtworkImageLoaded(imageUrl: string): void {
-    if (imageUrl) this.loadedArtworkImages[imageUrl] = true;
   }
 
   getArtworkSrcset(artwork: Artwork): string {
