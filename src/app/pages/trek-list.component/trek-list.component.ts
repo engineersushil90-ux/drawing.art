@@ -401,8 +401,9 @@ loadDrawings(imageAccessToken = ''): void {
     .getBuildDrawings()
     .subscribe({
       next: drawings => {
-        this.applyDrawings(drawings);
-        this.refreshDrawingsFromApi(imageAccessToken);
+        const waitingForAdultGallery = this.activeCategory === '18+ Sketches';
+        this.applyDrawings(drawings, waitingForAdultGallery);
+        this.refreshDrawingsFromApi(imageAccessToken, waitingForAdultGallery);
       },
       error: error => {
         console.warn('Build-time gallery index could not be loaded; using the drawings API.', error);
@@ -426,11 +427,11 @@ private refreshDrawingsFromApi(imageAccessToken: string, showLoading = false): v
   });
 }
 
-private applyDrawings(drawings: Artwork[]): void {
+private applyDrawings(drawings: Artwork[], keepLoading = false): void {
   this.artworks = drawings;
   const adultDrawing = drawings.find(artwork => artwork.category === '18+ Sketches');
   if (adultDrawing) this.isPayment = adultDrawing.isPayment ?? this.isPayment;
-  this.isLoading = false;
+  this.isLoading = keepLoading;
   this.cdr.detectChanges();
 }
 
