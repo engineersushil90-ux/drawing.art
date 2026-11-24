@@ -2724,6 +2724,11 @@ app.use(
       maxAge: '1y',
       index: false,
       redirect: false,
+      setHeaders: (res, filePath) => {
+        if (basename(filePath) === 'gallery.json') {
+          res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+        }
+      },
     }
   )
 );

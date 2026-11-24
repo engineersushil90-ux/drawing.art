@@ -127,6 +127,10 @@ export class DrawingsService {
     }))));
   }
 
+  getBuildDrawings(): Observable<Artwork[]> {
+    return this.http.get<Artwork[]>('/gallery.json');
+  }
+
   registerAdultViewer(details: { name: string; email: string; isAdult: boolean }): Observable<AdultAccessResponse> {
     return this.http.post<AdultAccessResponse>(`${this.apiBaseUrl}/api/18plus/confirm`, details, {
       withCredentials: true

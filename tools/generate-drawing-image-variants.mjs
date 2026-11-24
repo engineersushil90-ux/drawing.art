@@ -165,4 +165,30 @@ await writeFile(
   JSON.stringify(imageManifest, null, 2),
   'utf8'
 );
+
+const drawingIndex = JSON.parse(await readFile(join(projectRoot, 'public', 'drawings.json'), 'utf8'));
+const gallery = drawingIndex.map(drawing => {
+  const variants = imageManifest[drawing.image];
+  if (variants) {
+    return {
+      ...drawing,
+      imageSmall: variants.small,
+      imageLarge: variants.large,
+      imageSmallWidth: variants.smallWidth,
+      imageLargeWidth: variants.largeWidth
+    };
+  }
+
+  const encodedPath = drawing.image.split('/').map(encodeURIComponent).join('/');
+  const file = encodeURIComponent(drawing.image);
+  return {
+    ...drawing,
+    imageSmall: `https://drawing-art.onrender.com/api/drawings/preview?file=${file}&width=480`,
+    imageLarge: `https://drawing-art.onrender.com/api/drawings/preview?file=${file}&width=960`,
+    imageSmallWidth: 480,
+    imageLargeWidth: 960,
+    image: `/${encodedPath}`
+  };
+});
+await writeFile(join(projectRoot, 'public', 'gallery.json'), JSON.stringify(gallery), 'utf8');
 console.log(`Updated ${generatedVariants} responsive WebP image variant(s).`);

@@ -397,39 +397,41 @@ loadDrawings(imageAccessToken = ''): void {
   this.isLoading = true;
   this.loadArtworkReviewCounts(imageAccessToken);
 
-  console.log('Loading drawings.json...');
-
   this.drawingsService
-    .getDrawings(imageAccessToken)
+    .getBuildDrawings()
     .subscribe({
       next: drawings => {
-        console.log(
-          'DRAWINGS LOADED:',
-          drawings
-        );
-
-        this.artworks = drawings;
-        const adultDrawing = drawings.find(artwork => artwork.category === '18+ Sketches');
-        if (adultDrawing) this.isPayment = adultDrawing.isPayment ?? this.isPayment;
-        this.isLoading = false;
-
-        // Force UI refresh
-        this.cdr.detectChanges();
+        this.applyDrawings(drawings);
+        this.refreshDrawingsFromApi(imageAccessToken);
       },
-
       error: error => {
-        console.error(
-          'DRAWINGS ERROR:',
-          error
-        );
-
-        this.artworks = [];
-        this.isLoading = false;
-
-        // Force UI refresh
-        this.cdr.detectChanges();
+        console.warn('Build-time gallery index could not be loaded; using the drawings API.', error);
+        this.refreshDrawingsFromApi(imageAccessToken, true);
       }
     });
+}
+
+private refreshDrawingsFromApi(imageAccessToken: string, showLoading = false): void {
+  if (showLoading) this.isLoading = true;
+  this.drawingsService.getDrawings(imageAccessToken).subscribe({
+    next: drawings => this.applyDrawings(drawings),
+    error: error => {
+      console.error('Drawings API could not refresh the gallery:', error);
+      if (showLoading) {
+        this.artworks = [];
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    }
+  });
+}
+
+private applyDrawings(drawings: Artwork[]): void {
+  this.artworks = drawings;
+  const adultDrawing = drawings.find(artwork => artwork.category === '18+ Sketches');
+  if (adultDrawing) this.isPayment = adultDrawing.isPayment ?? this.isPayment;
+  this.isLoading = false;
+  this.cdr.detectChanges();
 }
 
   ngOnDestroy(): void {

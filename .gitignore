@@ -37,6 +37,7 @@ yarn-error.log
 /public/drawings-optimized/
 /private-drawings-optimized/
 /public/drawing-image-variants.json
+/public/gallery.json
 /data/adult-sketch-viewers.json
 /data/drawings/
 /libpeerconnection.log
