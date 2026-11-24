@@ -506,6 +506,30 @@ h1 em {
   background: #f2f0f2;
 }
 
+.image-loading-indicator {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  border: 3px solid #26342d2b;
+  border-top-color: #26342d;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.image-wrap.image-pending .image-loading-indicator {
+  opacity: 1;
+  animation: image-loading-spin .8s linear infinite;
+}
+
+@keyframes image-loading-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 .image-wrap img {
   display: block;
 

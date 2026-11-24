@@ -343,7 +343,9 @@
           (click)="openArtwork(artwork)"
         >
 
-        <div class="image-wrap">
+        <div class="image-wrap" [class.image-pending]="!loadedArtworkImages[getArtworkImage(artwork)]">
+
+          <span class="image-loading-indicator" aria-label="Image is loading" role="status"></span>
 
           <picture>
             <source
@@ -356,6 +358,8 @@
               [src]="getArtworkImage(artwork)"
               [alt]="artwork.alt"
               [attr.crossorigin]="artwork.category === '18+ Sketches' ? 'use-credentials' : null"
+              (load)="markArtworkImageLoaded(getArtworkImage(artwork))"
+              (error)="markArtworkImageLoaded(getArtworkImage(artwork))"
               loading="lazy"
               decoding="async"
             />
