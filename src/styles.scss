@@ -2,6 +2,7 @@ html { scroll-behavior: smooth; }
 body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #fffdf9; }
 
 .image-wrap.image-pending::after { content: ''; position: absolute; top: calc(50% - 15px); left: calc(50% - 15px); width: 24px; height: 24px; border: 3px solid #26342d2b; border-top-color: #26342d; border-radius: 50%; animation: image-loading-spin .8s linear infinite; }
+.loading-message::before { content: ''; display: inline-block; width: 18px; height: 18px; margin-right: 10px; vertical-align: -4px; border: 2px solid #26342d2b; border-top-color: #26342d; border-radius: 50%; animation: image-loading-spin .8s linear infinite; }
 @keyframes image-loading-spin { to { transform: rotate(1turn); } }
 
 .new-badge { display: inline-block; margin-left: 7px; padding: 3px 6px; border-radius: 999px; background: #c85c4a; color: #fff; font: 700 9px/1 Arial, sans-serif; letter-spacing: .5px; vertical-align: middle; animation: new-badge-blink 1s steps(2, start) infinite; }
